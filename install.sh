@@ -129,7 +129,59 @@ install_linux() {
       echo -e "${YELLOW}Warning: smash binary not found in repository, creating placeholder...${NC}"
       cat > "$LINUX_INSTALL_DIR/smash" << 'EOF'
 #!/bin/bash
-echo "SmashLang v0.1.0-dev (placeholder)"
+
+# Colors for output
+RED="\033[0;31m"
+GREEN="\033[0;32m"
+YELLOW="\033[0;33m"
+BLUE="\033[0;34m"
+CYAN="\033[0;36m"
+NC="\033[0m" # No Color
+
+# Check for command line arguments
+if [[ "$1" == "--help" || "$1" == "-h" ]]; then
+  echo -e "${BLUE}SmashLang v0.1.0-dev${NC} - A JavaScript-inspired programming language"
+  echo ""
+  echo -e "${YELLOW}Usage:${NC}"
+  echo -e "  smash [options] <file.smash>    Run a SmashLang program"
+  echo -e "  smash                          Start interactive REPL mode"
+  echo ""
+  echo -e "${YELLOW}Options:${NC}"
+  echo -e "  -h, --help                     Show this help message"
+  echo -e "  -v, --version                  Show version information"
+  echo -e "  -c, --compile <file.smash>     Compile a SmashLang program to binary"
+  echo -e "  -o, --output <file>            Specify output file for compilation"
+  echo -e "  --wasm                         Compile to WebAssembly (see docs/wasm_support.md)"
+  echo -e "  --target <platform>            Specify target platform (linux, macos, windows)"
+  echo -e "  --debug                        Enable debug mode"
+  echo ""
+  echo -e "${YELLOW}Examples:${NC}"
+  echo -e "  smash                           Start interactive REPL"
+  echo -e "  smash hello.smash               Run a SmashLang program"
+  echo -e "  smash -c hello.smash -o hello  Compile a program to binary"
+  echo -e "  smash --wasm hello.smash       Compile a program to WebAssembly"
+  echo ""
+  echo -e "${YELLOW}Documentation:${NC}"
+  echo -e "  Visit ${CYAN}https://smashlang.com/docs${NC} for full documentation"
+  exit 0
+elif [[ "$1" == "--version" || "$1" == "-v" ]]; then
+  echo -e "${BLUE}SmashLang v0.1.0-dev${NC}"
+  exit 0
+elif [[ "$1" == "repl" || -z "$1" ]]; then
+  echo -e "${YELLOW}SmashLang REPL v0.1.0-dev${NC}"
+  echo -e "${BLUE}Type .help for available commands or .exit to quit${NC}"
+  echo -e "${YELLOW}> ${NC}This is a placeholder. The actual REPL is not yet implemented."
+  exit 0
+else
+  if [[ -n "$1" && "$1" == *.smash ]]; then
+    echo -e "${YELLOW}SmashLang v0.1.0-dev (placeholder)${NC}"
+    echo -e "Would run file: $1 (not yet implemented)"
+  else
+    echo -e "${YELLOW}SmashLang v0.1.0-dev (placeholder)${NC}"
+    echo -e "Unknown command or file: $1"
+    echo -e "Run ${CYAN}smash --help${NC} for usage information"
+  fi
+fi
 EOF
       chmod +x "$LINUX_INSTALL_DIR/smash"
     fi
@@ -141,7 +193,53 @@ EOF
       echo -e "${YELLOW}Warning: smashpkg binary not found in repository, creating placeholder...${NC}"
       cat > "$LINUX_INSTALL_DIR/smashpkg" << 'EOF'
 #!/bin/bash
-echo "SmashLang Package Manager v0.1.0-dev (placeholder)"
+
+# Colors for output
+RED="\033[0;31m"
+GREEN="\033[0;32m"
+YELLOW="\033[0;33m"
+BLUE="\033[0;34m"
+CYAN="\033[0;36m"
+NC="\033[0m" # No Color
+
+# Check for command line arguments
+if [[ "$1" == "--help" || "$1" == "-h" ]]; then
+  echo -e "${BLUE}SmashLang Package Manager v0.1.0-dev${NC}"
+  echo ""
+  echo -e "${YELLOW}Usage:${NC}"
+  echo -e "  smashpkg [command] [options]"
+  echo ""
+  echo -e "${YELLOW}Commands:${NC}"
+  echo -e "  install <package>       Install a package"
+  echo -e "  remove <package>        Remove a package"
+  echo -e "  update <package>        Update a package"
+  echo -e "  list                   List installed packages"
+  echo -e "  search <query>          Search for packages"
+  echo -e "  info <package>          Show package information"
+  echo ""
+  echo -e "${YELLOW}Options:${NC}"
+  echo -e "  -h, --help              Show this help message"
+  echo -e "  -v, --version           Show version information"
+  echo -e "  -g, --global            Install/remove packages globally"
+  echo ""
+  echo -e "${YELLOW}Examples:${NC}"
+  echo -e "  smashpkg install networking/hono    Install the Hono package"
+  echo -e "  smashpkg list                      List installed packages"
+  echo -e "  smashpkg search http               Search for HTTP-related packages"
+  echo ""
+  echo -e "${YELLOW}Documentation:${NC}"
+  echo -e "  Visit ${CYAN}https://smashlang.com/docs/packages${NC} for full documentation"
+  exit 0
+elif [[ "$1" == "--version" || "$1" == "-v" ]]; then
+  echo -e "${BLUE}SmashLang Package Manager v0.1.0-dev${NC}"
+  exit 0
+else
+  echo -e "${YELLOW}SmashLang Package Manager v0.1.0-dev (placeholder)${NC}"
+  if [[ -n "$1" ]]; then
+    echo -e "Command: $1 (not yet implemented)"
+  fi
+  echo -e "Run ${CYAN}smashpkg --help${NC} for usage information"
+fi
 EOF
       chmod +x "$LINUX_INSTALL_DIR/smashpkg"
     fi
