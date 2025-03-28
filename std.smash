@@ -36,6 +36,67 @@ fn __promisify(value) {
     });
 }
 
+// Control flow support
+// These are special functions that the runtime will recognize and handle
+
+// Conditional operators
+fn __equals(a, b) {
+    return a === b;
+}
+
+fn __not_equals(a, b) {
+    return a !== b;
+}
+
+fn __greater_than(a, b) {
+    return a > b;
+}
+
+fn __less_than(a, b) {
+    return a < b;
+}
+
+fn __greater_than_equals(a, b) {
+    return a >= b;
+}
+
+fn __less_than_equals(a, b) {
+    return a <= b;
+}
+
+// Logical operators
+fn __and(a, b) {
+    return a && b;
+}
+
+fn __or(a, b) {
+    return a || b;
+}
+
+fn __not(a) {
+    return !a;
+}
+
+// Ternary operator helper
+fn __ternary(condition, trueValue, falseValue) {
+    return condition ? trueValue : falseValue;
+}
+
+// Array and object iteration helpers
+fn __iterate_array(array, callback) {
+    for (let i = 0; i < array.length; i++) {
+        callback(array[i], i, array);
+    }
+}
+
+fn __iterate_object(obj, callback) {
+    for (let key in obj) {
+        if (obj.hasOwnProperty(key)) {
+            callback(key, obj[key], obj);
+        }
+    }
+}
+
 // HTTP/HTTPS functionality - fetch API compatible
 fn fetch(url, options = {}) {
     let method = options.method || "GET";

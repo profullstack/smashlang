@@ -1,0 +1,274 @@
+// SmashLang Practical Control Flow Examples
+
+// Import the networking module
+import "std/net";
+
+// ===== Practical Conditional Examples =====
+
+// Function to validate user input with conditionals
+fn validateUserInput(username, password) {
+    // Check if username is provided
+    if (!username) {
+        return { valid: false, message: "Username is required" };
+    }
+    
+    // Check username length
+    if (username.length < 3) {
+        return { valid: false, message: "Username must be at least 3 characters" };
+    }
+    
+    // Check if password is provided
+    if (!password) {
+        return { valid: false, message: "Password is required" };
+    }
+    
+    // Check password strength with nested conditions
+    if (password.length < 8) {
+        return { valid: false, message: "Password must be at least 8 characters" };
+    } else {
+        let hasUpperCase = false;
+        let hasNumber = false;
+        let hasSpecial = false;
+        
+        // Check each character in the password
+        for (let i = 0; i < password.length; i++) {
+            let char = password[i];
+            
+            // Using regular expressions to check character types
+            if (/[A-Z]/.test(char)) {
+                hasUpperCase = true;
+            } else if (/[0-9]/.test(char)) {
+                hasNumber = true;
+            } else if (/[!@#$%^&*]/.test(char)) {
+                hasSpecial = true;
+            }
+        }
+        
+        // Check if password meets all criteria
+        if (!hasUpperCase) {
+            return { valid: false, message: "Password must contain at least one uppercase letter" };
+        } else if (!hasNumber) {
+            return { valid: false, message: "Password must contain at least one number" };
+        } else if (!hasSpecial) {
+            return { valid: false, message: "Password must contain at least one special character" };
+        }
+    }
+    
+    // If all checks pass
+    return { valid: true, message: "Input is valid" };
+}
+
+// Test the validation function
+let validationResult = validateUserInput("john_doe", "Password123!");
+print(`Validation result: ${validationResult.valid ? "Valid" : "Invalid"}`);
+print(`Message: ${validationResult.message}`);
+
+// Using switch for different HTTP status codes
+fn handleHttpResponse(statusCode) {
+    let message;
+    
+    switch (statusCode) {
+        case 200:
+            message = "OK - Request succeeded";
+            break;
+        case 201:
+            message = "Created - Resource created successfully";
+            break;
+        case 400:
+            message = "Bad Request - Server could not understand the request";
+            break;
+        case 401:
+            message = "Unauthorized - Authentication required";
+            break;
+        case 403:
+            message = "Forbidden - Server refuses to authorize";
+            break;
+        case 404:
+            message = "Not Found - Resource not found";
+            break;
+        case 500:
+            message = "Internal Server Error - Server encountered an error";
+            break;
+        default:
+            message = `Unknown status code: ${statusCode}`;
+    }
+    
+    return message;
+}
+
+print(`\nHTTP 200: ${handleHttpResponse(200)}`);
+print(`HTTP 404: ${handleHttpResponse(404)}`);
+print(`HTTP 418: ${handleHttpResponse(418)}`);
+
+// ===== Practical Loop Examples =====
+
+// Processing data with loops
+let temperatures = [22.5, 25.3, 18.9, 20.1, 23.4, 19.8, 21.2];
+
+// Calculate average temperature using a for loop
+fn calculateAverage(data) {
+    let sum = 0;
+    
+    for (let i = 0; i < data.length; i++) {
+        sum += data[i];
+    }
+    
+    return data.length > 0 ? sum / data.length : 0;
+}
+
+print(`\nAverage temperature: ${calculateAverage(temperatures).toFixed(2)}°C`);
+
+// Find min and max temperatures using a for-of loop
+fn findMinMax(data) {
+    if (data.length === 0) {
+        return { min: null, max: null };
+    }
+    
+    let min = data[0];
+    let max = data[0];
+    
+    for (let value of data) {
+        if (value < min) {
+            min = value;
+        }
+        if (value > max) {
+            max = value;
+        }
+    }
+    
+    return { min, max };
+}
+
+let minMax = findMinMax(temperatures);
+print(`Min temperature: ${minMax.min.toFixed(2)}°C`);
+print(`Max temperature: ${minMax.max.toFixed(2)}°C`);
+
+// Filter temperatures above threshold using while loop
+fn filterAboveThreshold(data, threshold) {
+    let result = [];
+    let i = 0;
+    
+    while (i < data.length) {
+        if (data[i] > threshold) {
+            result.push(data[i]);
+        }
+        i++;
+    }
+    
+    return result;
+}
+
+let highTemps = filterAboveThreshold(temperatures, 22.0);
+print(`Temperatures above 22.0°C: ${highTemps.join(", ")}°C`);
+
+// Process user data with for-in loop
+let users = [
+    { id: 1, name: "Alice", active: true, lastLogin: "2025-03-25" },
+    { id: 2, name: "Bob", active: false, lastLogin: "2025-01-15" },
+    { id: 3, name: "Charlie", active: true, lastLogin: "2025-03-27" },
+    { id: 4, name: "Diana", active: true, lastLogin: "2025-03-20" }
+];
+
+// Print user properties
+print("\nUser details:");
+for (let i = 0; i < users.length; i++) {
+    let user = users[i];
+    print(`User ${user.id}:`);
+    
+    for (let key in user) {
+        print(`  ${key}: ${user[key]}`);
+    }
+    print(""); // Empty line for readability
+}
+
+// Find active users using array methods and arrow functions
+let activeUsers = users.filter(fn(user) => user.active);
+print(`Active users: ${activeUsers.length}`);
+
+// Map user names to uppercase
+let upperNames = users.map(fn(user) => user.name.toUpperCase());
+print(`User names: ${upperNames.join(", ")}`);
+
+// Nested loops for a simple matrix operation
+fn createMultiplicationTable(size) {
+    let table = [];
+    
+    for (let i = 1; i <= size; i++) {
+        let row = [];
+        for (let j = 1; j <= size; j++) {
+            row.push(i * j);
+        }
+        table.push(row);
+    }
+    
+    return table;
+}
+
+let multiTable = createMultiplicationTable(5);
+print("\nMultiplication Table (5x5):");
+for (let row of multiTable) {
+    print(row.join("\t"));
+}
+
+// Using break and continue for specific conditions
+fn findFirstPrime(numbers) {
+    for (let num of numbers) {
+        // Skip non-positive numbers and 1
+        if (num <= 1) continue;
+        
+        let isPrime = true;
+        for (let i = 2; i <= Math.sqrt(num); i++) {
+            if (num % i === 0) {
+                isPrime = false;
+                break;
+            }
+        }
+        
+        if (isPrime) {
+            return num; // Return the first prime found
+        }
+    }
+    
+    return null; // No prime found
+}
+
+let numbers = [4, 6, 8, 9, 11, 12, 15, 17, 20];
+let firstPrime = findFirstPrime(numbers);
+print(`\nFirst prime number in the list: ${firstPrime !== null ? firstPrime : "None"}`);
+
+// Async function with loops and conditionals
+async fn fetchUserData(userIds) {
+    let results = [];
+    
+    for (let i = 0; i < userIds.length; i++) {
+        let userId = userIds[i];
+        print(`Fetching data for user ${userId}...`);
+        
+        try {
+            // Simulated API call
+            const response = await fetch(`https://api.example.com/users/${userId}`);
+            
+            if (response.status === 200) {
+                const userData = await response.json();
+                results.push(userData);
+                print(`Successfully fetched data for user ${userId}`);
+            } else if (response.status === 404) {
+                print(`User ${userId} not found`);
+            } else {
+                print(`Error fetching user ${userId}: ${response.status}`);
+            }
+        } catch (error) {
+            print(`Exception while fetching user ${userId}: ${error}`);
+            // Continue with next user despite error
+            continue;
+        }
+    }
+    
+    return results;
+}
+
+// Call the async function
+print("\nFetching user data...");
+fetchUserData([1, 2, 3]).then(fn(data) {
+    print(`Fetched data for ${data.length} users`);
+});

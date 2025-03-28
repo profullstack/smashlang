@@ -1,0 +1,144 @@
+// SmashLang Control Flow Examples
+
+// ===== Conditionals =====
+
+// Basic if statement
+let age = 25;
+
+if (age >= 18) {
+    print("Adult");
+}
+
+// If-else statement
+let score = 75;
+
+if (score >= 90) {
+    print("Grade: A");
+} else if (score >= 80) {
+    print("Grade: B");
+} else if (score >= 70) {
+    print("Grade: C");
+} else if (score >= 60) {
+    print("Grade: D");
+} else {
+    print("Grade: F");
+}
+
+// Ternary operator
+let status = age >= 18 ? "adult" : "minor";
+print(`Status: ${status}`);
+
+// Switch statement
+let day = 3;
+let dayName;
+
+switch (day) {
+    case 1:
+        dayName = "Monday";
+        break;
+    case 2:
+        dayName = "Tuesday";
+        break;
+    case 3:
+        dayName = "Wednesday";
+        break;
+    case 4:
+        dayName = "Thursday";
+        break;
+    case 5:
+        dayName = "Friday";
+        break;
+    case 6:
+        dayName = "Saturday";
+        break;
+    case 7:
+        dayName = "Sunday";
+        break;
+    default:
+        dayName = "Invalid day";
+}
+
+print(`Day: ${dayName}`);
+
+// ===== Loops =====
+
+// For loop
+print("\nFor loop:");
+for (let i = 0; i < 5; i++) {
+    print(`Iteration ${i}`);
+}
+
+// While loop
+print("\nWhile loop:");
+let counter = 0;
+while (counter < 5) {
+    print(`Count: ${counter}`);
+    counter++;
+}
+
+// Do-while loop
+print("\nDo-while loop:");
+let num = 0;
+do {
+    print(`Number: ${num}`);
+    num++;
+} while (num < 5);
+
+// For-in loop (for objects)
+print("\nFor-in loop:");
+let person = {
+    name: "John",
+    age: 30,
+    job: "Developer"
+};
+
+for (let key in person) {
+    print(`${key}: ${person[key]}`);
+}
+
+// For-of loop (for arrays)
+print("\nFor-of loop:");
+let fruits = ["apple", "banana", "orange", "grape"];
+
+for (let fruit of fruits) {
+    print(fruit);
+}
+
+// forEach method for arrays
+print("\nforEach method:");
+fruits.forEach(fn(fruit, index) {
+    print(`${index}: ${fruit}`);
+});
+
+// Break and continue
+print("\nBreak example:");
+for (let i = 0; i < 10; i++) {
+    if (i === 5) break;
+    print(`Break loop: ${i}`);
+}
+
+print("\nContinue example:");
+for (let i = 0; i < 10; i++) {
+    if (i % 2 === 0) continue;
+    print(`Continue loop: ${i}`);
+}
+
+// Nested loops
+print("\nNested loops:");
+for (let i = 0; i < 3; i++) {
+    for (let j = 0; j < 3; j++) {
+        print(`Position (${i}, ${j})`);
+    }
+}
+
+// Labeled statements
+print("\nLabeled break:");
+outer: for (let i = 0; i < 3; i++) {
+    for (let j = 0; j < 3; j++) {
+        if (i === 1 && j === 1) {
+            print("Breaking outer loop");
+            break outer;
+        }
+        print(`Label position (${i}, ${j})`);
+    }
+}
