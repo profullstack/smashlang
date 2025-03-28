@@ -1,0 +1,81 @@
+{
+  "name": "sqlite",
+  "version": "3.36.0",
+  "description": "SQLite database bindings for SmashLang",
+  "homepage": "https://github.com/smashlang/sqlite",
+  "repository": "https://github.com/smashlang/sqlite.git",
+  "license": "MIT",
+  "authors": ["SmashLang Team", "Database Contributors"],
+  "maintainers": ["@database-team", "@smashlang-core"],
+  "category": "database",
+  "dependencies": [],
+  "native_dependencies": [
+    {
+      "name": "sqlite3",
+      "version": ">=3.35.0",
+      "debian": "libsqlite3-dev",
+      "fedora": "sqlite-devel",
+      "arch": "sqlite",
+      "macos": "sqlite",
+      "windows": "sqlite3"
+    }
+  ],
+  "versions": [
+    {
+      "version": "3.36.0",
+      "release_date": "2025-02-15",
+      "url": "https://github.com/smashlang/sqlite/archive/v3.36.0.tar.gz",
+      "sha256": "a7c5308b6c631491c9940724d07ae77a238a650a0d586a3c4b9952eba044c9ac"
+    },
+    {
+      "version": "3.35.2",
+      "release_date": "2025-01-10",
+      "url": "https://github.com/smashlang/sqlite/archive/v3.35.2.tar.gz",
+      "sha256": "d2a5f776f2b478e7a3e1fa0e89c8328c3f4c4e11f8f6a91e692b7e93c24e5208"
+    },
+    {
+      "version": "3.35.0",
+      "release_date": "2024-12-05",
+      "url": "https://github.com/smashlang/sqlite/archive/v3.35.0.tar.gz",
+      "sha256": "f8b32b9a3e36cac3e462b7d7e714450257a3e286d4b9e1341283b26c8a195906"
+    }
+  ],
+  "installation": {
+    "build": [
+      "./configure --prefix=#{prefix}",
+      "make",
+      "make install"
+    ],
+    "install": [
+      "cp -r lib/* #{prefix}/",
+      "cp -r include/* #{prefix}/include/"
+    ]
+  },
+  "testing": {
+    "test_commands": [
+      "smash test/basic.smash",
+      "smash test/transactions.smash"
+    ]
+  },
+  "documentation": {
+    "readme": "https://github.com/smashlang/sqlite/blob/main/README.md",
+    "api_docs": "https://docs.smashlang.com/packages/sqlite/",
+    "examples": [
+      "examples/basic_query.smash",
+      "examples/transactions.smash",
+      "examples/prepared_statements.smash"
+    ]
+  },
+  "stats": {
+    "downloads": {
+      "total": 7532,
+      "last_month": 842,
+      "last_week": 213
+    },
+    "stars": 124,
+    "forks": 32,
+    "issues": 5,
+    "pull_requests": 3
+  },
+  "api_version": "1.0"
+}

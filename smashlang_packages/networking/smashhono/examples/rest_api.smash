@@ -1,0 +1,366 @@
+// rest_api.smash - RESTful API example with SmashHono
+
+import "smashhono";
+import "json";
+
+// Create a new SmashHono app
+const app = new SmashHono();
+
+// Add middleware for all routes
+app.use(smashhono.middleware.logger());
+app.use(smashhono.middleware.cors());
+
+// In-memory database for demo purposes
+const db = {
+  users: [
+    { id: "1", name: "John Doe", email: "john@example.com", role: "admin" },
+    { id: "2", name: "Jane Smith", email: "jane@example.com", role: "user" },
+    { id: "3", name: "Bob Johnson", email: "bob@example.com", role: "user" }
+  ],
+  posts: [
+    { id: "1", userId: "1", title: "Introduction to SmashLang", content: "SmashLang is a powerful programming language..." },
+    { id: "2", userId: "1", title: "Building Web APIs with Hono", content: "Hono makes it easy to build fast web APIs..." },
+    { id: "3", userId: "2", title: "Frontend Development Tips", content: "Here are some tips for frontend development..." }
+  ]
+};
+
+// Create API group with base path
+const api = app.basePath("/api");
+
+// API documentation route
+api.get("/", (c) => {
+  return c.json({
+    name: "SmashHono REST API Example",
+    version: "1.0.0",
+    endpoints: [
+      { method: "GET", path: "/api/users", description: "Get all users" },
+      { method: "GET", path: "/api/users/:id", description: "Get user by ID" },
+      { method: "POST", path: "/api/users", description: "Create a new user" },
+      { method: "PUT", path: "/api/users/:id", description: "Update a user" },
+      { method: "DELETE", path: "/api/users/:id", description: "Delete a user" },
+      { method: "GET", path: "/api/posts", description: "Get all posts" },
+      { method: "GET", path: "/api/posts/:id", description: "Get post by ID" },
+      { method: "GET", path: "/api/users/:id/posts", description: "Get posts by user ID" }
+    ]
+  });
+});
+
+// User routes
+api.get("/users", (c) => {
+  return c.json(db.users);
+});
+
+api.get("/users/:id", (c) => {
+  const id = c.params.id;
+  const user = db.users.find(u => u.id === id);
+  
+  if (!user) {
+    throw new smashhono.HTTPException(404, "User not found");
+  }
+  
+  return c.json(user);
+});
+
+api.post("/users", async (c) => {
+  try {
+    const body = await c.json();
+    
+    // Validate required fields
+    if (!body.name || !body.email) {
+      throw new smashhono.HTTPException(400, "Name and email are required");
+    }
+    
+    // Create new user
+    const newUser = {
+      id: String(db.users.length + 1),
+      name: body.name,
+      email: body.email,
+      role: body.role || "user"
+    };
+    
+    db.users.push(newUser);
+    
+    return c.json(newUser, 201);
+  } catch (error) {
+    if (error instanceof SyntaxError) {
+      throw new smashhono.HTTPException(400, "Invalid JSON");
+    }
+    throw error;
+  }
+});
+
+api.put("/users/:id", async (c) => {
+  const id = c.params.id;
+  const userIndex = db.users.findIndex(u => u.id === id);
+  
+  if (userIndex === -1) {
+    throw new smashhono.HTTPException(404, "User not found");
+  }
+  
+  try {
+    const body = await c.json();
+    const updatedUser = {
+      ...db.users[userIndex],
+      ...body,
+      id // Ensure ID doesn't change
+    };
+    
+    db.users[userIndex] = updatedUser;
+    
+    return c.json(updatedUser);
+  } catch (error) {
+    if (error instanceof SyntaxError) {
+      throw new smashhono.HTTPException(400, "Invalid JSON");
+    }
+    throw error;
+  }
+});
+
+api.delete("/users/:id", (c) => {
+  const id = c.params.id;
+  const userIndex = db.users.findIndex(u => u.id === id);
+  
+  if (userIndex === -1) {
+    throw new smashhono.HTTPException(404, "User not found");
+  }
+  
+  // Remove user
+  db.users.splice(userIndex, 1);
+  
+  // Remove associated posts
+  db.posts = db.posts.filter(p => p.userId !== id);
+  
+  return c.json({ success: true, message: "User deleted successfully" });
+});
+
+// Post routes
+api.get("/posts", (c) => {
+  return c.json(db.posts);
+});
+
+api.get("/posts/:id", (c) => {
+  const id = c.params.id;
+  const post = db.posts.find(p => p.id === id);
+  
+  if (!post) {
+    throw new hono.HTTPException(404, "Post not found");
+  }
+  
+  return c.json(post);
+});
+
+api.get("/users/:id/posts", (c) => {
+  const userId = c.params.id;
+  const user = db.users.find(u => u.id === userId);
+  
+  if (!user) {
+    throw new smashhono.HTTPException(404, "User not found");
+  }
+  
+  const userPosts = db.posts.filter(p => p.userId === userId);
+  
+  return c.json(userPosts);
+});
+
+// Error handling
+app.onError((err, c) => {
+  console.error(`Error: ${err.message}`);
+  
+  if (err instanceof smashhono.HTTPException) {
+    return c.json({ error: err.message }, err.status);
+  }
+  
+  return c.json({ error: "Internal Server Error" }, 500);
+});
+
+// Not found handler
+app.notFound((c) => {
+  return c.json({ error: "Not Found", message: `No route found for ${c.req.method} ${c.req.url}` }, 404);
+});
+
+// HTML interface for testing the API
+app.get("/", (c) => {
+  return c.html(`
+    <!DOCTYPE html>
+    <html>
+      <head>
+        <title>SmashHono REST API Example</title>
+        <style>
+          body {
+            font-family: system-ui, -apple-system, sans-serif;
+            max-width: 1000px;
+            margin: 0 auto;
+            padding: 2rem;
+            line-height: 1.6;
+          }
+          h1 { color: #e63c3c; }
+          pre {
+            background: #f5f5f5;
+            padding: 1rem;
+            border-radius: 4px;
+            overflow-x: auto;
+          }
+          button {
+            background: #e63c3c;
+            color: white;
+            border: none;
+            padding: 0.5rem 1rem;
+            border-radius: 4px;
+            cursor: pointer;
+            margin-right: 0.5rem;
+            margin-bottom: 0.5rem;
+          }
+          button:hover { background: #d32f2f; }
+          #result {
+            background: #f5f5f5;
+            padding: 1rem;
+            border-radius: 4px;
+            margin-top: 1rem;
+            min-height: 200px;
+          }
+          .endpoint {
+            margin-bottom: 1rem;
+            padding: 1rem;
+            background: #f9f9f9;
+            border-radius: 4px;
+          }
+          .method {
+            display: inline-block;
+            padding: 0.25rem 0.5rem;
+            border-radius: 4px;
+            margin-right: 0.5rem;
+            font-weight: bold;
+          }
+          .get { background: #e3f2fd; color: #0d47a1; }
+          .post { background: #e8f5e9; color: #1b5e20; }
+          .put { background: #fff8e1; color: #ff6f00; }
+          .delete { background: #ffebee; color: #b71c1c; }
+        </style>
+      </head>
+      <body>
+        <h1>SmashHono REST API Example</h1>
+        <p>This is a simple demonstration of a RESTful API built with SmashHono for SmashLang.</p>
+        
+        <h2>API Endpoints</h2>
+        
+        <div class="endpoint">
+          <span class="method get">GET</span>
+          <code>/api/users</code>
+          <p>Get all users</p>
+          <button onclick="fetchData('/api/users')">Try it</button>
+        </div>
+        
+        <div class="endpoint">
+          <span class="method get">GET</span>
+          <code>/api/users/:id</code>
+          <p>Get user by ID</p>
+          <button onclick="fetchData('/api/users/1')">Try with ID 1</button>
+          <button onclick="fetchData('/api/users/999')">Try with invalid ID</button>
+        </div>
+        
+        <div class="endpoint">
+          <span class="method post">POST</span>
+          <code>/api/users</code>
+          <p>Create a new user</p>
+          <button onclick="createUser()">Create user</button>
+        </div>
+        
+        <div class="endpoint">
+          <span class="method put">PUT</span>
+          <code>/api/users/:id</code>
+          <p>Update a user</p>
+          <button onclick="updateUser()">Update user 1</button>
+        </div>
+        
+        <div class="endpoint">
+          <span class="method delete">DELETE</span>
+          <code>/api/users/:id</code>
+          <p>Delete a user</p>
+          <button onclick="deleteUser()">Delete user 3</button>
+        </div>
+        
+        <div class="endpoint">
+          <span class="method get">GET</span>
+          <code>/api/posts</code>
+          <p>Get all posts</p>
+          <button onclick="fetchData('/api/posts')">Try it</button>
+        </div>
+        
+        <div class="endpoint">
+          <span class="method get">GET</span>
+          <code>/api/users/:id/posts</code>
+          <p>Get posts by user ID</p>
+          <button onclick="fetchData('/api/users/1/posts')">Get user 1 posts</button>
+        </div>
+        
+        <h3>Response</h3>
+        <pre id="result">// Results will appear here</pre>
+        
+        <script>
+          async function fetchData(url) {
+            try {
+              const response = await fetch(url);
+              const data = await response.json();
+              document.getElementById('result').textContent = JSON.stringify(data, null, 2);
+            } catch (error) {
+              document.getElementById('result').textContent = 'Error: ' + error.message;
+            }
+          }
+          
+          async function createUser() {
+            try {
+              const response = await fetch('/api/users', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                  name: 'New User',
+                  email: 'newuser@example.com',
+                  role: 'user'
+                })
+              });
+              const data = await response.json();
+              document.getElementById('result').textContent = JSON.stringify(data, null, 2);
+            } catch (error) {
+              document.getElementById('result').textContent = 'Error: ' + error.message;
+            }
+          }
+          
+          async function updateUser() {
+            try {
+              const response = await fetch('/api/users/1', {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                  name: 'John Doe (Updated)',
+                  role: 'superadmin'
+                })
+              });
+              const data = await response.json();
+              document.getElementById('result').textContent = JSON.stringify(data, null, 2);
+            } catch (error) {
+              document.getElementById('result').textContent = 'Error: ' + error.message;
+            }
+          }
+          
+          async function deleteUser() {
+            try {
+              const response = await fetch('/api/users/3', {
+                method: 'DELETE'
+              });
+              const data = await response.json();
+              document.getElementById('result').textContent = JSON.stringify(data, null, 2);
+            } catch (error) {
+              document.getElementById('result').textContent = 'Error: ' + error.message;
+            }
+          }
+        </script>
+      </body>
+    </html>
+  `);
+});
+
+// Start the server
+app.listen(3000, () => {
+  console.log("REST API server is running on http://localhost:3000");
+  console.log("API documentation available at http://localhost:3000/api");
+});

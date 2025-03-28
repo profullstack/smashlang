@@ -1,0 +1,104 @@
+// pocketbase.smash - PocketBase client for SmashLang
+{
+  "name": "pocketbase",
+  "version": "0.5.0",
+  "description": "Client library for interacting with PocketBase.io servers",
+  "license": "MIT",
+  "authors": ["SmashLang Team", "Database Contributors"],
+  "dependencies": ["http", "json"],
+  "url": "https://smashlang.com/packages/pocketbase-0.5.0.tar.gz",
+  "sha256": "9f86d081884c7d98a938e1c84f3e7e1e7d7c4d388e3b0e9bef71d01d0a05ef7d",
+  "install": [
+    "cp -r src/* #{prefix}/"
+  ],
+  "test": [
+    "smash test/client.smash",
+    "smash test/auth.smash",
+    "smash test/crud.smash",
+    "smash test/realtime.smash"
+  ],
+  "exports": {
+    "Client": "class Client {
+      constructor(baseUrl) {
+        this.baseUrl = baseUrl;
+        this.authStore = { token: null, model: null };
+        this.http = http.createClient();
+      }
+
+      // Authentication methods
+      async authWithPassword(collection, email, password) { /* Implementation */ }
+      async authWithOAuth2(provider, code, codeVerifier, redirectUrl) { /* Implementation */ }
+      async refreshAuth() { /* Implementation */ }
+      async logout() { /* Implementation */ }
+
+      // Collection records CRUD
+      async getCollection(collectionIdOrName) { /* Implementation */ }
+      async getCollectionList() { /* Implementation */ }
+      async getRecord(collection, id) { /* Implementation */ }
+      async getRecordList(collection, page = 1, perPage = 30, filter = '') { /* Implementation */ }
+      async createRecord(collection, data) { /* Implementation */ }
+      async updateRecord(collection, id, data) { /* Implementation */ }
+      async deleteRecord(collection, id) { /* Implementation */ }
+
+      // File handling
+      async uploadFile(collection, id, fieldName, fileData, filename) { /* Implementation */ }
+      getFileUrl(record, filename, queryParams = {}) { /* Implementation */ }
+
+      // Realtime subscriptions
+      subscribe(collection, callback) { /* Implementation */ }
+      unsubscribe(collection) { /* Implementation */ }
+    }",
+    "Admin": "class Admin {
+      constructor(client) {
+        this.client = client;
+      }
+
+      // Collection management
+      async createCollection(data) { /* Implementation */ }
+      async updateCollection(collectionId, data) { /* Implementation */ }
+      async deleteCollection(collectionId) { /* Implementation */ }
+
+      // Field management
+      async createField(collectionId, data) { /* Implementation */ }
+      async updateField(collectionId, fieldId, data) { /* Implementation */ }
+      async deleteField(collectionId, fieldId) { /* Implementation */ }
+
+      // User management
+      async listUsers(page = 1, perPage = 30) { /* Implementation */ }
+      async createUser(data) { /* Implementation */ }
+      async updateUser(userId, data) { /* Implementation */ }
+      async deleteUser(userId) { /* Implementation */ }
+
+      // Settings management
+      async getSettings() { /* Implementation */ }
+      async updateSettings(data) { /* Implementation */ }
+
+      // Logs and backups
+      async getLogs(page = 1, perPage = 30) { /* Implementation */ }
+      async createBackup() { /* Implementation */ }
+      async restoreBackup(filename) { /* Implementation */ }
+    }",
+    "createClient": "fn createClient(baseUrl) {
+      return new Client(baseUrl);
+    }",
+    "RealtimeEvent": "class RealtimeEvent {
+      constructor(action, record, collection) {
+        this.action = action;  // 'create', 'update', or 'delete'
+        this.record = record;
+        this.collection = collection;
+      }
+    }",
+    "utils": {
+      "encodeQuery": "fn encodeQuery(params) { /* Implementation */ }",
+      "isValidEmail": "fn isValidEmail(email) { /* Implementation */ }",
+      "generateFormData": "fn generateFormData(data) { /* Implementation */ }"
+    }
+  },
+  "examples": [
+    "examples/auth.smash",
+    "examples/crud.smash",
+    "examples/files.smash",
+    "examples/realtime.smash",
+    "examples/admin.smash"
+  ]
+}

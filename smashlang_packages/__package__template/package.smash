@@ -1,0 +1,69 @@
+// __package__template/package.smash - Template for creating a new SmashLang package
+// Replace all placeholders with your package's information
+{
+  "name": "package_name",  // Required: Package name (lowercase, underscores for multi-word)
+  "version": "0.1.0",      // Required: Package version (semantic versioning)
+  "description": "A brief description of what your package does",  // Required
+  "license": "MIT",        // Required: License identifier
+  "authors": [
+    "Your Name",           // Required: List of authors
+    "Another Contributor"
+  ],
+  "maintainers": [
+    "@github_username",    // Optional: GitHub usernames of maintainers
+    "@another_maintainer"
+  ],
+  "dependencies": [
+    // Optional: Other SmashLang packages required
+    // "http",
+    // "json"
+  ],
+  "url": "https://example.com/your-package-0.1.0.tar.gz",  // Required: Source URL
+  "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",  // Required: SHA256 checksum
+  
+  // Optional: System dependencies required
+  "native_dependencies": [
+    // {
+    //   "name": "dependency_name",
+    //   "version": ">=1.0.0",
+    //   "debian": "package-name",
+    //   "fedora": "package-name",
+    //   "arch": "package-name",
+    //   "macos": "package-name",
+    //   "windows": "package-name"
+    // }
+  ],
+  
+  // Optional: Build steps (for packages that need compilation)
+  "build": [
+    // "./configure --prefix=#{prefix}",
+    // "make",
+    // "make install"
+  ],
+  
+  // Required: Installation steps
+  "install": [
+    "cp -r src/* #{prefix}/"
+  ],
+  
+  // Optional but recommended: Test commands
+  "test": [
+    // "smash test/run.smash"
+  ],
+  
+  // Required: Exported functions, classes, and objects
+  "exports": {
+    "functionName": "fn functionName(param1, param2) { /* Implementation */ }",
+    "ClassName": "class ClassName { /* Implementation */ }",
+    "nestedObject": {
+      "nestedFunction": "fn nestedFunction() { /* Implementation */ }",
+      "anotherFunction": "fn anotherFunction() { /* Implementation */ }"
+    }
+  },
+  
+  // Optional: Example files
+  "examples": [
+    // "examples/example1.smash",
+    // "examples/example2.smash"
+  ]
+}

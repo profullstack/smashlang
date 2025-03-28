@@ -1,0 +1,21 @@
+// basic.smash - Basic example of using the package
+
+import "package_name";
+
+// Basic usage example
+fn basicExample() {
+  console.log("=== Basic Package Example ===");
+  
+  // Function usage example
+  const result = package_name.functionName("param1", "param2");
+  console.log("Function result:", result);
+  
+  // Class usage example
+  const instance = new package_name.ClassName();
+  instance.method();
+  
+  console.log("Basic example completed!");
+}
+
+// Run the example
+basicExample();

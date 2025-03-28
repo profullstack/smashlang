@@ -1,0 +1,113 @@
+// basic.smash - Basic SmashHono web server example
+
+import "smashhono";
+
+// Create a new SmashHono app
+const app = new SmashHono();
+
+// Add a middleware that logs all requests
+app.use(smashhono.middleware.logger());
+
+// Define routes
+app.get("/", (c) => {
+  return c.html(`
+    <!DOCTYPE html>
+    <html>
+      <head>
+        <title>SmashHono</title>
+        <style>
+          body {
+            font-family: system-ui, -apple-system, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 2rem;
+            line-height: 1.6;
+          }
+          h1 { color: #e63c3c; }
+          .links { display: flex; gap: 1rem; margin: 2rem 0; }
+          .links a {
+            display: inline-block;
+            padding: 0.5rem 1rem;
+            background: #f0f0f0;
+            border-radius: 4px;
+            text-decoration: none;
+            color: #333;
+          }
+          .links a:hover { background: #e0e0e0; }
+          pre {
+            background: #f5f5f5;
+            padding: 1rem;
+            border-radius: 4px;
+            overflow-x: auto;
+          }
+        </style>
+      </head>
+      <body>
+        <h1>Welcome to SmashHono! 🔥</h1>
+        <p>A lightweight, ultrafast web framework for SmashLang.</p>
+        
+        <div class="links">
+          <a href="/">Home</a>
+          <a href="/json">JSON Example</a>
+          <a href="/html">HTML Example</a>
+          <a href="/params/123">URL Params</a>
+          <a href="/query?name=SmashLang&version=1.0">Query Params</a>
+        </div>
+        
+        <h2>Getting Started</h2>
+        <pre>
+// Create a new SmashHono app
+const app = new SmashHono();
+
+// Define a route
+app.get("/", (c) => c.text("Hello, SmashLang!"));
+
+// Start the server
+app.listen(3000);
+        </pre>
+      </body>
+    </html>
+  `);
+});
+
+// JSON response example
+app.get("/json", (c) => {
+  return c.json({
+    framework: "SmashHono",
+    language: "SmashLang",
+    message: "This is a JSON response",
+    timestamp: Date.now()
+  });
+});
+
+// HTML response example
+app.get("/html", (c) => {
+  return c.html(`
+    <h1>HTML Response</h1>
+    <p>This is an HTML response from SmashHono.</p>
+    <a href="/">Back to home</a>
+  `);
+});
+
+// URL parameters example
+app.get("/params/:id", (c) => {
+  const id = c.params.id;
+  return c.json({ id, message: `You requested item ${id}` });
+});
+
+// Query parameters example
+app.get("/query", (c) => {
+  const name = c.query.name || "Guest";
+  const version = c.query.version || "unknown";
+  
+  return c.json({
+    name,
+    version,
+    message: `Hello, ${name}! You're using version ${version}.`
+  });
+});
+
+// Start the server
+app.listen(3000, () => {
+  console.log("Server is running on http://localhost:3000");
+});

@@ -1,0 +1,78 @@
+// auth.smash - PocketBase authentication example
+
+import "pocketbase";
+
+// Create a PocketBase client
+const pb = pocketbase.createClient("http://127.0.0.1:8090");
+
+async fn main() {
+  console.log("=== PocketBase Authentication Example ===");
+  
+  try {
+    // Login with email and password
+    console.log("Logging in with email and password...");
+    const authData = await pb.authWithPassword("users", "test@example.com", "password123");
+    console.log("Logged in successfully!");
+    console.log(`User ID: ${authData.model.id}`);
+    console.log(`Username: ${authData.model.username}`);
+    console.log(`Email: ${authData.model.email}`);
+    console.log(`Token: ${authData.token.substring(0, 15)}...`);
+    
+    // Check if user is authenticated
+    if (pb.authStore.token) {
+      console.log("User is authenticated");
+      
+      // Get user data
+      console.log("\nUser data:");
+      console.log(`ID: ${pb.authStore.model.id}`);
+      console.log(`Email: ${pb.authStore.model.email}`);
+      console.log(`Created: ${pb.authStore.model.created}`);
+    }
+    
+    // Refresh auth
+    console.log("\nRefreshing authentication token...");
+    await pb.refreshAuth();
+    console.log("Token refreshed successfully!");
+    
+    // Logout
+    console.log("\nLogging out...");
+    await pb.logout();
+    console.log("Logged out successfully!");
+    
+    if (!pb.authStore.token) {
+      console.log("User is no longer authenticated");
+    }
+    
+    // OAuth2 example (commented out as it requires browser interaction)
+    /*
+    // Redirect the user to the OAuth2 provider's auth page
+    const authMethods = await pb.getAuthMethods();
+    const googleAuthUrl = authMethods.authProviders
+      .find(p => p.name === "google")
+      .authUrl + "&redirectUrl=http://localhost:8090/redirect";
+      
+    console.log("Open this URL in your browser:", googleAuthUrl);
+    
+    // After redirect, handle the OAuth2 authentication
+    const code = "..."  // code from the redirect URL
+    const verifier = "..."  // code verifier if using PKCE
+    const redirectUrl = "http://localhost:8090/redirect";
+    
+    const oauthData = await pb.authWithOAuth2(
+      "google", 
+      code,
+      verifier,
+      redirectUrl
+    );
+    
+    console.log("Logged in with Google:", oauthData.model.email);
+    */
+  } catch (error) {
+    console.error(`Authentication error: ${error.message}`);
+  }
+}
+
+// Run the main function
+main().catch(error => {
+  console.error("Error in main function:", error);
+});

@@ -1,0 +1,27 @@
+// json.smash - JSON parsing and serialization library for SmashLang
+{
+  "name": "json",
+  "version": "1.5.2",
+  "description": "Fast JSON parsing and serialization for SmashLang",
+  "license": "MIT",
+  "authors": ["SmashLang Team"],
+  "dependencies": [],
+  "url": "https://smashlang.com/packages/json-1.5.2.tar.gz",
+  "sha256": "b5bb9d8014a0f9b1d61e21e796d78dccdf1352f23cd32812f4850b878ae4944c",
+  "install": [
+    "cp -r src/* #{prefix}/"
+  ],
+  "test": [
+    "smash test/parse.smash",
+    "smash test/stringify.smash"
+  ],
+  "exports": {
+    "parse": "fn parse(jsonString) { /* Implementation */ }",
+    "stringify": "fn stringify(value, replacer, space) { /* Implementation */ }",
+    "parseAsync": "async fn parseAsync(jsonString) { /* Implementation */ }"
+  },
+  "examples": [
+    "examples/basic.smash",
+    "examples/custom_serializer.smash"
+  ]
+}

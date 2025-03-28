@@ -1,0 +1,51 @@
+// postgres.smash - PostgreSQL database bindings for SmashLang
+{
+  "name": "postgres",
+  "version": "1.0.0",
+  "description": "PostgreSQL database bindings for SmashLang",
+  "license": "MIT",
+  "authors": ["SmashLang Team", "Database Contributors"],
+  "dependencies": [],
+  "url": "https://smashlang.com/packages/postgres-1.0.0.tar.gz",
+  "sha256": "d2a5f776f2b478e7a3e1fa0e89c8328c3f4c4e11f8f6a91e692b7e93c24e5208",
+  "native_dependencies": [
+    {
+      "name": "libpq",
+      "version": ">=12.0",
+      "debian": "libpq-dev",
+      "fedora": "libpq-devel",
+      "arch": "postgresql-libs",
+      "macos": "libpq",
+      "windows": "postgresql"
+    }
+  ],
+  "build": [
+    "./configure --prefix=#{prefix}",
+    "make",
+    "make install"
+  ],
+  "install": [
+    "cp -r lib/* #{prefix}/",
+    "cp -r include/* #{prefix}/include/"
+  ],
+  "test": [
+    "smash test/connection.smash",
+    "smash test/query.smash",
+    "smash test/transaction.smash"
+  ],
+  "exports": {
+    "createClient": "fn createClient(connectionString) { /* Implementation */ }",
+    "Pool": "class Pool { /* Implementation */ }",
+    "Client": "class Client { /* Implementation */ }",
+    "Transaction": "class Transaction { /* Implementation */ }",
+    "types": {
+      "registerType": "fn registerType(name, parser, serializer) { /* Implementation */ }",
+      "builtins": "Object containing built-in type handlers"
+    }
+  },
+  "examples": [
+    "examples/basic_query.smash",
+    "examples/connection_pool.smash",
+    "examples/transactions.smash"
+  ]
+}

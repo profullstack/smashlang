@@ -1,0 +1,18 @@
+// math.smash - Math library formula for SmashLang
+{
+  "name": "math",
+  "version": "1.0.0",
+  "description": "Advanced mathematics library for SmashLang",
+  "homepage": "https://github.com/smashlang/math",
+  "license": "MIT",
+  "authors": ["SmashLang Team"],
+  "dependencies": [],
+  "url": "https://github.com/smashlang/math/archive/v1.0.0.tar.gz",
+  "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+  "install": [
+    "cp -r src/* #{prefix}/"
+  ],
+  "test": [
+    "smash test/run.smash"
+  ]
+}

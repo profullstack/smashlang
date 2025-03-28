@@ -1,0 +1,58 @@
+// ml.smash - Machine learning library for SmashLang
+{
+  "name": "ml",
+  "version": "0.5.0",
+  "description": "Machine learning library with neural networks and more",
+  "license": "MIT",
+  "authors": ["ML Community Team"],
+  "maintainers": ["@ml-team", "@smashlang-community"],
+  "dependencies": ["math"],
+  "url": "https://smashlang.com/packages/ml-0.5.0.tar.gz",
+  "sha256": "4b68ab3847feda7d6fe8a2d8b75620603d5b79c7c21c1e03fef9f8b2428a2ab4",
+  "install": [
+    "cp -r src/* #{prefix}/"
+  ],
+  "test": [
+    "smash test/linear_regression.smash",
+    "smash test/neural_network.smash",
+    "smash test/clustering.smash"
+  ],
+  "exports": {
+    "regression": {
+      "LinearRegression": "class LinearRegression { /* Implementation */ }",
+      "LogisticRegression": "class LogisticRegression { /* Implementation */ }",
+      "PolynomialRegression": "class PolynomialRegression { /* Implementation */ }"
+    },
+    "neural": {
+      "NeuralNetwork": "class NeuralNetwork { /* Implementation */ }",
+      "Layer": "class Layer { /* Implementation */ }",
+      "activations": {
+        "sigmoid": "fn sigmoid(x) { /* Implementation */ }",
+        "relu": "fn relu(x) { /* Implementation */ }",
+        "tanh": "fn tanh(x) { /* Implementation */ }",
+        "softmax": "fn softmax(x) { /* Implementation */ }"
+      }
+    },
+    "clustering": {
+      "KMeans": "class KMeans { /* Implementation */ }",
+      "DBSCAN": "class DBSCAN { /* Implementation */ }"
+    },
+    "preprocessing": {
+      "normalize": "fn normalize(data) { /* Implementation */ }",
+      "standardize": "fn standardize(data) { /* Implementation */ }",
+      "oneHotEncode": "fn oneHotEncode(data) { /* Implementation */ }"
+    },
+    "metrics": {
+      "accuracy": "fn accuracy(actual, predicted) { /* Implementation */ }",
+      "precision": "fn precision(actual, predicted) { /* Implementation */ }",
+      "recall": "fn recall(actual, predicted) { /* Implementation */ }",
+      "f1Score": "fn f1Score(actual, predicted) { /* Implementation */ }"
+    }
+  },
+  "examples": [
+    "examples/linear_regression.smash",
+    "examples/neural_network.smash",
+    "examples/kmeans_clustering.smash",
+    "examples/mnist_classification.smash"
+  ]
+}

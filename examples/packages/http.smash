@@ -1,0 +1,20 @@
+// http.smash - HTTP client library formula for SmashLang
+{
+  "name": "http",
+  "version": "1.2.0",
+  "description": "Advanced HTTP client library with support for modern protocols",
+  "homepage": "https://github.com/smashlang/http",
+  "license": "MIT",
+  "authors": ["SmashLang Team", "Web Contributors"],
+  "dependencies": ["crypto", "json"],
+  "url": "https://github.com/smashlang/http/archive/v1.2.0.tar.gz",
+  "sha256": "f2ca1bb6c7e907d06dafe4687e579fce76b37e4e93b7605022da52e6ccc26fd2",
+  "install": [
+    "cp -r lib/* #{prefix}/",
+    "cp -r include/* #{prefix}/include/"
+  ],
+  "test": [
+    "smash test/client.smash",
+    "smash test/server.smash"
+  ]
+}

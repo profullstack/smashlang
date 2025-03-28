@@ -1,0 +1,225 @@
+// pocketbase_example.smash - Example of using PocketBase with SmashLang
+
+import "pocketbase";
+import "std";
+
+// Create a PocketBase client
+const pb = pocketbase.createClient("http://127.0.0.1:8090");
+
+// Example: Authentication
+async fn authExample() {
+  console.log("=== Authentication Example ===");
+  
+  try {
+    // Login with email and password
+    const authData = await pb.authWithPassword("users", "test@example.com", "password123");
+    console.log("Logged in successfully!");
+    console.log(`User ID: ${authData.model.id}`);
+    console.log(`Username: ${authData.model.username}`);
+    console.log(`Email: ${authData.model.email}`);
+    console.log(`Token: ${authData.token.substring(0, 15)}...`);
+    
+    // Check if user is authenticated
+    if (pb.authStore.token) {
+      console.log("User is authenticated");
+    }
+    
+    // Logout
+    await pb.logout();
+    console.log("Logged out successfully!");
+  } catch (error) {
+    console.error(`Authentication error: ${error.message}`);
+  }
+}
+
+// Example: CRUD operations
+async fn crudExample() {
+  console.log("\n=== CRUD Operations Example ===");
+  
+  try {
+    // First authenticate
+    await pb.authWithPassword("users", "test@example.com", "password123");
+    
+    // Create a record
+    const newTask = {
+      title: "Learn SmashLang",
+      description: "Master the SmashLang programming language",
+      status: "in-progress",
+      due_date: new Date().toISOString()
+    };
+    
+    const createdTask = await pb.createRecord("tasks", newTask);
+    console.log("Created new task:", createdTask);
+    
+    // Get a record
+    const task = await pb.getRecord("tasks", createdTask.id);
+    console.log("Retrieved task:", task);
+    
+    // Update a record
+    const updatedData = {
+      status: "completed"
+    };
+    
+    const updatedTask = await pb.updateRecord("tasks", task.id, updatedData);
+    console.log("Updated task:", updatedTask);
+    
+    // List records with filtering
+    const taskList = await pb.getRecordList("tasks", 1, 10, "status = 'completed'");
+    console.log(`Found ${taskList.items.length} completed tasks`);
+    
+    // Delete a record
+    await pb.deleteRecord("tasks", task.id);
+    console.log(`Deleted task with ID: ${task.id}`);
+  } catch (error) {
+    console.error(`CRUD error: ${error.message}`);
+  }
+}
+
+// Example: Realtime subscriptions
+async fn realtimeExample() {
+  console.log("\n=== Realtime Example ===");
+  
+  try {
+    // Subscribe to changes in the "tasks" collection
+    pb.subscribe("tasks", (event) => {
+      console.log(`Realtime event: ${event.action}`);
+      console.log("Affected record:", event.record);
+    });
+    
+    console.log("Subscribed to the 'tasks' collection");
+    console.log("Creating a new task to trigger realtime event...");
+    
+    // Create a new task to trigger the subscription
+    const newTask = {
+      title: "Test Realtime",
+      description: "This should trigger a realtime event",
+      status: "new"
+    };
+    
+    await pb.createRecord("tasks", newTask);
+    
+    // Wait for a moment to see the realtime event
+    await std.sleep(2000);
+    
+    // Unsubscribe
+    pb.unsubscribe("tasks");
+    console.log("Unsubscribed from the 'tasks' collection");
+  } catch (error) {
+    console.error(`Realtime error: ${error.message}`);
+  }
+}
+
+// Example: File uploads and handling
+async fn fileExample() {
+  console.log("\n=== File Handling Example ===");
+  
+  try {
+    // First authenticate
+    await pb.authWithPassword("users", "test@example.com", "password123");
+    
+    // Create a record with a file
+    const fileData = fs.readFileSync("./example.png");
+    
+    // Create a document record first
+    const newDocument = {
+      title: "Project Documentation",
+      description: "Important project files"
+    };
+    
+    const createdDoc = await pb.createRecord("documents", newDocument);
+    
+    // Upload file to the record
+    await pb.uploadFile("documents", createdDoc.id, "attachment", fileData, "example.png");
+    console.log("File uploaded successfully!");
+    
+    // Get the file URL
+    const fileUrl = pb.getFileUrl(createdDoc, createdDoc.attachment);
+    console.log(`File URL: ${fileUrl}`);
+  } catch (error) {
+    console.error(`File handling error: ${error.message}`);
+  }
+}
+
+// Example: Admin operations
+async fn adminExample() {
+  console.log("\n=== Admin Operations Example ===");
+  
+  try {
+    // First authenticate as admin
+    await pb.authWithPassword("_pb_users_auth_", "admin@example.com", "adminpassword123");
+    
+    // Create admin client
+    const admin = new pocketbase.Admin(pb);
+    
+    // List collections
+    const collections = await admin.getCollectionList();
+    console.log(`Found ${collections.length} collections:`);
+    for (const collection of collections) {
+      console.log(`- ${collection.name}`);
+    }
+    
+    // Create a new collection
+    const newCollection = {
+      name: "projects",
+      schema: [
+        {
+          name: "title",
+          type: "text",
+          required: true
+        },
+        {
+          name: "description",
+          type: "text",
+          required: false
+        },
+        {
+          name: "status",
+          type: "select",
+          options: {
+            values: ["planning", "in-progress", "completed", "on-hold"]
+          }
+        },
+        {
+          name: "owner",
+          type: "relation",
+          options: {
+            collectionId: "users",
+            cascadeDelete: false
+          }
+        }
+      ]
+    };
+    
+    const createdCollection = await admin.createCollection(newCollection);
+    console.log("Created new collection:", createdCollection.name);
+    
+    // Get system logs
+    const logs = await admin.getLogs(1, 5);
+    console.log("Recent system logs:");
+    for (const log of logs.items) {
+      console.log(`[${log.created}] ${log.action}: ${log.message}`);
+    }
+  } catch (error) {
+    console.error(`Admin operations error: ${error.message}`);
+  }
+}
+
+// Run all examples
+async fn main() {
+  console.log("Starting PocketBase examples...");
+  console.log("Note: These examples assume you have a PocketBase server running at http://127.0.0.1:8090");
+  console.log("with the appropriate collections and user accounts set up.\n");
+  
+  await authExample();
+  await crudExample();
+  await realtimeExample();
+  await fileExample();
+  await adminExample();
+  
+  console.log("\nAll examples completed!");
+}
+
+// Run the main function
+main().catch(error => {
+  console.error("Error in main function:", error);
+});

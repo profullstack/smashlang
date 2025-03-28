@@ -265,13 +265,54 @@ match age {
 
 ## 📦 Package Manager
 
-Install packages with:
+SmashLang uses a Homebrew-inspired package management system with all packages contained within the `smashlang_packages` directory in the main codebase.
+
+### Installing Packages
 
 ```bash
-smashpkg install std:math
+# Install a package
+smashpkg install math
+
+# Install a specific version
+smashpkg install sqlite@3.36.0
+
+# Install multiple packages
+smashpkg install math crypto json
 ```
 
-Installs to `smash_modules/` and available via `import`.
+Packages are installed to `smash_modules/` and available via `import`.
+
+```js
+// Import a package
+import "math";
+
+// Use the package
+let result = math.sin(0.5) + math.cos(0.5);
+```
+
+### Package Directory Structure
+
+All SmashLang packages are organized in the `smashlang_packages` directory:
+
+```
+smashlang_packages/
+├u2500u2500 core/          # Essential libraries maintained by the SmashLang team
+├u2500u2500 networking/    # Libraries for HTTP, WebSockets, and other network protocols
+├u2500u2500 database/      # Database drivers and ORM tools
+├u2500u2500 community/     # Third-party packages contributed by the community
+```
+
+This approach keeps the codebase self-contained and ensures that even with a million packages, the download size remains manageable.
+
+### Contributing Packages
+
+To contribute a new package:
+
+1. Create a new formula file in the appropriate directory under `smashlang_packages/`
+2. Test your formula locally using `smashpkg test <formula>`
+3. Submit a pull request
+
+See the [smashlang_packages/README.md](./smashlang_packages/README.md) for more details.
 
 ---
 

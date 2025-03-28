@@ -1,0 +1,31 @@
+// websocket.smash - WebSocket client and server implementation for SmashLang
+{
+  "name": "websocket",
+  "version": "0.9.1",
+  "description": "WebSocket client and server implementation for SmashLang",
+  "license": "MIT",
+  "authors": ["SmashLang Team", "Network Contributors"],
+  "dependencies": ["http", "crypto"],
+  "url": "https://smashlang.com/packages/websocket-0.9.1.tar.gz",
+  "sha256": "f2ca1bb6c7e907d06dafe4687e579fce76b37e4e93b7605022da52e6ccc26fd2",
+  "install": [
+    "cp -r src/* #{prefix}/"
+  ],
+  "test": [
+    "smash test/client.smash",
+    "smash test/server.smash",
+    "smash test/protocol.smash"
+  ],
+  "exports": {
+    "createServer": "fn createServer(options) { /* Implementation */ }",
+    "createClient": "fn createClient(url, protocols, options) { /* Implementation */ }",
+    "Server": "class Server { /* Implementation */ }",
+    "Client": "class Client { /* Implementation */ }",
+    "Connection": "class Connection { /* Implementation */ }"
+  },
+  "examples": [
+    "examples/echo_server.smash",
+    "examples/chat_client.smash",
+    "examples/realtime_data.smash"
+  ]
+}

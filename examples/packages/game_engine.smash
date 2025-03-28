@@ -1,0 +1,52 @@
+// game_engine.smash - 2D game engine formula for SmashLang
+{
+  "name": "game_engine",
+  "version": "0.8.5",
+  "description": "Fast 2D game engine with physics and rendering capabilities",
+  "homepage": "https://github.com/smashdev/game_engine",
+  "license": "MIT",
+  "authors": ["GameDev Team"],
+  "maintainers": ["@gamedev", "@smashlang-community"],
+  "dependencies": ["math", "graphics"],
+  "url": "https://github.com/smashdev/game_engine/archive/v0.8.5.tar.gz",
+  "sha256": "b5bb9d8014a0f9b1d61e21e796d78dccdf1352f23cd32812f4850b878ae4944c",
+  "native_dependencies": [
+    {
+      "name": "sdl2",
+      "version": ">=2.0.14",
+      "debian": "libsdl2-dev",
+      "fedora": "SDL2-devel",
+      "arch": "sdl2",
+      "macos": "sdl2",
+      "windows": "sdl2"
+    },
+    {
+      "name": "opengl",
+      "debian": "libgl1-mesa-dev",
+      "fedora": "mesa-libGL-devel",
+      "arch": "mesa",
+      "macos": null,
+      "windows": null
+    }
+  ],
+  "build": [
+    "./configure --prefix=#{prefix} --enable-optimizations",
+    "make -j#{cores}",
+    "make install"
+  ],
+  "install": [
+    "cp -r lib/* #{prefix}/",
+    "cp -r include/* #{prefix}/include/",
+    "cp -r assets/* #{prefix}/assets/"
+  ],
+  "test": [
+    "smash test/core.smash",
+    "smash test/rendering.smash",
+    "smash test/physics.smash"
+  ],
+  "examples": [
+    "examples/hello_world.smash",
+    "examples/sprite_animation.smash",
+    "examples/collision_detection.smash"
+  ]
+}

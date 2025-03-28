@@ -1,0 +1,297 @@
+// smashhono.smash - Lightweight web framework for SmashLang inspired by Hono.js
+{
+  "name": "smashhono",
+  "version": "0.1.0",
+  "description": "Lightweight, ultrafast web framework for SmashLang with support for REST, WebSockets, and GraphQL",
+  "license": "MIT",
+  "authors": ["SmashLang Team", "Web Framework Contributors"],
+  "dependencies": ["http", "websocket", "json"],
+  "url": "https://smashlang.com/packages/smashhono-0.1.0.tar.gz",
+  "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+  "install": [
+    "cp -r src/* #{prefix}/"
+  ],
+  "test": [
+    "smash test/router.smash",
+    "smash test/middleware.smash",
+    "smash test/handlers.smash",
+    "smash test/websocket.smash",
+    "smash test/graphql.smash"
+  ],
+  "exports": {
+    "SmashHono": "class SmashHono {
+      constructor(options = {}) {
+        this.routes = [];
+        this.middleware = [];
+        this.notFoundHandler = (c) => c.text('Not Found', 404);
+        this.errorHandler = (err, c) => {
+          console.error(err);
+          return c.text('Internal Server Error', 500);
+        };
+        this.options = options;
+      }
+
+      // HTTP methods
+      get(path, ...handlers) { return this.addRoute('GET', path, handlers); }
+      post(path, ...handlers) { return this.addRoute('POST', path, handlers); }
+      put(path, ...handlers) { return this.addRoute('PUT', path, handlers); }
+      delete(path, ...handlers) { return this.addRoute('DELETE', path, handlers); }
+      patch(path, ...handlers) { return this.addRoute('PATCH', path, handlers); }
+      options(path, ...handlers) { return this.addRoute('OPTIONS', path, handlers); }
+      head(path, ...handlers) { return this.addRoute('HEAD', path, handlers); }
+
+      // Add a route with any method
+      route(path, methods, ...handlers) {
+        for (const method of methods) {
+          this.addRoute(method, path, handlers);
+        }
+        return this;
+      }
+
+      // Add a route for all methods
+      all(path, ...handlers) {
+        return this.addRoute('ALL', path, handlers);
+      }
+
+      // Add middleware that runs on all routes
+      use(...handlers) {
+        this.middleware.push(...handlers);
+        return this;
+      }
+
+      // Add a route with method, path, and handlers
+      addRoute(method, path, handlers) {
+        this.routes.push({ method, path, handlers });
+        return this;
+      }
+
+      // Create a sub-app with a base path
+      basePath(path) {
+        const subApp = new SmashHono(this.options);
+        subApp.parentApp = this;
+        subApp.basePath = path;
+        return subApp;
+      }
+
+      // Mount another SmashHono app at a path
+      route(path, app) {
+        // Implementation
+        return this;
+      }
+
+      // WebSocket support
+      ws(path, handler) {
+        // Implementation for WebSocket routes
+        return this;
+      }
+
+      // GraphQL support
+      graphql(path, schema, resolvers) {
+        // Implementation for GraphQL endpoint
+        return this;
+      }
+
+      // Set custom 404 handler
+      notFound(handler) {
+        this.notFoundHandler = handler;
+        return this;
+      }
+
+      // Set custom error handler
+      onError(handler) {
+        this.errorHandler = handler;
+        return this;
+      }
+
+      // Create a fetch-compatible request handler
+      fetch(request, env, executionContext) {
+        // Implementation
+      }
+
+      // Start the server
+      async listen(port = 3000, options = {}) {
+        // Implementation
+      }
+    }",
+    
+    "Context": "class Context {
+      constructor(req, res) {
+        this.req = req;
+        this.res = res;
+        this.params = {};
+        this.query = {};
+        this.state = {};
+      }
+
+      // Response helpers
+      text(body, status = 200, headers = {}) {
+        this.res.status = status;
+        this.res.headers['Content-Type'] = 'text/plain; charset=utf-8';
+        Object.assign(this.res.headers, headers);
+        this.res.body = body;
+        return this.res;
+      }
+
+      json(body, status = 200, headers = {}) {
+        this.res.status = status;
+        this.res.headers['Content-Type'] = 'application/json; charset=utf-8';
+        Object.assign(this.res.headers, headers);
+        this.res.body = JSON.stringify(body);
+        return this.res;
+      }
+
+      html(body, status = 200, headers = {}) {
+        this.res.status = status;
+        this.res.headers['Content-Type'] = 'text/html; charset=utf-8';
+        Object.assign(this.res.headers, headers);
+        this.res.body = body;
+        return this.res;
+      }
+
+      redirect(url, status = 302) {
+        this.res.status = status;
+        this.res.headers['Location'] = url;
+        return this.res;
+      }
+
+      // Request helpers
+      async body() {
+        // Implementation
+      }
+
+      async json() {
+        const body = await this.body();
+        return JSON.parse(body);
+      }
+
+      async formData() {
+        // Implementation
+      }
+
+      header(name) {
+        return this.req.headers[name.toLowerCase()];
+      }
+    }",
+    
+    "middleware": {
+      "logger": "fn logger() {
+        return async (c, next) => {
+          const start = Date.now();
+          await next();
+          const ms = Date.now() - start;
+          console.log(`${c.req.method} ${c.req.url} - ${c.res.status} - ${ms}ms`);
+        };
+      }",
+      
+      "cors": "fn cors(options = {}) {
+        const defaults = {
+          origin: '*',
+          methods: 'GET,HEAD,PUT,PATCH,POST,DELETE',
+          headers: '',
+          credentials: false
+        };
+        
+        const opts = { ...defaults, ...options };
+        
+        return async (c, next) => {
+          c.res.headers['Access-Control-Allow-Origin'] = opts.origin;
+          
+          if (opts.credentials) {
+            c.res.headers['Access-Control-Allow-Credentials'] = 'true';
+          }
+          
+          if (c.req.method === 'OPTIONS') {
+            c.res.headers['Access-Control-Allow-Methods'] = opts.methods;
+            c.res.headers['Access-Control-Allow-Headers'] = opts.headers || c.req.headers['access-control-request-headers'] || '';
+            c.res.headers['Access-Control-Max-Age'] = '86400'; // 24 hours
+            return c.text('', 204);
+          }
+          
+          await next();
+        };
+      }",
+      
+      "basicAuth": "fn basicAuth(options) {
+        return async (c, next) => {
+          const authHeader = c.req.headers['authorization'];
+          if (!authHeader || !authHeader.startsWith('Basic ')) {
+            c.res.headers['WWW-Authenticate'] = 'Basic realm="Secure Area"';
+            return c.text('Unauthorized', 401);
+          }
+          
+          const base64Credentials = authHeader.split(' ')[1];
+          const credentials = atob(base64Credentials);
+          const [username, password] = credentials.split(':');
+          
+          if (!options.validate(username, password)) {
+            c.res.headers['WWW-Authenticate'] = 'Basic realm="Secure Area"';
+            return c.text('Unauthorized', 401);
+          }
+          
+          c.set('username', username);
+          await next();
+        };
+      }",
+      
+      "compress": "fn compress() {
+        return async (c, next) => {
+          await next();
+          // Implementation for compression
+        };
+      }",
+      
+      "etag": "fn etag() {
+        return async (c, next) => {
+          await next();
+          // Implementation for ETag generation and validation
+        };
+      }",
+      
+      "jwt": "fn jwt(options) {
+        return async (c, next) => {
+          // JWT verification implementation
+          await next();
+        };
+      }"
+    },
+    
+    "graphql": {
+      "createHandler": "fn createHandler(schema, resolvers) {
+        return async (c) => {
+          // GraphQL handler implementation
+        };
+      }"
+    },
+    
+    "validator": {
+      "validate": "fn validate(schema) {
+        return async (c, next) => {
+          // Validation implementation
+          await next();
+        };
+      }"
+    },
+    
+    "serve": "fn serve(options) {
+      return async (c, next) => {
+        // Static file serving implementation
+        await next();
+      };
+    }",
+    
+    "HTTPException": "class HTTPException extends Error {
+      constructor(status = 500, message = 'Internal Server Error', options = {}) {
+        super(message);
+        this.status = status;
+        this.options = options;
+      }
+    }"
+  },
+  "examples": [
+    "examples/basic.smash",
+    "examples/middleware.smash",
+    "examples/rest_api.smash",
+    "examples/websocket.smash",
+    "examples/graphql.smash"
+  ]
+}

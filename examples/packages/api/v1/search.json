@@ -1,0 +1,54 @@
+{
+  "query": "database",
+  "results": [
+    {
+      "name": "sqlite",
+      "version": "3.36.0",
+      "description": "SQLite database bindings for SmashLang",
+      "homepage": "https://github.com/smashlang/sqlite",
+      "category": "database",
+      "license": "MIT",
+      "relevance": 0.95
+    },
+    {
+      "name": "postgres",
+      "version": "1.0.0",
+      "description": "PostgreSQL database bindings",
+      "homepage": "https://github.com/smashlang/postgres",
+      "category": "database",
+      "license": "MIT",
+      "relevance": 0.92
+    },
+    {
+      "name": "redis",
+      "version": "0.8.2",
+      "description": "Redis client for in-memory database operations",
+      "homepage": "https://github.com/smashlang/redis",
+      "category": "database",
+      "license": "MIT",
+      "relevance": 0.85
+    },
+    {
+      "name": "mongodb",
+      "version": "0.7.0",
+      "description": "MongoDB client for document database operations",
+      "homepage": "https://github.com/smashlang/mongodb",
+      "category": "database",
+      "license": "MIT",
+      "relevance": 0.82
+    },
+    {
+      "name": "orm",
+      "version": "0.5.1",
+      "description": "Object-Relational Mapping for database access",
+      "homepage": "https://github.com/smashdev/orm",
+      "category": "community",
+      "license": "MIT",
+      "relevance": 0.75
+    }
+  ],
+  "total_results": 5,
+  "page": 1,
+  "per_page": 10,
+  "api_version": "1.0"
+}

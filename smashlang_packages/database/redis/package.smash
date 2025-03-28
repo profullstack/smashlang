@@ -1,0 +1,98 @@
+// redis.smash - Redis client library for SmashLang
+{
+  "name": "redis",
+  "version": "0.8.2",
+  "description": "Redis client for in-memory database operations with support for all Redis data structures",
+  "license": "MIT",
+  "authors": ["SmashLang Team", "Database Contributors"],
+  "dependencies": [],
+  "url": "https://smashlang.com/packages/redis-0.8.2.tar.gz",
+  "sha256": "f2ca1bb6c7e907d06dafe4687e579fce76b37e4e93b7605022da52e6ccc26fd2",
+  "native_dependencies": [
+    {
+      "name": "hiredis",
+      "version": ">=1.0.0",
+      "debian": "libhiredis-dev",
+      "fedora": "hiredis-devel",
+      "arch": "hiredis",
+      "macos": "hiredis",
+      "windows": "hiredis"
+    }
+  ],
+  "build": [
+    "./configure --prefix=#{prefix}",
+    "make",
+    "make install"
+  ],
+  "install": [
+    "cp -r lib/* #{prefix}/",
+    "cp -r include/* #{prefix}/include/"
+  ],
+  "test": [
+    "smash test/connection.smash",
+    "smash test/commands.smash",
+    "smash test/pubsub.smash"
+  ],
+  "exports": {
+    "createClient": "fn createClient(options) { /* Implementation */ }",
+    "Client": "class Client { /* Implementation */ }",
+    "commands": {
+      "string": {
+        "get": "fn get(key) { /* Implementation */ }",
+        "set": "fn set(key, value, options) { /* Implementation */ }",
+        "append": "fn append(key, value) { /* Implementation */ }",
+        "incr": "fn incr(key) { /* Implementation */ }",
+        "decr": "fn decr(key) { /* Implementation */ }"
+      },
+      "hash": {
+        "hget": "fn hget(key, field) { /* Implementation */ }",
+        "hset": "fn hset(key, field, value) { /* Implementation */ }",
+        "hgetall": "fn hgetall(key) { /* Implementation */ }",
+        "hdel": "fn hdel(key, field) { /* Implementation */ }"
+      },
+      "list": {
+        "lpush": "fn lpush(key, ...values) { /* Implementation */ }",
+        "rpush": "fn rpush(key, ...values) { /* Implementation */ }",
+        "lpop": "fn lpop(key) { /* Implementation */ }",
+        "rpop": "fn rpop(key) { /* Implementation */ }",
+        "lrange": "fn lrange(key, start, stop) { /* Implementation */ }"
+      },
+      "set": {
+        "sadd": "fn sadd(key, ...members) { /* Implementation */ }",
+        "srem": "fn srem(key, ...members) { /* Implementation */ }",
+        "smembers": "fn smembers(key) { /* Implementation */ }",
+        "sismember": "fn sismember(key, member) { /* Implementation */ }"
+      },
+      "sorted_set": {
+        "zadd": "fn zadd(key, score, member) { /* Implementation */ }",
+        "zrange": "fn zrange(key, start, stop, options) { /* Implementation */ }",
+        "zrank": "fn zrank(key, member) { /* Implementation */ }",
+        "zscore": "fn zscore(key, member) { /* Implementation */ }"
+      },
+      "pubsub": {
+        "subscribe": "fn subscribe(...channels) { /* Implementation */ }",
+        "publish": "fn publish(channel, message) { /* Implementation */ }",
+        "unsubscribe": "fn unsubscribe(...channels) { /* Implementation */ }"
+      },
+      "transaction": {
+        "multi": "fn multi() { /* Implementation */ }",
+        "exec": "fn exec() { /* Implementation */ }",
+        "discard": "fn discard() { /* Implementation */ }"
+      },
+      "scripting": {
+        "eval": "fn eval(script, numKeys, ...keysAndArgs) { /* Implementation */ }",
+        "evalsha": "fn evalsha(sha1, numKeys, ...keysAndArgs) { /* Implementation */ }",
+        "script": "Object containing script management commands"
+      }
+    },
+    "Pipeline": "class Pipeline { /* Implementation */ }",
+    "Cluster": "class Cluster { /* Implementation */ }"
+  },
+  "examples": [
+    "examples/basic.smash",
+    "examples/pubsub.smash",
+    "examples/transactions.smash",
+    "examples/lua_scripting.smash",
+    "examples/caching.smash"
+  ]
+}

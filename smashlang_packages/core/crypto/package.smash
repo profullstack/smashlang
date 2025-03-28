@@ -1,0 +1,51 @@
+// crypto.smash - Cryptography library for SmashLang
+{
+  "name": "crypto",
+  "version": "2.1.0",
+  "description": "Cryptography library with modern algorithms for SmashLang",
+  "license": "MIT",
+  "authors": ["SmashLang Team", "Security Contributors"],
+  "dependencies": [],
+  "url": "https://smashlang.com/packages/crypto-2.1.0.tar.gz",
+  "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+  "install": [
+    "cp -r src/* #{prefix}/"
+  ],
+  "test": [
+    "smash test/hash.smash",
+    "smash test/cipher.smash",
+    "smash test/hmac.smash"
+  ],
+  "exports": {
+    "hash": {
+      "md5": "fn md5(data) { /* Implementation */ }",
+      "sha1": "fn sha1(data) { /* Implementation */ }",
+      "sha256": "fn sha256(data) { /* Implementation */ }",
+      "sha512": "fn sha512(data) { /* Implementation */ }"
+    },
+    "cipher": {
+      "aes": {
+        "encrypt": "fn encrypt(data, key, iv) { /* Implementation */ }",
+        "decrypt": "fn decrypt(data, key, iv) { /* Implementation */ }"
+      },
+      "chacha20": {
+        "encrypt": "fn encrypt(data, key, nonce) { /* Implementation */ }",
+        "decrypt": "fn decrypt(data, key, nonce) { /* Implementation */ }"
+      }
+    },
+    "hmac": {
+      "sign": "fn sign(data, key, algorithm) { /* Implementation */ }",
+      "verify": "fn verify(data, signature, key, algorithm) { /* Implementation */ }"
+    },
+    "random": {
+      "bytes": "fn bytes(length) { /* Implementation */ }",
+      "number": "fn number(min, max) { /* Implementation */ }",
+      "uuid": "fn uuid() { /* Implementation */ }"
+    }
+  },
+  "examples": [
+    "examples/hash_example.smash",
+    "examples/encryption.smash",
+    "examples/secure_random.smash"
+  ]
+}

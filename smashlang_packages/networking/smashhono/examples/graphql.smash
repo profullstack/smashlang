@@ -1,0 +1,417 @@
+// graphql.smash - GraphQL API example with SmashHono
+
+import "smashhono";
+
+// Create a new SmashHono app
+const app = new SmashHono();
+
+// Add middleware
+app.use(smashhono.middleware.logger());
+app.use(smashhono.middleware.cors());
+
+// In-memory database for demo purposes
+const db = {
+  users: [
+    { id: "1", name: "John Doe", email: "john@example.com", role: "admin" },
+    { id: "2", name: "Jane Smith", email: "jane@example.com", role: "user" },
+    { id: "3", name: "Bob Johnson", email: "bob@example.com", role: "user" }
+  ],
+  posts: [
+    { id: "1", userId: "1", title: "Introduction to SmashLang", content: "SmashLang is a powerful programming language...", published: true },
+    { id: "2", userId: "1", title: "Building Web APIs with Hono", content: "Hono makes it easy to build fast web APIs...", published: true },
+    { id: "3", userId: "2", title: "Frontend Development Tips", content: "Here are some tips for frontend development...", published: true },
+    { id: "4", userId: "3", title: "Draft Post", content: "This is an unpublished draft...", published: false }
+  ],
+  comments: [
+    { id: "1", postId: "1", userId: "2", content: "Great introduction!" },
+    { id: "2", postId: "1", userId: "3", content: "Very helpful for beginners." },
+    { id: "3", postId: "2", userId: "3", content: "I'm going to try this framework." }
+  ]
+};
+
+// Define GraphQL schema
+const schema = `
+  type Query {
+    hello: String!
+    users: [User!]!
+    user(id: ID!): User
+    posts(published: Boolean): [Post!]!
+    post(id: ID!): Post
+  }
+  
+  type Mutation {
+    createUser(input: CreateUserInput!): User!
+    updateUser(id: ID!, input: UpdateUserInput!): User
+    deleteUser(id: ID!): Boolean
+    createPost(input: CreatePostInput!): Post!
+    addComment(input: AddCommentInput!): Comment!
+  }
+  
+  type User {
+    id: ID!
+    name: String!
+    email: String!
+    role: String!
+    posts: [Post!]!
+    comments: [Comment!]!
+  }
+  
+  type Post {
+    id: ID!
+    title: String!
+    content: String!
+    published: Boolean!
+    author: User!
+    comments: [Comment!]!
+  }
+  
+  type Comment {
+    id: ID!
+    content: String!
+    post: Post!
+    author: User!
+  }
+  
+  input CreateUserInput {
+    name: String!
+    email: String!
+    role: String
+  }
+  
+  input UpdateUserInput {
+    name: String
+    email: String
+    role: String
+  }
+  
+  input CreatePostInput {
+    title: String!
+    content: String!
+    published: Boolean
+    userId: ID!
+  }
+  
+  input AddCommentInput {
+    postId: ID!
+    userId: ID!
+    content: String!
+  }
+`;
+
+// Define resolvers
+const resolvers = {
+  Query: {
+    hello: () => "Hello, GraphQL!",
+    
+    users: () => db.users,
+    
+    user: (_, { id }) => {
+      return db.users.find(user => user.id === id);
+    },
+    
+    posts: (_, { published }) => {
+      if (published === undefined) {
+        return db.posts;
+      }
+      return db.posts.filter(post => post.published === published);
+    },
+    
+    post: (_, { id }) => {
+      return db.posts.find(post => post.id === id);
+    }
+  },
+  
+  Mutation: {
+    createUser: (_, { input }) => {
+      const newUser = {
+        id: String(db.users.length + 1),
+        name: input.name,
+        email: input.email,
+        role: input.role || "user"
+      };
+      
+      db.users.push(newUser);
+      return newUser;
+    },
+    
+    updateUser: (_, { id, input }) => {
+      const userIndex = db.users.findIndex(user => user.id === id);
+      
+      if (userIndex === -1) {
+        return null;
+      }
+      
+      const updatedUser = {
+        ...db.users[userIndex],
+        ...input
+      };
+      
+      db.users[userIndex] = updatedUser;
+      return updatedUser;
+    },
+    
+    deleteUser: (_, { id }) => {
+      const userIndex = db.users.findIndex(user => user.id === id);
+      
+      if (userIndex === -1) {
+        return false;
+      }
+      
+      db.users.splice(userIndex, 1);
+      
+      // Remove associated posts and comments
+      db.posts = db.posts.filter(post => post.userId !== id);
+      db.comments = db.comments.filter(comment => comment.userId !== id);
+      
+      return true;
+    },
+    
+    createPost: (_, { input }) => {
+      const newPost = {
+        id: String(db.posts.length + 1),
+        userId: input.userId,
+        title: input.title,
+        content: input.content,
+        published: input.published !== undefined ? input.published : false
+      };
+      
+      db.posts.push(newPost);
+      return newPost;
+    },
+    
+    addComment: (_, { input }) => {
+      const newComment = {
+        id: String(db.comments.length + 1),
+        postId: input.postId,
+        userId: input.userId,
+        content: input.content
+      };
+      
+      db.comments.push(newComment);
+      return newComment;
+    }
+  },
+  
+  User: {
+    posts: (user) => {
+      return db.posts.filter(post => post.userId === user.id);
+    },
+    
+    comments: (user) => {
+      return db.comments.filter(comment => comment.userId === user.id);
+    }
+  },
+  
+  Post: {
+    author: (post) => {
+      return db.users.find(user => user.id === post.userId);
+    },
+    
+    comments: (post) => {
+      return db.comments.filter(comment => comment.postId === post.id);
+    }
+  },
+  
+  Comment: {
+    post: (comment) => {
+      return db.posts.find(post => post.id === comment.postId);
+    },
+    
+    author: (comment) => {
+      return db.users.find(user => user.id === comment.userId);
+    }
+  }
+};
+
+// Create GraphQL endpoint
+app.graphql("/graphql", schema, resolvers);
+
+// HTML interface with GraphQL playground
+app.get("/", (c) => {
+  return c.html(`
+    <!DOCTYPE html>
+    <html>
+      <head>
+        <title>SmashHono GraphQL Example</title>
+        <style>
+          body {
+            font-family: system-ui, -apple-system, sans-serif;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 2rem;
+            line-height: 1.6;
+          }
+          h1 { color: #e63c3c; }
+          .container {
+            display: flex;
+            flex-direction: column;
+            height: 80vh;
+          }
+          #graphql-playground {
+            flex: 1;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            overflow: hidden;
+            margin-top: 1rem;
+          }
+          pre {
+            background: #f5f5f5;
+            padding: 1rem;
+            border-radius: 4px;
+            overflow-x: auto;
+          }
+          .example {
+            margin-bottom: 1rem;
+            cursor: pointer;
+            padding: 0.5rem;
+            background: #f0f0f0;
+            border-radius: 4px;
+          }
+          .example:hover {
+            background: #e0e0e0;
+          }
+        </style>
+        <link rel="stylesheet" href="https://unpkg.com/graphiql/graphiql.min.css" />
+      </head>
+      <body>
+        <h1>SmashHono GraphQL Example ud83dudd25</h1>
+        <p>A GraphQL API built with SmashHono for SmashLang.</p>
+        
+        <h2>Example Queries</h2>
+        <div class="example" onclick="setQuery(allUsersQuery)">Get all users</div>
+        <div class="example" onclick="setQuery(userWithPostsQuery)">Get user with posts</div>
+        <div class="example" onclick="setQuery(createUserMutation)">Create a new user</div>
+        <div class="example" onclick="setQuery(createPostMutation)">Create a new post</div>
+        
+        <div class="container">
+          <div id="graphql-playground"></div>
+        </div>
+        
+        <script src="https://unpkg.com/react@17/umd/react.production.min.js"></script>
+        <script src="https://unpkg.com/react-dom@17/umd/react-dom.production.min.js"></script>
+        <script src="https://unpkg.com/graphiql/graphiql.min.js"></script>
+        
+        <script>
+          // Example queries
+          const allUsersQuery = `query GetAllUsers {
+  users {
+    id
+    name
+    email
+    role
+    posts {
+      id
+      title
+    }
+  }
+}`;
+
+          const userWithPostsQuery = `query GetUserWithPosts($userId: ID!) {
+  user(id: $userId) {
+    id
+    name
+    email
+    posts {
+      id
+      title
+      content
+      published
+      comments {
+        id
+        content
+        author {
+          name
+        }
+      }
+    }
+  }
+}
+
+# Variables:
+# {
+#   "userId": "1"
+# }`;
+
+          const createUserMutation = `mutation CreateNewUser($input: CreateUserInput!) {
+  createUser(input: $input) {
+    id
+    name
+    email
+    role
+  }
+}
+
+# Variables:
+# {
+#   "input": {
+#     "name": "New User",
+#     "email": "newuser@example.com",
+#     "role": "user"
+#   }
+# }`;
+
+          const createPostMutation = `mutation CreateNewPost($input: CreatePostInput!) {
+  createPost(input: $input) {
+    id
+    title
+    content
+    published
+    author {
+      name
+    }
+  }
+}
+
+# Variables:
+# {
+#   "input": {
+#     "title": "New Post Title",
+#     "content": "This is the content of my new post.",
+#     "published": true,
+#     "userId": "1"
+#   }
+# }`;
+
+          // Set up GraphiQL
+          function graphQLFetcher(graphQLParams) {
+            return fetch('/graphql', {
+              method: 'post',
+              headers: {
+                'Content-Type': 'application/json',
+              },
+              body: JSON.stringify(graphQLParams),
+            })
+              .then(response => response.json())
+              .catch(() => response.text());
+          }
+
+          let editor;
+
+          function setQuery(query) {
+            if (editor) {
+              editor._updateQueryString(query);
+            }
+          }
+
+          window.addEventListener('load', () => {
+            editor = React.createElement(GraphiQL, {
+              fetcher: graphQLFetcher,
+              defaultQuery: allUsersQuery,
+            });
+            
+            ReactDOM.render(
+              editor,
+              document.getElementById('graphql-playground')
+            );
+          });
+        </script>
+      </body>
+    </html>
+  `);
+});
+
+// Start the server
+app.listen(3000, () => {
+  console.log("SmashHono GraphQL server is running on http://localhost:3000");
+  console.log("GraphQL endpoint available at http://localhost:3000/graphql");
+});
