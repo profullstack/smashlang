@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="assets/logo.png" alt="SmashLang logo" width="400" />
+  <img src="assets/logo.svg" alt="SmashLang logo" width="400" />
 </p>
 
 # SmashLang
