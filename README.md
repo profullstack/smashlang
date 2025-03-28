@@ -120,4 +120,4 @@ The SmashLang logo represents resistance, speed, and clarity. The raised fist re
 
 ## License
 
-MIT © 2025 SmashLang Team
+ISC © 2025 SmashLang.com
