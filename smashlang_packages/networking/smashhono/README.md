@@ -1,7 +1,7 @@
 # SmashHono
 
 <p align="center">
-  <img src="https://raw.githubusercontent.com/honojs/hono/main/docs/images/hono-logo.png" alt="SmashHono logo" width="200" />
+  <img src="./assets/logo.svg" alt="SmashHono logo" width="200" />
 </p>
 
 A lightweight, ultrafast web framework for SmashLang inspired by [Hono.js](https://hono.dev/). Hono (u708e) means "flame" in Japanese.

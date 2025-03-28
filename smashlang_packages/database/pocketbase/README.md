@@ -1,5 +1,9 @@
 # PocketBase Client for SmashLang
 
+<p align="center">
+  <img src="./assets/logo.svg" alt="PocketBase Client Logo" width="200" />
+</p>
+
 A comprehensive client library for interacting with [PocketBase](https://pocketbase.io) servers from SmashLang applications.
 
 ## Installation

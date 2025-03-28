@@ -39,11 +39,20 @@
     // "./configure --prefix=#{prefix}",
     // "make",
     // "make install"
+    "command -v pandoc >/dev/null 2>&1 || { echo \"WARNING: pandoc is not installed. Skipping index.html generation.\"; exit 0; }",
+    "pandoc -s README.md -o index.html --metadata title=\"$(grep -m 1 '^# ' README.md | sed 's/^# //g')\" --css=https://cdn.jsdelivr.net/npm/water.css@2/out/water.css --self-contained --include-in-header=\"<link rel=\\\"icon\\\" href=\\\"./assets/favicon.svg\\\" type=\\\"image/svg+xml\\\">\" || { echo \"WARNING: Failed to generate index.html\"; exit 0; }"
   ],
   
   // Required: Installation steps
   "install": [
-    "cp -r src/* #{prefix}/"
+    "cp -r src/* #{prefix}/",
+    "[ -f index.html ] && cp index.html #{prefix}/ || true"
+  ],
+  
+  // Required: Validate package structure
+  "validate": [
+    "test -f assets/logo.svg || (test -f assets/logo.png && echo \"WARNING: Using PNG logo instead of preferred SVG format\") || (echo \"ERROR: Missing required logo file (assets/logo.svg or assets/logo.png)\" && exit 1)",
+    "test -f assets/favicon.svg || (test -f assets/favicon.png && echo \"WARNING: Using PNG favicon instead of preferred SVG format\") || (echo \"ERROR: Missing required favicon file (assets/favicon.svg or assets/favicon.png)\" && exit 1)"
   ],
   
   // Optional but recommended: Test commands

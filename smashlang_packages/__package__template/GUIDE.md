@@ -36,10 +36,18 @@ This template provides a starting point for creating new SmashLang packages. Fol
 ├── package.smash    # Package definition and metadata
 ├── README.md        # Documentation
 ├── GUIDE.md         # This guide (can be removed)
+├── index.html       # Generated HTML documentation (created during build)
+├── assets/          # Package assets
+│   ├── logo.svg       # Package logo (REQUIRED)
+│   └── favicon.svg    # Package favicon (REQUIRED)
 └── examples/        # Example code
     ├── basic.smash
     └── advanced.smash
 ```
+
+> **IMPORTANT**: Each package MUST include both a logo file and a favicon file in SVG format in the assets directory. PNG format is allowed but not recommended. The logo will be displayed at the top of your package's README.md file, and the favicon can be used for web applications built with your package.
+>
+> During the build process, the README.md file will be automatically converted to index.html using pandoc (if installed). This HTML file will use the favicon.svg and have a clean, responsive design using Water.css. If pandoc is not installed, a warning will be displayed and the build will continue without generating the HTML file.
 
 ## Package File Format
 

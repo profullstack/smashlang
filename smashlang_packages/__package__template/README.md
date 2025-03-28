@@ -1,5 +1,9 @@
 # Package Name
 
+<p align="center">
+  <img src="./assets/logo.svg" alt="Package Logo" width="200" />
+</p>
+
 A brief description of what your package does and why it's useful.
 
 ## Installation
