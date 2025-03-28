@@ -1,0 +1,141 @@
+// Example demonstrating SmashLang's HTTP and networking capabilities with async/await
+
+// Import the networking module
+import "std/net";
+
+// HTTP/HTTPS fetch example using async/await
+print("Fetch API Example (async/await):");
+
+// Top-level async function for HTTP requests
+async fn runHttpExamples() {
+    try {
+        // Simple GET request with async/await
+        print("Performing GET request...");
+        const response = await fetch("https://api.example.com/data");
+        const data = await response.json();
+        print("Received data:", data);
+        
+        // POST request with JSON body using async/await
+        print("Performing POST request...");
+        const postResponse = await post("https://api.example.com/submit", {
+            name: "SmashLang",
+            version: "1.0.0",
+            features: ["native compilation", "JavaScript-like syntax", "networking", "async/await"]
+        }, {
+            headers: {
+                "Content-Type": "application/json",
+                "Accept": "application/json"
+            }
+        });
+        const postData = await postResponse.json();
+        print("Response:", postData);
+    } catch (error) {
+        print("HTTP Error:", error);
+    }
+}
+
+// TCP Client example with async/await
+print("\nTCP Client Example (async/await):");
+
+async fn runTcpClientExample() {
+    try {
+        const client = createTcpClient();
+        print("Connecting to example.com...");
+        const conn = await client.connect("example.com", 80);
+        
+        print("Sending HTTP request...");
+        await client.send(conn, "GET / HTTP/1.1\r\nHost: example.com\r\n\r\n");
+        
+        print("Receiving response...");
+        const response = await client.receive(conn);
+        print("Response received:");
+        print(response.substring(0, 150) + "..."); // Show first 150 chars
+        
+        print("Closing connection...");
+        await client.close(conn);
+        print("Connection closed");
+    } catch (error) {
+        print("TCP Client Error:", error);
+    }
+}
+
+// TCP Server example with async/await
+print("\nTCP Server Example (async/await):");
+
+async fn runTcpServerExample() {
+    try {
+        const server = createTcpServer();
+        print("Binding to 127.0.0.1:8080...");
+        const s = await server.bind("127.0.0.1", 8080);
+        
+        print("Starting to listen...");
+        await server.listen(s);
+        print("Server listening on 127.0.0.1:8080");
+        
+        print("Waiting for a client connection...");
+        const client = await server.accept(s);
+        print("Client connected, receiving data...");
+        
+        const data = await createTcpClient().receive(client);
+        print("Received data:", data.substring(0, 50) + "...");
+        
+        print("Sending response...");
+        await createTcpClient().send(client, "HTTP/1.1 200 OK\r\n\r\nHello from async SmashLang!");
+        
+        print("Closing client connection...");
+        await createTcpClient().close(client);
+        
+        print("Shutting down server...");
+        await server.close(s);
+        print("Server closed");
+    } catch (error) {
+        print("TCP Server Error:", error);
+    }
+}
+
+// UDP example with async/await
+print("\nUDP Example (async/await):");
+
+async fn runUdpExample() {
+    try {
+        const socket = createUdpSocket();
+        print("Binding UDP socket to 127.0.0.1:8081...");
+        const udpSocket = await socket.bind("127.0.0.1", 8081);
+        print("UDP socket bound to 127.0.0.1:8081");
+        
+        print("Sending UDP packet...");
+        await socket.sendTo(udpSocket, "Hello UDP", "127.0.0.1", 8081);
+        
+        print("Waiting to receive UDP packet...");
+        const [receivedData, sender] = await socket.receiveFrom(udpSocket);
+        print(`Received: ${receivedData} from ${sender.address}:${sender.port}`);
+        
+        print("Closing UDP socket...");
+        await socket.close(udpSocket);
+        print("UDP socket closed");
+    } catch (error) {
+        print("UDP Error:", error);
+    }
+}
+
+// Main async function to run all examples
+async fn main() {
+    print("Starting SmashLang networking examples with async/await...");
+    
+    // Run HTTP examples
+    await runHttpExamples();
+    
+    // Run TCP client example
+    await runTcpClientExample();
+    
+    // Run TCP server example
+    await runTcpServerExample();
+    
+    // Run UDP example
+    await runUdpExample();
+    
+    print("All examples completed!");
+}
+
+// Execute the main function
+main();

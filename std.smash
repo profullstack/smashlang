@@ -19,3 +19,54 @@ fn __div__(a, b) {
 fn print(x) {
     return x; // placeholder for native print
 }
+
+// Async/await support
+// This is a special function that the runtime will recognize and handle
+fn __createPromise(executor) {
+    return __native_create_promise(executor);
+}
+
+// Convert a value to a Promise if it's not already one
+fn __promisify(value) {
+    if (__is_promise(value)) {
+        return value;
+    }
+    return __createPromise(fn(resolve, _) {
+        resolve(value);
+    });
+}
+
+// HTTP/HTTPS functionality - fetch API compatible
+fn fetch(url, options = {}) {
+    let method = options.method || "GET";
+    let headers = options.headers || {};
+    let body = options.body || null;
+    let timeout = options.timeout || 30000; // 30 seconds default
+    
+    // This will be implemented natively in the runtime
+    // Returns a Promise-like object with .then(), .catch(), and .json() methods
+    return __native_fetch(url, method, headers, body, timeout);
+}
+
+// Helper methods for common HTTP verbs
+fn get(url, options = {}) {
+    options.method = "GET";
+    return fetch(url, options);
+}
+
+fn post(url, data, options = {}) {
+    options.method = "POST";
+    options.body = data;
+    return fetch(url, options);
+}
+
+fn put(url, data, options = {}) {
+    options.method = "PUT";
+    options.body = data;
+    return fetch(url, options);
+}
+
+fn del(url, options = {}) {
+    options.method = "DELETE";
+    return fetch(url, options);
+}

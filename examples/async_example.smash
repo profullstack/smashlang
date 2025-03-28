@@ -1,0 +1,150 @@
+// Example demonstrating SmashLang's async/await capabilities
+
+// Import the networking module
+import "std/net";
+
+// Top-level async function
+async fn fetchData() {
+    print("Fetching data...");
+    try {
+        // Using await with fetch
+        const response = await fetch("https://api.example.com/data");
+        const data = await response.json();
+        print("Received data:", data);
+        return data;
+    } catch (error) {
+        print("Error fetching data:", error);
+        throw error;
+    }
+}
+
+// Top-level async function for HTTP POST
+async fn submitData(payload) {
+    print("Submitting data...");
+    try {
+        const response = await post("https://api.example.com/submit", payload, {
+            headers: {
+                "Content-Type": "application/json",
+                "Accept": "application/json"
+            }
+        });
+        const result = await response.json();
+        print("Submit result:", result);
+        return result;
+    } catch (error) {
+        print("Error submitting data:", error);
+        throw error;
+    }
+}
+
+// Async TCP client example
+async fn fetchWebPage(host, port, path) {
+    print(`Connecting to ${host}:${port}...`);
+    const client = createTcpClient();
+    
+    try {
+        const conn = await client.connect(host, port);
+        print("Connected, sending request...");
+        
+        await client.send(conn, `GET ${path} HTTP/1.1\r\nHost: ${host}\r\n\r\n`);
+        const response = await client.receive(conn);
+        print("Response received");
+        
+        await client.close(conn);
+        return response;
+    } catch (error) {
+        print("Network error:", error);
+        throw error;
+    }
+}
+
+// Async TCP server example
+async fn startServer(address, port) {
+    const server = createTcpServer();
+    
+    try {
+        const s = await server.bind(address, port);
+        await server.listen(s);
+        print(`Server listening on ${address}:${port}`);
+        
+        // Handle one client connection
+        const handleClient = async (clientConn) => {
+            try {
+                const data = await createTcpClient().receive(clientConn);
+                print("Received:", data);
+                
+                await createTcpClient().send(clientConn, "HTTP/1.1 200 OK\r\n\r\nHello from async SmashLang!");
+                await createTcpClient().close(clientConn);
+            } catch (error) {
+                print("Error handling client:", error);
+            }
+        };
+        
+        // Accept and handle connections in a loop
+        while (true) {
+            const client = await server.accept(s);
+            // Handle each client in a separate "thread"
+            handleClient(client);
+        }
+    } catch (error) {
+        print("Server error:", error);
+        throw error;
+    } finally {
+        // This will only run if the loop is broken
+        if (s) await server.close(s);
+    }
+}
+
+// Async UDP example
+async fn udpEcho(address, port) {
+    const socket = createUdpSocket();
+    
+    try {
+        const udpSocket = await socket.bind(address, port);
+        print(`UDP socket bound to ${address}:${port}`);
+        
+        // Listen for incoming packets
+        while (true) {
+            const [data, sender] = await socket.receiveFrom(udpSocket);
+            print(`Received: ${data} from ${sender.address}:${sender.port}`);
+            
+            // Echo back to sender
+            await socket.sendTo(udpSocket, data, sender.address, sender.port);
+        }
+    } catch (error) {
+        print("UDP error:", error);
+        throw error;
+    } finally {
+        if (udpSocket) await socket.close(udpSocket);
+    }
+}
+
+// Main async function to orchestrate everything
+async fn main() {
+    // Fetch data example
+    const data = await fetchData();
+    
+    // Submit data example
+    const payload = {
+        name: "SmashLang",
+        version: "1.0.0",
+        features: ["native compilation", "JavaScript-like syntax", "async/await"]
+    };
+    await submitData(payload);
+    
+    // Fetch web page example
+    const webPage = await fetchWebPage("example.com", 80, "/");
+    print("Web page first 100 chars:", webPage.substring(0, 100));
+    
+    // Start server in background
+    // Note: This would normally block, but we're using a non-blocking approach
+    startServer("127.0.0.1", 8080);
+    
+    // Start UDP echo server in background
+    udpEcho("127.0.0.1", 8081);
+    
+    print("All async operations initiated!");
+}
+
+// Execute the main function
+main();

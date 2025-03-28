@@ -1,0 +1,126 @@
+// SmashLang Networking Module (std/net.smash)
+// Provides low-level TCP/IP and UDP networking capabilities
+
+// TCP Client functionality
+fn createTcpClient() {
+    return {
+        // Connect to a server
+        connect: fn(host, port) {
+            return __native_tcp_connect(host, port);
+        },
+        
+        // Send data over an established connection
+        send: fn(connection, data) {
+            return __native_tcp_send(connection, data);
+        },
+        
+        // Receive data from an established connection
+        receive: fn(connection, maxBytes = 4096) {
+            return __native_tcp_receive(connection, maxBytes);
+        },
+        
+        // Close an established connection
+        close: fn(connection) {
+            return __native_tcp_close(connection);
+        }
+    };
+}
+
+// TCP Server functionality
+fn createTcpServer() {
+    return {
+        // Bind to a specific address and port
+        bind: fn(address, port) {
+            return __native_tcp_server_bind(address, port);
+        },
+        
+        // Listen for incoming connections
+        listen: fn(server, backlog = 10) {
+            return __native_tcp_server_listen(server, backlog);
+        },
+        
+        // Accept an incoming connection
+        accept: fn(server) {
+            return __native_tcp_server_accept(server);
+        },
+        
+        // Close the server
+        close: fn(server) {
+            return __native_tcp_server_close(server);
+        }
+    };
+}
+
+// UDP Socket functionality
+fn createUdpSocket() {
+    return {
+        // Bind to a specific address and port
+        bind: fn(address, port) {
+            return __native_udp_bind(address, port);
+        },
+        
+        // Send data to a specific address and port
+        sendTo: fn(socket, data, address, port) {
+            return __native_udp_send_to(socket, data, address, port);
+        },
+        
+        // Receive data from any sender
+        receiveFrom: fn(socket, maxBytes = 4096) {
+            return __native_udp_receive_from(socket, maxBytes);
+        },
+        
+        // Close the socket
+        close: fn(socket) {
+            return __native_udp_close(socket);
+        }
+    };
+}
+
+// DNS resolution functions
+fn resolveHostname(hostname) {
+    return __native_dns_resolve(hostname);
+}
+
+// Socket options and utilities
+fn setSocketOption(socket, option, value) {
+    return __native_set_socket_option(socket, option, value);
+}
+
+// Common socket options
+const SOCKET_OPTIONS = {
+    REUSE_ADDR: "SO_REUSEADDR",
+    KEEP_ALIVE: "SO_KEEPALIVE",
+    RECV_TIMEOUT: "SO_RCVTIMEO",
+    SEND_TIMEOUT: "SO_SNDTIMEO",
+    RECV_BUFFER: "SO_RCVBUF",
+    SEND_BUFFER: "SO_SNDBUF",
+    NO_DELAY: "TCP_NODELAY"
+};
+
+// Example usage:
+//
+// // TCP Client example
+// let client = createTcpClient();
+// let conn = client.connect("example.com", 80);
+// client.send(conn, "GET / HTTP/1.1\r\nHost: example.com\r\n\r\n");
+// let response = client.receive(conn);
+// print(response);
+// client.close(conn);
+//
+// // TCP Server example
+// let server = createTcpServer();
+// let s = server.bind("0.0.0.0", 8080);
+// server.listen(s);
+// let client = server.accept(s);
+// let data = createTcpClient().receive(client);
+// createTcpClient().send(client, "HTTP/1.1 200 OK\r\n\r\nHello World");
+// createTcpClient().close(client);
+// server.close(s);
+//
+// // UDP example
+// let socket = createUdpSocket();
+// let s = socket.bind("0.0.0.0", 8081);
+// socket.sendTo(s, "Hello UDP", "example.com", 8081);
+// let [data, sender] = socket.receiveFrom(s);
+// print(data + " from " + sender.address + ":" + sender.port);
+// socket.close(s);

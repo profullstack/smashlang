@@ -79,6 +79,178 @@ print("Hello from " + name);
 
 ---
 
+## 🌐 HTTP/HTTPS API
+
+SmashLang includes a fetch-compatible API for making HTTP requests with both Promise-based and async/await approaches:
+
+### Promise-based API
+
+```js
+// Simple GET request
+fetch("https://api.example.com/data")
+    .then(fn(response) {
+        return response.json();
+    })
+    .then(fn(data) {
+        print("Received data:", data);
+    })
+    .catch(fn(error) {
+        print("Error fetching data:", error);
+    });
+
+// POST request with JSON body
+post("https://api.example.com/submit", {
+    name: "SmashLang",
+    version: "1.0.0",
+    features: ["native compilation", "JavaScript-like syntax"]
+}, {
+    headers: {
+        "Content-Type": "application/json",
+        "Accept": "application/json"
+    }
+});
+```
+
+### Async/Await API
+
+```js
+// Top-level async function
+async fn fetchData() {
+    try {
+        // Simple GET request with async/await
+        const response = await fetch("https://api.example.com/data");
+        const data = await response.json();
+        print("Received data:", data);
+        
+        // POST request with async/await
+        const postResponse = await post("https://api.example.com/submit", {
+            name: "SmashLang",
+            version: "1.0.0",
+            features: ["native compilation", "async/await"]
+        }, {
+            headers: {
+                "Content-Type": "application/json"
+            }
+        });
+        const result = await postResponse.json();
+        print("Response:", result);
+    } catch (error) {
+        print("Error:", error);
+    }
+}
+
+// Run the async function
+fetchData();
+```
+
+---
+
+## 🔌 Networking
+
+Low-level TCP/IP and UDP networking capabilities with both traditional and async/await approaches:
+
+### Traditional API
+
+```js
+// Import the networking module
+import "std/net";
+
+// TCP Client example
+let client = createTcpClient();
+let conn = client.connect("example.com", 80);
+client.send(conn, "GET / HTTP/1.1\r\nHost: example.com\r\n\r\n");
+let response = client.receive(conn);
+print(response);
+client.close(conn);
+
+// TCP Server example
+let server = createTcpServer();
+let s = server.bind("127.0.0.1", 8080);
+server.listen(s);
+
+let client = server.accept(s);
+let data = createTcpClient().receive(client);
+createTcpClient().send(client, "HTTP/1.1 200 OK\r\n\r\nHello!");
+createTcpClient().close(client);
+server.close(s);
+
+// UDP example
+let socket = createUdpSocket();
+let udpSocket = socket.bind("127.0.0.1", 8081);
+socket.sendTo(udpSocket, "Hello UDP", "127.0.0.1", 8081);
+let [data, sender] = socket.receiveFrom(udpSocket);
+print(data + " from " + sender.address + ":" + sender.port);
+socket.close(udpSocket);
+```
+
+### Async/Await API
+
+```js
+// Import the networking module
+import "std/net";
+
+// Async TCP client example
+async fn fetchWebPage(host, port, path) {
+    try {
+        const client = createTcpClient();
+        const conn = await client.connect(host, port);
+        
+        await client.send(conn, `GET ${path} HTTP/1.1\r\nHost: ${host}\r\n\r\n`);
+        const response = await client.receive(conn);
+        
+        await client.close(conn);
+        return response;
+    } catch (error) {
+        print("Network error:", error);
+        throw error;
+    }
+}
+
+// Async TCP server example
+async fn startServer(address, port) {
+    const server = createTcpServer();
+    
+    try {
+        const s = await server.bind(address, port);
+        await server.listen(s);
+        print(`Server listening on ${address}:${port}`);
+        
+        // Accept and handle a connection
+        const client = await server.accept(s);
+        const data = await createTcpClient().receive(client);
+        await createTcpClient().send(client, "HTTP/1.1 200 OK\r\n\r\nHello!");
+        await createTcpClient().close(client);
+        await server.close(s);
+    } catch (error) {
+        print("Server error:", error);
+    }
+}
+
+// Async UDP example
+async fn sendAndReceiveUdp() {
+    const socket = createUdpSocket();
+    
+    try {
+        const udpSocket = await socket.bind("127.0.0.1", 8081);
+        
+        await socket.sendTo(udpSocket, "Hello UDP", "127.0.0.1", 8081);
+        const [data, sender] = await socket.receiveFrom(udpSocket);
+        print(`${data} from ${sender.address}:${sender.port}`);
+        
+        await socket.close(udpSocket);
+    } catch (error) {
+        print("UDP error:", error);
+    }
+}
+
+// Run the async functions
+fetchWebPage("example.com", 80, "/").then(response => print(response));
+startServer("127.0.0.1", 8080);
+sendAndReceiveUdp();
+```
+
+---
+
 ## 🧪 Pattern Matching
 
 ```js
