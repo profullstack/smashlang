@@ -46,6 +46,31 @@ SmashLang compiles to native binaries for:
 
 ## 🚀 Getting Started
 
+### Quick Installation
+
+Install SmashLang with a single command:
+
+```bash
+# Using curl
+curl -fsSL https://raw.githubusercontent.com/profullstack/smashlang/main/install.sh | bash
+
+# Or using wget
+wget -O- https://raw.githubusercontent.com/profullstack/smashlang/main/install.sh | bash
+```
+
+This will automatically:
+- Detect your operating system (Windows, macOS, or Linux)
+- Download the appropriate binaries
+- Set up the package repository
+- Configure your environment
+- Add SmashLang to your PATH
+
+After installation, verify it works:
+
+```bash
+smash --version
+```
+
 ### Build the Compiler & Runtime
 
 ```bash

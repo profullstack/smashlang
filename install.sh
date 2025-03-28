@@ -1,0 +1,568 @@
+#!/bin/bash
+
+# SmashLang Installer Script
+# This script installs SmashLang on Windows, macOS, and Linux systems
+
+set -e
+
+# Colors for output
+RED="\033[0;31m"
+GREEN="\033[0;32m"
+YELLOW="\033[0;33m"
+BLUE="\033[0;34m"
+NC="\033[0m" # No Color
+
+# SmashLang version
+VERSION="0.1.0"
+
+# Default version for upgrades
+DEFAULT_VERSION="0.1.0"
+
+# GitHub repository
+REPO="profullstack/smashlang"
+REPO_URL="https://github.com/$REPO"
+RELEASE_URL="$REPO_URL/releases/download/v$VERSION"
+
+# Installation directories
+LINUX_INSTALL_DIR="$HOME/.local/bin"
+MACOS_INSTALL_DIR="$HOME/.local/bin"
+WINDOWS_INSTALL_DIR="$HOME/AppData/Local/SmashLang"
+
+# Package directories
+LINUX_PACKAGES_DIR="$HOME/.local/share/smashlang/packages"
+MACOS_PACKAGES_DIR="$HOME/Library/Application Support/SmashLang/packages"
+WINDOWS_PACKAGES_DIR="$HOME/AppData/Local/SmashLang/packages"
+
+# Command line arguments
+COMMAND="install"
+TARGET_VERSION="$DEFAULT_VERSION"
+
+if [[ "$1" == "upgrade" ]]; then
+  COMMAND="upgrade"
+  shift
+  
+  # Check for version flag
+  if [[ "$1" == "--version" && -n "$2" ]]; then
+    TARGET_VERSION="$2"
+    shift 2
+  fi
+elif [[ "$1" == "--help" || "$1" == "-h" ]]; then
+  echo "Usage: ./install.sh [command] [options]"
+  echo "Commands:"
+  echo "  install         Install SmashLang (default)"
+  echo "  upgrade         Upgrade or downgrade SmashLang"
+  echo ""
+  echo "Options:"
+  echo "  --version VER   Specify version for upgrade (default: latest)"
+  echo "  --help, -h      Show this help message"
+  exit 0
+fi
+
+# Detect operating system
+detect_os() {
+  if [[ "$OSTYPE" == "linux-gnu"* ]]; then
+    echo "linux"
+  elif [[ "$OSTYPE" == "darwin"* ]]; then
+    echo "macos"
+  elif [[ "$OSTYPE" == "msys"* || "$OSTYPE" == "cygwin"* || "$OSTYPE" == "win32"* ]]; then
+    echo "windows"
+  else
+    echo "unknown"
+  fi
+}
+
+# Check for required tools
+check_requirements() {
+  local os=$1
+  
+  # Check for curl or wget
+  if ! command -v curl &> /dev/null && ! command -v wget &> /dev/null; then
+    echo -e "${RED}Error: Neither curl nor wget found. Please install one of them and try again.${NC}"
+    exit 1
+  fi
+  
+  # Check for unzip (needed for Windows)
+  if [[ "$os" == "windows" ]] && ! command -v unzip &> /dev/null; then
+    echo -e "${RED}Error: unzip not found. Please install unzip and try again.${NC}"
+    exit 1
+  fi
+  
+  # Check for tar (needed for Linux and macOS)
+  if [[ "$os" != "windows" ]] && ! command -v tar &> /dev/null; then
+    echo -e "${RED}Error: tar not found. Please install tar and try again.${NC}"
+    exit 1
+  fi
+}
+
+# Download a file
+download() {
+  local url=$1
+  local output=$2
+  
+  echo -e "${BLUE}Downloading $url...${NC}"
+  
+  if command -v curl &> /dev/null; then
+    curl -L -o "$output" "$url"
+  else
+    wget -O "$output" "$url"
+  fi
+}
+
+# Create directory if it doesn't exist
+create_dir() {
+  local dir=$1
+  
+  if [[ ! -d "$dir" ]]; then
+    echo -e "${BLUE}Creating directory $dir...${NC}"
+    mkdir -p "$dir"
+  fi
+}
+
+# Install SmashLang on Linux
+install_linux() {
+  echo -e "${GREEN}Installing SmashLang on Linux...${NC}"
+  
+  # Set up directories
+  create_dir "$LINUX_INSTALL_DIR"
+  create_dir "$LINUX_PACKAGES_DIR"
+  
+  # Download SmashLang binary
+  local binary_url="$RELEASE_URL/smashlang-linux-x64.tar.gz"
+  local binary_file="/tmp/smashlang-linux-x64.tar.gz"
+  download "$binary_url" "$binary_file"
+  
+  # Extract binary
+  echo -e "${BLUE}Extracting SmashLang binary...${NC}"
+  tar -xzf "$binary_file" -C "$LINUX_INSTALL_DIR"
+  
+  # Download packages
+  local packages_url="$RELEASE_URL/smashlang_packages.tar.gz"
+  local packages_file="/tmp/smashlang_packages.tar.gz"
+  download "$packages_url" "$packages_file"
+  
+  # Extract packages
+  echo -e "${BLUE}Extracting SmashLang packages...${NC}"
+  tar -xzf "$packages_file" -C "$LINUX_PACKAGES_DIR"
+  
+  # Create configuration file
+  create_config_linux
+  
+  # Make binary executable
+  chmod +x "$LINUX_INSTALL_DIR/smash"
+  chmod +x "$LINUX_INSTALL_DIR/smashpkg"
+  
+  # Add to PATH if not already there
+  if [[ ":$PATH:" != *":$LINUX_INSTALL_DIR:"* ]]; then
+    echo -e "${YELLOW}Adding SmashLang to PATH in ~/.bashrc...${NC}"
+    echo "export PATH=\"$LINUX_INSTALL_DIR:\$PATH\"" >> "$HOME/.bashrc"
+    echo -e "${YELLOW}Please run 'source ~/.bashrc' or start a new terminal to use SmashLang.${NC}"
+  fi
+  
+  echo -e "${GREEN}SmashLang has been successfully installed on Linux!${NC}"
+  echo -e "${GREEN}Run 'smash --version' to verify the installation.${NC}"
+}
+
+# Install SmashLang on macOS
+install_macos() {
+  echo -e "${GREEN}Installing SmashLang on macOS...${NC}"
+  
+  # Set up directories
+  create_dir "$MACOS_INSTALL_DIR"
+  create_dir "$MACOS_PACKAGES_DIR"
+  
+  # Download SmashLang binary
+  local binary_url="$RELEASE_URL/smashlang-macos-x64.tar.gz"
+  local binary_file="/tmp/smashlang-macos-x64.tar.gz"
+  download "$binary_url" "$binary_file"
+  
+  # Extract binary
+  echo -e "${BLUE}Extracting SmashLang binary...${NC}"
+  tar -xzf "$binary_file" -C "$MACOS_INSTALL_DIR"
+  
+  # Download packages
+  local packages_url="$RELEASE_URL/smashlang_packages.tar.gz"
+  local packages_file="/tmp/smashlang_packages.tar.gz"
+  download "$packages_url" "$packages_file"
+  
+  # Extract packages
+  echo -e "${BLUE}Extracting SmashLang packages...${NC}"
+  tar -xzf "$packages_file" -C "$MACOS_PACKAGES_DIR"
+  
+  # Create configuration file
+  create_config_macos
+  
+  # Make binary executable
+  chmod +x "$MACOS_INSTALL_DIR/smash"
+  chmod +x "$MACOS_INSTALL_DIR/smashpkg"
+  
+  # Add to PATH if not already there
+  if [[ ":$PATH:" != *":$MACOS_INSTALL_DIR:"* ]]; then
+    echo -e "${YELLOW}Adding SmashLang to PATH in ~/.zshrc...${NC}"
+    echo "export PATH=\"$MACOS_INSTALL_DIR:\$PATH\"" >> "$HOME/.zshrc"
+    echo -e "${YELLOW}Please run 'source ~/.zshrc' or start a new terminal to use SmashLang.${NC}"
+  fi
+  
+  echo -e "${GREEN}SmashLang has been successfully installed on macOS!${NC}"
+  echo -e "${GREEN}Run 'smash --version' to verify the installation.${NC}"
+}
+
+# Install SmashLang on Windows
+install_windows() {
+  echo -e "${GREEN}Installing SmashLang on Windows...${NC}"
+  
+  # Set up directories
+  create_dir "$WINDOWS_INSTALL_DIR"
+  create_dir "$WINDOWS_PACKAGES_DIR"
+  
+  # Download SmashLang binary
+  local binary_url="$RELEASE_URL/smashlang-windows-x64.zip"
+  local binary_file="/tmp/smashlang-windows-x64.zip"
+  download "$binary_url" "$binary_file"
+  
+  # Extract binary
+  echo -e "${BLUE}Extracting SmashLang binary...${NC}"
+  unzip -o "$binary_file" -d "$WINDOWS_INSTALL_DIR"
+  
+  # Download packages
+  local packages_url="$RELEASE_URL/smashlang_packages.zip"
+  local packages_file="/tmp/smashlang_packages.zip"
+  download "$packages_url" "$packages_file"
+  
+  # Extract packages
+  echo -e "${BLUE}Extracting SmashLang packages...${NC}"
+  unzip -o "$packages_file" -d "$WINDOWS_PACKAGES_DIR"
+  
+  # Create configuration file
+  create_config_windows
+  
+  # Add to PATH
+  echo -e "${YELLOW}Please add $WINDOWS_INSTALL_DIR to your PATH manually.${NC}"
+  echo -e "${YELLOW}You can do this by editing your system environment variables.${NC}"
+  
+  echo -e "${GREEN}SmashLang has been successfully installed on Windows!${NC}"
+  echo -e "${GREEN}Run 'smash --version' to verify the installation.${NC}"
+}
+
+# Create configuration file for Linux
+create_config_linux() {
+  local config_dir="$HOME/.config/smashlang"
+  local config_file="$config_dir/config.json"
+  
+  create_dir "$config_dir"
+  
+  echo -e "${BLUE}Creating configuration file...${NC}"
+  cat > "$config_file" << EOF
+{
+  "version": "$VERSION",
+  "packagesDir": "$LINUX_PACKAGES_DIR",
+  "modulesDir": "./smash_modules",
+  "autoUpdate": true,
+  "logLevel": "info"
+}
+EOF
+}
+
+# Create configuration file for macOS
+create_config_macos() {
+  local config_dir="$HOME/Library/Application Support/SmashLang"
+  local config_file="$config_dir/config.json"
+  
+  create_dir "$config_dir"
+  
+  echo -e "${BLUE}Creating configuration file...${NC}"
+  cat > "$config_file" << EOF
+{
+  "version": "$VERSION",
+  "packagesDir": "$MACOS_PACKAGES_DIR",
+  "modulesDir": "./smash_modules",
+  "autoUpdate": true,
+  "logLevel": "info"
+}
+EOF
+}
+
+# Create configuration file for Windows
+create_config_windows() {
+  local config_dir="$HOME/AppData/Local/SmashLang"
+  local config_file="$config_dir/config.json"
+  
+  create_dir "$config_dir"
+  
+  echo -e "${BLUE}Creating configuration file...${NC}"
+  cat > "$config_file" << EOF
+{
+  "version": "$VERSION",
+  "packagesDir": "$WINDOWS_PACKAGES_DIR",
+  "modulesDir": "./smash_modules",
+  "autoUpdate": true,
+  "logLevel": "info"
+}
+EOF
+}
+
+# Upgrade SmashLang on Linux
+upgrade_linux() {
+  local version="$1"
+  echo -e "${GREEN}Upgrading SmashLang to version $version on Linux...${NC}"
+  
+  # Set up directories if they don't exist
+  create_dir "$LINUX_INSTALL_DIR"
+  create_dir "$LINUX_PACKAGES_DIR"
+  
+  # Download SmashLang binary for the specified version
+  local binary_url="$REPO_URL/releases/download/v$version/smashlang-linux-x64.tar.gz"
+  local binary_file="/tmp/smashlang-linux-x64-$version.tar.gz"
+  download "$binary_url" "$binary_file"
+  
+  # Extract binary
+  echo -e "${BLUE}Extracting SmashLang binary...${NC}"
+  tar -xzf "$binary_file" -C "$LINUX_INSTALL_DIR"
+  
+  # Download packages for the specified version
+  local packages_url="$REPO_URL/releases/download/v$version/smashlang_packages.tar.gz"
+  local packages_file="/tmp/smashlang_packages-$version.tar.gz"
+  download "$packages_url" "$packages_file"
+  
+  # Extract packages
+  echo -e "${BLUE}Extracting SmashLang packages...${NC}"
+  tar -xzf "$packages_file" -C "$LINUX_PACKAGES_DIR"
+  
+  # Update configuration file with new version
+  update_config_linux "$version"
+  
+  # Make binary executable
+  chmod +x "$LINUX_INSTALL_DIR/smash"
+  chmod +x "$LINUX_INSTALL_DIR/smashpkg"
+  
+  echo -e "${GREEN}SmashLang has been successfully upgraded to version $version on Linux!${NC}"
+  echo -e "${GREEN}Run 'smash --version' to verify the upgrade.${NC}"
+}
+
+# Upgrade SmashLang on macOS
+upgrade_macos() {
+  local version="$1"
+  echo -e "${GREEN}Upgrading SmashLang to version $version on macOS...${NC}"
+  
+  # Set up directories if they don't exist
+  create_dir "$MACOS_INSTALL_DIR"
+  create_dir "$MACOS_PACKAGES_DIR"
+  
+  # Download SmashLang binary for the specified version
+  local binary_url="$REPO_URL/releases/download/v$version/smashlang-macos-x64.tar.gz"
+  local binary_file="/tmp/smashlang-macos-x64-$version.tar.gz"
+  download "$binary_url" "$binary_file"
+  
+  # Extract binary
+  echo -e "${BLUE}Extracting SmashLang binary...${NC}"
+  tar -xzf "$binary_file" -C "$MACOS_INSTALL_DIR"
+  
+  # Download packages for the specified version
+  local packages_url="$REPO_URL/releases/download/v$version/smashlang_packages.tar.gz"
+  local packages_file="/tmp/smashlang_packages-$version.tar.gz"
+  download "$packages_url" "$packages_file"
+  
+  # Extract packages
+  echo -e "${BLUE}Extracting SmashLang packages...${NC}"
+  tar -xzf "$packages_file" -C "$MACOS_PACKAGES_DIR"
+  
+  # Update configuration file with new version
+  update_config_macos "$version"
+  
+  # Make binary executable
+  chmod +x "$MACOS_INSTALL_DIR/smash"
+  chmod +x "$MACOS_INSTALL_DIR/smashpkg"
+  
+  echo -e "${GREEN}SmashLang has been successfully upgraded to version $version on macOS!${NC}"
+  echo -e "${GREEN}Run 'smash --version' to verify the upgrade.${NC}"
+}
+
+# Upgrade SmashLang on Windows
+upgrade_windows() {
+  local version="$1"
+  echo -e "${GREEN}Upgrading SmashLang to version $version on Windows...${NC}"
+  
+  # Set up directories if they don't exist
+  create_dir "$WINDOWS_INSTALL_DIR"
+  create_dir "$WINDOWS_PACKAGES_DIR"
+  
+  # Download SmashLang binary for the specified version
+  local binary_url="$REPO_URL/releases/download/v$version/smashlang-windows-x64.zip"
+  local binary_file="/tmp/smashlang-windows-x64-$version.zip"
+  download "$binary_url" "$binary_file"
+  
+  # Extract binary
+  echo -e "${BLUE}Extracting SmashLang binary...${NC}"
+  unzip -o "$binary_file" -d "$WINDOWS_INSTALL_DIR"
+  
+  # Download packages for the specified version
+  local packages_url="$REPO_URL/releases/download/v$version/smashlang_packages.zip"
+  local packages_file="/tmp/smashlang_packages-$version.zip"
+  download "$packages_url" "$packages_file"
+  
+  # Extract packages
+  echo -e "${BLUE}Extracting SmashLang packages...${NC}"
+  unzip -o "$packages_file" -d "$WINDOWS_PACKAGES_DIR"
+  
+  # Update configuration file with new version
+  update_config_windows "$version"
+  
+  echo -e "${GREEN}SmashLang has been successfully upgraded to version $version on Windows!${NC}"
+  echo -e "${GREEN}Run 'smash --version' to verify the upgrade.${NC}"
+}
+
+# Update configuration file for Linux with new version
+update_config_linux() {
+  local version="$1"
+  local config_dir="$HOME/.config/smashlang"
+  local config_file="$config_dir/config.json"
+  
+  create_dir "$config_dir"
+  
+  echo -e "${BLUE}Updating configuration file...${NC}"
+  cat > "$config_file" << EOF
+{
+  "version": "$version",
+  "packagesDir": "$LINUX_PACKAGES_DIR",
+  "modulesDir": "./smash_modules",
+  "autoUpdate": true,
+  "logLevel": "info"
+}
+EOF
+}
+
+# Update configuration file for macOS with new version
+update_config_macos() {
+  local version="$1"
+  local config_dir="$HOME/Library/Application Support/SmashLang"
+  local config_file="$config_dir/config.json"
+  
+  create_dir "$config_dir"
+  
+  echo -e "${BLUE}Updating configuration file...${NC}"
+  cat > "$config_file" << EOF
+{
+  "version": "$version",
+  "packagesDir": "$MACOS_PACKAGES_DIR",
+  "modulesDir": "./smash_modules",
+  "autoUpdate": true,
+  "logLevel": "info"
+}
+EOF
+}
+
+# Update configuration file for Windows with new version
+update_config_windows() {
+  local version="$1"
+  local config_dir="$HOME/AppData/Local/SmashLang"
+  local config_file="$config_dir/config.json"
+  
+  create_dir "$config_dir"
+  
+  echo -e "${BLUE}Updating configuration file...${NC}"
+  cat > "$config_file" << EOF
+{
+  "version": "$version",
+  "packagesDir": "$WINDOWS_PACKAGES_DIR",
+  "modulesDir": "./smash_modules",
+  "autoUpdate": true,
+  "logLevel": "info"
+}
+EOF
+}
+
+# Get script directory
+get_script_dir() {
+  local source="${BASH_SOURCE[0]}"
+  while [ -h "$source" ]; do
+    local dir="$(cd -P "$(dirname "$source")" && pwd)"
+    source="$(readlink "$source")"
+    [[ $source != /* ]] && source="$dir/$source"
+  done
+  echo "$(cd -P "$(dirname "$source")" && pwd)"
+}
+
+# Display welcome message
+display_welcome() {
+  local script_dir=$(get_script_dir)
+  local logo_file="$script_dir/assets/logo.ascii"
+  
+  # Check if logo file exists, otherwise use default ASCII art
+  if [ -f "$logo_file" ]; then
+    echo -e "\n${YELLOW}"
+    cat "$logo_file" | while read line; do
+      echo -e "${YELLOW}$line${NC}"
+    done
+  else
+    # Fallback ASCII art if the file doesn't exist
+    echo -e "\n${YELLOW}   _____                      _     _                       ${NC}"
+    echo -e "${YELLOW}  / ____|                    | |   | |                      ${NC}"
+    echo -e "${YELLOW} | (___  _ __ ___   __ _ ___| |__ | |     __ _ _ __   __ _ ${NC}"
+    echo -e "${YELLOW}  \___ \| '_ ' _ \ / _' / __| '_ \| |    / _' | '_ \ / _' |${NC}"
+    echo -e "${YELLOW}  ____) | | | | | | (_| \__ \ | | | |___| (_| | | | | (_| |${NC}"
+    echo -e "${YELLOW} |_____/|_| |_| |_|\__,_|___/_| |_|______\__,_|_| |_|\__, |${NC}"
+    echo -e "${YELLOW}                                                        __/ |${NC}"
+    echo -e "${YELLOW}                                                       |___/ ${NC}"
+  fi
+  echo -e "\n${GREEN}💪 Welcome to SmashLang! 💪${NC}"
+  echo -e "${BLUE}A bold, high-performance, JavaScript-inspired general-purpose programming language${NC}"
+  echo -e "${BLUE}that compiles to native binaries. Made for developers who want the power of C/Rust${NC}"
+  echo -e "${BLUE}but the clarity of JavaScript — without the bloat.${NC}"
+  echo -e "\n${YELLOW}Visit https://smashlang.com for documentation and community resources.${NC}"
+  echo -e "\n"
+}
+
+# Main function
+main() {
+  display_welcome
+  
+  if [[ "$COMMAND" == "install" ]]; then
+    echo -e "${GREEN}SmashLang Installer v$VERSION${NC}"
+  else
+    echo -e "${GREEN}SmashLang Upgrader - Target Version: $TARGET_VERSION${NC}"
+  fi
+  
+  # Detect operating system
+  local os=$(detect_os)
+  
+  if [[ "$os" == "unknown" ]]; then
+    echo -e "${RED}Error: Unsupported operating system.${NC}"
+    echo -e "${RED}This installer supports Linux, macOS, and Windows.${NC}"
+    exit 1
+  fi
+  
+  echo -e "${BLUE}Detected operating system: $os${NC}"
+  
+  # Check requirements
+  check_requirements "$os"
+  
+  # Install or upgrade based on command and OS
+  if [[ "$COMMAND" == "install" ]]; then
+    case "$os" in
+      linux)
+        install_linux
+        ;;
+      macos)
+        install_macos
+        ;;
+      windows)
+        install_windows
+        ;;
+    esac
+  else
+    # Upgrade command
+    case "$os" in
+      linux)
+        upgrade_linux "$TARGET_VERSION"
+        ;;
+      macos)
+        upgrade_macos "$TARGET_VERSION"
+        ;;
+      windows)
+        upgrade_windows "$TARGET_VERSION"
+        ;;
+    esac
+  fi
+}
+
+# Run the main function
+main
