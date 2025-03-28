@@ -36,6 +36,7 @@ WINDOWS_PACKAGES_DIR="$HOME/AppData/Local/SmashLang/packages"
 # Command line arguments
 COMMAND="install"
 TARGET_VERSION="$DEFAULT_VERSION"
+USE_MASTER=false
 
 if [[ "$1" == "upgrade" ]]; then
   COMMAND="upgrade"
@@ -46,6 +47,9 @@ if [[ "$1" == "upgrade" ]]; then
     TARGET_VERSION="$2"
     shift 2
   fi
+elif [[ "$1" == "--master" ]]; then
+  USE_MASTER=true
+  shift
 elif [[ "$1" == "--help" || "$1" == "-h" ]]; then
   echo "Usage: ./install.sh [command] [options]"
   echo "Commands:"
@@ -54,6 +58,7 @@ elif [[ "$1" == "--help" || "$1" == "-h" ]]; then
   echo ""
   echo "Options:"
   echo "  --version VER   Specify version for upgrade (default: latest)"
+  echo "  --master        Use GitHub master branch instead of releases"
   echo "  --help, -h      Show this help message"
   exit 0
 fi
@@ -78,6 +83,12 @@ check_requirements() {
   # Check for curl or wget
   if ! command -v curl &> /dev/null && ! command -v wget &> /dev/null; then
     echo -e "${RED}Error: Neither curl nor wget found. Please install one of them and try again.${NC}"
+    exit 1
+  fi
+  
+  # Check for git if using master branch
+  if [ "$USE_MASTER" = true ] && ! command -v git &> /dev/null; then
+    echo -e "${RED}Error: git not found. Please install git and try again.${NC}"
     exit 1
   fi
   
@@ -126,23 +137,61 @@ install_linux() {
   create_dir "$LINUX_INSTALL_DIR"
   create_dir "$LINUX_PACKAGES_DIR"
   
-  # Download SmashLang binary
-  local binary_url="$RELEASE_URL/smashlang-linux-x64.tar.gz"
-  local binary_file="/tmp/smashlang-linux-x64.tar.gz"
-  download "$binary_url" "$binary_file"
-  
-  # Extract binary
-  echo -e "${BLUE}Extracting SmashLang binary...${NC}"
-  tar -xzf "$binary_file" -C "$LINUX_INSTALL_DIR"
-  
-  # Download packages
-  local packages_url="$RELEASE_URL/smashlang_packages.tar.gz"
-  local packages_file="/tmp/smashlang_packages.tar.gz"
-  download "$packages_url" "$packages_file"
-  
-  # Extract packages
-  echo -e "${BLUE}Extracting SmashLang packages...${NC}"
-  tar -xzf "$packages_file" -C "$LINUX_PACKAGES_DIR"
+  if [ "$USE_MASTER" = true ]; then
+    echo -e "${YELLOW}Using GitHub master branch for installation...${NC}"
+    
+    # Clone the repository
+    local temp_dir="/tmp/smashlang-master"
+    rm -rf "$temp_dir"
+    echo -e "${BLUE}Cloning SmashLang repository...${NC}"
+    git clone --depth 1 "$REPO_URL" "$temp_dir"
+    
+    # Copy binaries from the repository
+    echo -e "${BLUE}Installing SmashLang binaries...${NC}"
+    if [ -f "$temp_dir/bin/smash" ]; then
+      cp "$temp_dir/bin/smash" "$LINUX_INSTALL_DIR/"
+      chmod +x "$LINUX_INSTALL_DIR/smash"
+    else
+      echo -e "${YELLOW}Warning: smash binary not found in repository, creating placeholder...${NC}"
+      echo '#!/bin/bash\necho "SmashLang v0.1.0-dev (placeholder)"' > "$LINUX_INSTALL_DIR/smash"
+      chmod +x "$LINUX_INSTALL_DIR/smash"
+    fi
+    
+    if [ -f "$temp_dir/bin/smashpkg" ]; then
+      cp "$temp_dir/bin/smashpkg" "$LINUX_INSTALL_DIR/"
+      chmod +x "$LINUX_INSTALL_DIR/smashpkg"
+    else
+      echo -e "${YELLOW}Warning: smashpkg binary not found in repository, creating placeholder...${NC}"
+      echo '#!/bin/bash\necho "SmashLang Package Manager v0.1.0-dev (placeholder)"' > "$LINUX_INSTALL_DIR/smashpkg"
+      chmod +x "$LINUX_INSTALL_DIR/smashpkg"
+    fi
+    
+    # Copy packages from the repository
+    echo -e "${BLUE}Installing SmashLang packages...${NC}"
+    if [ -d "$temp_dir/smashlang_packages" ]; then
+      cp -r "$temp_dir/smashlang_packages"/* "$LINUX_PACKAGES_DIR/"
+    else
+      echo -e "${YELLOW}Warning: smashlang_packages directory not found in repository${NC}"
+    fi
+  else
+    # Download SmashLang binary
+    local binary_url="$RELEASE_URL/smashlang-linux-x64.tar.gz"
+    local binary_file="/tmp/smashlang-linux-x64.tar.gz"
+    download "$binary_url" "$binary_file"
+    
+    # Extract binary
+    echo -e "${BLUE}Extracting SmashLang binary...${NC}"
+    tar -xzf "$binary_file" -C "$LINUX_INSTALL_DIR"
+    
+    # Download packages
+    local packages_url="$RELEASE_URL/smashlang_packages.tar.gz"
+    local packages_file="/tmp/smashlang_packages.tar.gz"
+    download "$packages_url" "$packages_file"
+    
+    # Extract packages
+    echo -e "${BLUE}Extracting SmashLang packages...${NC}"
+    tar -xzf "$packages_file" -C "$LINUX_PACKAGES_DIR"
+  fi
   
   # Create configuration file
   create_config_linux
@@ -170,23 +219,61 @@ install_macos() {
   create_dir "$MACOS_INSTALL_DIR"
   create_dir "$MACOS_PACKAGES_DIR"
   
-  # Download SmashLang binary
-  local binary_url="$RELEASE_URL/smashlang-macos-x64.tar.gz"
-  local binary_file="/tmp/smashlang-macos-x64.tar.gz"
-  download "$binary_url" "$binary_file"
-  
-  # Extract binary
-  echo -e "${BLUE}Extracting SmashLang binary...${NC}"
-  tar -xzf "$binary_file" -C "$MACOS_INSTALL_DIR"
-  
-  # Download packages
-  local packages_url="$RELEASE_URL/smashlang_packages.tar.gz"
-  local packages_file="/tmp/smashlang_packages.tar.gz"
-  download "$packages_url" "$packages_file"
-  
-  # Extract packages
-  echo -e "${BLUE}Extracting SmashLang packages...${NC}"
-  tar -xzf "$packages_file" -C "$MACOS_PACKAGES_DIR"
+  if [ "$USE_MASTER" = true ]; then
+    echo -e "${YELLOW}Using GitHub master branch for installation...${NC}"
+    
+    # Clone the repository
+    local temp_dir="/tmp/smashlang-master"
+    rm -rf "$temp_dir"
+    echo -e "${BLUE}Cloning SmashLang repository...${NC}"
+    git clone --depth 1 "$REPO_URL" "$temp_dir"
+    
+    # Copy binaries from the repository
+    echo -e "${BLUE}Installing SmashLang binaries...${NC}"
+    if [ -f "$temp_dir/bin/smash" ]; then
+      cp "$temp_dir/bin/smash" "$MACOS_INSTALL_DIR/"
+      chmod +x "$MACOS_INSTALL_DIR/smash"
+    else
+      echo -e "${YELLOW}Warning: smash binary not found in repository, creating placeholder...${NC}"
+      echo '#!/bin/bash\necho "SmashLang v0.1.0-dev (placeholder)"' > "$MACOS_INSTALL_DIR/smash"
+      chmod +x "$MACOS_INSTALL_DIR/smash"
+    fi
+    
+    if [ -f "$temp_dir/bin/smashpkg" ]; then
+      cp "$temp_dir/bin/smashpkg" "$MACOS_INSTALL_DIR/"
+      chmod +x "$MACOS_INSTALL_DIR/smashpkg"
+    else
+      echo -e "${YELLOW}Warning: smashpkg binary not found in repository, creating placeholder...${NC}"
+      echo '#!/bin/bash\necho "SmashLang Package Manager v0.1.0-dev (placeholder)"' > "$MACOS_INSTALL_DIR/smashpkg"
+      chmod +x "$MACOS_INSTALL_DIR/smashpkg"
+    fi
+    
+    # Copy packages from the repository
+    echo -e "${BLUE}Installing SmashLang packages...${NC}"
+    if [ -d "$temp_dir/smashlang_packages" ]; then
+      cp -r "$temp_dir/smashlang_packages"/* "$MACOS_PACKAGES_DIR/"
+    else
+      echo -e "${YELLOW}Warning: smashlang_packages directory not found in repository${NC}"
+    fi
+  else
+    # Download SmashLang binary
+    local binary_url="$RELEASE_URL/smashlang-macos-x64.tar.gz"
+    local binary_file="/tmp/smashlang-macos-x64.tar.gz"
+    download "$binary_url" "$binary_file"
+    
+    # Extract binary
+    echo -e "${BLUE}Extracting SmashLang binary...${NC}"
+    tar -xzf "$binary_file" -C "$MACOS_INSTALL_DIR"
+    
+    # Download packages
+    local packages_url="$RELEASE_URL/smashlang_packages.tar.gz"
+    local packages_file="/tmp/smashlang_packages.tar.gz"
+    download "$packages_url" "$packages_file"
+    
+    # Extract packages
+    echo -e "${BLUE}Extracting SmashLang packages...${NC}"
+    tar -xzf "$packages_file" -C "$MACOS_PACKAGES_DIR"
+  fi
   
   # Create configuration file
   create_config_macos
@@ -214,23 +301,57 @@ install_windows() {
   create_dir "$WINDOWS_INSTALL_DIR"
   create_dir "$WINDOWS_PACKAGES_DIR"
   
-  # Download SmashLang binary
-  local binary_url="$RELEASE_URL/smashlang-windows-x64.zip"
-  local binary_file="/tmp/smashlang-windows-x64.zip"
-  download "$binary_url" "$binary_file"
-  
-  # Extract binary
-  echo -e "${BLUE}Extracting SmashLang binary...${NC}"
-  unzip -o "$binary_file" -d "$WINDOWS_INSTALL_DIR"
-  
-  # Download packages
-  local packages_url="$RELEASE_URL/smashlang_packages.zip"
-  local packages_file="/tmp/smashlang_packages.zip"
-  download "$packages_url" "$packages_file"
-  
-  # Extract packages
-  echo -e "${BLUE}Extracting SmashLang packages...${NC}"
-  unzip -o "$packages_file" -d "$WINDOWS_PACKAGES_DIR"
+  if [ "$USE_MASTER" = true ]; then
+    echo -e "${YELLOW}Using GitHub master branch for installation...${NC}"
+    
+    # Clone the repository
+    local temp_dir="/tmp/smashlang-master"
+    rm -rf "$temp_dir"
+    echo -e "${BLUE}Cloning SmashLang repository...${NC}"
+    git clone --depth 1 "$REPO_URL" "$temp_dir"
+    
+    # Copy binaries from the repository
+    echo -e "${BLUE}Installing SmashLang binaries...${NC}"
+    if [ -f "$temp_dir/bin/smash.exe" ]; then
+      cp "$temp_dir/bin/smash.exe" "$WINDOWS_INSTALL_DIR/"
+    else
+      echo -e "${YELLOW}Warning: smash.exe binary not found in repository, creating placeholder...${NC}"
+      echo '@echo off\necho SmashLang v0.1.0-dev (placeholder)' > "$WINDOWS_INSTALL_DIR/smash.bat"
+    fi
+    
+    if [ -f "$temp_dir/bin/smashpkg.exe" ]; then
+      cp "$temp_dir/bin/smashpkg.exe" "$WINDOWS_INSTALL_DIR/"
+    else
+      echo -e "${YELLOW}Warning: smashpkg.exe binary not found in repository, creating placeholder...${NC}"
+      echo '@echo off\necho SmashLang Package Manager v0.1.0-dev (placeholder)' > "$WINDOWS_INSTALL_DIR/smashpkg.bat"
+    fi
+    
+    # Copy packages from the repository
+    echo -e "${BLUE}Installing SmashLang packages...${NC}"
+    if [ -d "$temp_dir/smashlang_packages" ]; then
+      cp -r "$temp_dir/smashlang_packages"/* "$WINDOWS_PACKAGES_DIR/"
+    else
+      echo -e "${YELLOW}Warning: smashlang_packages directory not found in repository${NC}"
+    fi
+  else
+    # Download SmashLang binary
+    local binary_url="$RELEASE_URL/smashlang-windows-x64.zip"
+    local binary_file="/tmp/smashlang-windows-x64.zip"
+    download "$binary_url" "$binary_file"
+    
+    # Extract binary
+    echo -e "${BLUE}Extracting SmashLang binary...${NC}"
+    unzip -o "$binary_file" -d "$WINDOWS_INSTALL_DIR"
+    
+    # Download packages
+    local packages_url="$RELEASE_URL/smashlang_packages.zip"
+    local packages_file="/tmp/smashlang_packages.zip"
+    download "$packages_url" "$packages_file"
+    
+    # Extract packages
+    echo -e "${BLUE}Extracting SmashLang packages...${NC}"
+    unzip -o "$packages_file" -d "$WINDOWS_PACKAGES_DIR"
+  fi
   
   # Create configuration file
   create_config_windows
