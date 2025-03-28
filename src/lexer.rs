@@ -1,5 +1,6 @@
 #[derive(Debug, Clone, PartialEq)]
 pub enum Token {
+    Const,
     Let,
     Fn,
     Return,
@@ -162,6 +163,7 @@ pub fn tokenize(input: &str) -> Vec<Token> {
                     "let" => tokens.push(Token::Let),
                     "fn" => tokens.push(Token::Fn),
                     "return" => tokens.push(Token::Return),
+                    "const" => tokens.push(Token::Const),
                     "import" => tokens.push(Token::Import),
                     "true" => tokens.push(Token::Bool(true)),
                     "false" => tokens.push(Token::Bool(false)),

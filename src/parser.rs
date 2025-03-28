@@ -6,6 +6,7 @@ pub enum AstNode {
     Number(i64),
     Identifier(String),
     LetDecl { name: String, value: Box<AstNode> },
+    ConstDecl { name: String, value: Box<AstNode> },
     BinaryOp {
         left: Box<AstNode>,
         op: String,
@@ -59,6 +60,9 @@ impl Parser {
     pub fn parse(&mut self) -> Vec<AstNode> {
         let mut nodes = Vec::new();
         while self.peek().is_some() {
+            if let Some(const_decl) = self.parse_const() {
+                nodes.push(const_decl);
+            } else
             if let Some(import) = self.parse_import() {
                 nodes.push(import);
             } else if let Some(decl) = self.parse_let() {
@@ -79,6 +83,23 @@ impl Parser {
                 if let Some(Token::Identifier(path)) = self.advance() {
                     self.expect(&Token::Semicolon);
                     return Some(AstNode::Import(path.clone()));
+                }
+            }
+        }
+        None
+    }
+
+    fn parse_const(&mut self) -> Option<AstNode> {
+        if self.expect(&Token::Const) {
+            if let Some(Token::Identifier(name)) = self.advance() {
+                if self.expect(&Token::Equal) {
+                    if let Some(expr) = self.parse_expr() {
+                        self.expect(&Token::Semicolon);
+                        return Some(AstNode::ConstDecl {
+                            name: name.clone(),
+                            value: Box::new(expr),
+                        });
+                    }
                 }
             }
         }
