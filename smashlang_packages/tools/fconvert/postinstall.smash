@@ -1,0 +1,150 @@
+// postinstall.smash - Post-installation script for FConvert package
+
+// Import required modules
+import "fs";
+import "path";
+
+console.log("Running FConvert post-installation setup...");
+
+// Function to check if a command exists
+function commandExists(command) {
+  try {
+    const result = fs.execSync(`command -v ${command}`);
+    return result.toString().trim().length > 0;
+  } catch (error) {
+    return false;
+  }
+}
+
+// Create configuration directory and default config
+function setupConfig() {
+  try {
+    // Create config directory in user's home
+    const configDir = path.join(process.env.HOME, ".config", "fconvert");
+    const configFile = path.join(configDir, "config.json");
+    
+    // Create directory if it doesn't exist
+    if (!fs.existsSync(configDir)) {
+      fs.mkdirSync(configDir, { recursive: true });
+      console.log(`\u2713 Created configuration directory: ${configDir}`);
+    }
+    
+    // Create default configuration file if it doesn't exist
+    if (!fs.existsSync(configFile)) {
+      const defaultConfig = {
+        "version": "0.1.0",
+        "defaultOptions": {
+          "images": {
+            "quality": 90,
+            "resize": null
+          },
+          "documents": {
+            "template": "default",
+            "standalone": true
+          },
+          "audio": {
+            "bitrate": "192k",
+            "sampleRate": 44100
+          },
+          "video": {
+            "codec": "h264",
+            "crf": 23,
+            "preset": "medium"
+          }
+        },
+        "cacheEnabled": true,
+        "cacheDir": path.join(configDir, "cache"),
+        "logLevel": "info"
+      };
+      
+      // Write the config file
+      fs.writeFileSync(configFile, JSON.stringify(defaultConfig, null, 2));
+      console.log(`\u2713 Created default configuration file: ${configFile}`);
+      
+      // Create cache directory
+      if (!fs.existsSync(defaultConfig.cacheDir)) {
+        fs.mkdirSync(defaultConfig.cacheDir, { recursive: true });
+        console.log(`\u2713 Created cache directory: ${defaultConfig.cacheDir}`);
+      }
+    } else {
+      console.log(`\u2713 Configuration file already exists: ${configFile}`);
+    }
+    
+    return true;
+  } catch (error) {
+    console.error(`\u2717 Failed to set up configuration: ${error.message}`);
+    return false;
+  }
+}
+
+// Check for optional dependencies
+function checkOptionalDependencies() {
+  const optionalDeps = [
+    { name: 'Inkscape', command: 'inkscape', usedFor: 'SVG processing' },
+    { name: 'Ghostscript', command: 'gs', usedFor: 'PDF processing' },
+    { name: 'ExifTool', command: 'exiftool', usedFor: 'metadata handling' }
+  ];
+  
+  const available = [];
+  const missing = [];
+  
+  for (const dep of optionalDeps) {
+    if (commandExists(dep.command)) {
+      available.push(dep);
+    } else {
+      missing.push(dep);
+    }
+  }
+  
+  if (available.length > 0) {
+    console.log("\nDetected optional dependencies:");
+    for (const dep of available) {
+      console.log(`\u2713 ${dep.name} (${dep.command}): Available for ${dep.usedFor}`);
+    }
+  }
+  
+  if (missing.length > 0) {
+    console.log("\nOptional dependencies not found:");
+    for (const dep of missing) {
+      console.log(`\u2139 ${dep.name} (${dep.command}): Useful for ${dep.usedFor}`);
+    }
+    console.log("These dependencies are optional but can enhance FConvert's capabilities.");
+  }
+}
+
+// Print success message with usage examples
+function printSuccessMessage() {
+  console.log("\n\u2728 FConvert has been successfully installed! \u2728\n");
+  console.log("Quick Start Guide:");
+  console.log("  1. Convert an image:         fconvert image.jpg image.png");
+  console.log("  2. Convert a document:       fconvert document.md document.pdf");
+  console.log("  3. Convert audio:            fconvert audio.wav audio.mp3");
+  console.log("  4. Convert video:            fconvert video.mp4 video.webm");
+  console.log("  5. See all supported formats: fconvert --formats");
+  console.log("  6. Get help:                 fconvert --help\n");
+  
+  console.log("Configuration file: ~/.config/fconvert/config.json");
+  console.log("Documentation: https://github.com/profullstack/smashlang/packages/tools/fconvert\n");
+}
+
+// Main function
+function main() {
+  console.log("Setting up FConvert...");
+  
+  // Set up configuration
+  const configSetup = setupConfig();
+  if (!configSetup) {
+    console.warn("\u26a0 Configuration setup failed. Using default settings.");
+  }
+  
+  // Check for optional dependencies
+  checkOptionalDependencies();
+  
+  // Print success message
+  printSuccessMessage();
+  
+  console.log("Post-installation setup completed successfully.\n");
+}
+
+// Run the main function
+main();

@@ -1,0 +1,80 @@
+// postinstall.smash - Example post-installation script for SmashLang packages
+
+import "stdio/exec";
+import "fs";
+import "path";
+
+console.log("Running post-installation script...");
+
+// Example: Configure the installed package
+async function configurePackage() {
+  try {
+    // Create a default configuration file if it doesn't exist
+    const configDir = path.join(process.env.HOME, ".config", "package_name");
+    const configFile = path.join(configDir, "config.json");
+    
+    // Create config directory if it doesn't exist
+    if (!fs.existsSync(configDir)) {
+      await exec.exec(`mkdir -p ${configDir}`);
+      console.log(`\u2713 Created configuration directory: ${configDir}`);
+    }
+    
+    // Create default config file if it doesn't exist
+    if (!fs.existsSync(configFile)) {
+      const defaultConfig = {
+        "version": "1.0.0",
+        "theme": "default",
+        "autoUpdate": true,
+        "logLevel": "info"
+      };
+      
+      fs.writeFileSync(configFile, JSON.stringify(defaultConfig, null, 2));
+      console.log(`\u2713 Created default configuration file: ${configFile}`);
+    } else {
+      console.log(`\u2713 Configuration file already exists: ${configFile}`);
+    }
+  } catch (error) {
+    console.error(`\u2717 Failed to configure package: ${error}`);
+  }
+}
+
+// Example: Set up permissions or symlinks
+async function setupPermissions() {
+  try {
+    // Example: Make a script executable
+    await exec.exec("chmod +x ~/.local/bin/package_name");
+    console.log("\u2713 Set executable permissions");
+    
+    // Example: Create a symlink
+    await exec.exec("ln -sf ~/.local/lib/package_name/bin/cli.js ~/.local/bin/package_name-cli");
+    console.log("\u2713 Created symlink for CLI tool");
+  } catch (error) {
+    console.warn(`\u26a0 Failed to set up permissions: ${error}`);
+  }
+}
+
+// Example: Print installation success message
+function printSuccessMessage() {
+  console.log("\n\u2728 Package successfully installed! \u2728\n");
+  console.log("Getting started:");
+  console.log("  1. Run 'package_name --help' to see available commands");
+  console.log("  2. Check the documentation at https://example.com/docs");
+  console.log("  3. Join our community at https://example.com/community\n");
+}
+
+// Run post-installation tasks
+async function main() {
+  console.log("Performing post-installation setup...");
+  
+  await configurePackage();
+  await setupPermissions();
+  printSuccessMessage();
+  
+  console.log("Post-installation completed successfully.");
+}
+
+// Execute the main function
+main().catch(error => {
+  console.error("Post-installation failed:", error);
+  process.exit(1);
+});

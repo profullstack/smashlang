@@ -1,0 +1,55 @@
+// basic.smash - Basic usage example for FConvert
+
+import "fconvert";
+
+// Simple example showing basic file conversion
+console.log("FConvert Basic Example");
+console.log("======================\n");
+
+// Get list of supported formats
+const formats = fconvert.getFormats();
+console.log("Supported formats:");
+console.log("Image formats:", formats.image.join(", "));
+console.log("Document formats:", formats.document.join(", "));
+console.log("Audio formats:", formats.audio.join(", "));
+console.log("Video formats:", formats.video.join(", "));
+console.log("Data formats:", formats.data.join(", "));
+console.log();
+
+// Example 1: Convert PNG to JPEG
+console.log("Example 1: Converting PNG to JPEG");
+try {
+  fconvert.convert("example.png", "example.jpg");
+  console.log("✓ Conversion successful!\n");
+} catch (error) {
+  console.error("✗ Conversion failed:", error.message, "\n");
+}
+
+// Example 2: Convert with options
+console.log("Example 2: Converting with options");
+try {
+  fconvert.convert("document.md", "document.pdf", {
+    quality: "high",
+    pageSize: "a4",
+    margins: "1in"
+  });
+  console.log("✓ Conversion successful!\n");
+} catch (error) {
+  console.error("✗ Conversion failed:", error.message, "\n");
+}
+
+// Example 3: Using the Converter class
+console.log("Example 3: Using the Converter class");
+try {
+  const converter = new fconvert.Converter();
+  converter.setInputFile("audio.wav");
+  converter.setOutputFile("audio.mp3");
+  converter.setOption("bitrate", "320k");
+  converter.setOption("sampleRate", "44100");
+  converter.convert();
+  console.log("✓ Conversion successful!\n");
+} catch (error) {
+  console.error("✗ Conversion failed:", error.message, "\n");
+}
+
+console.log("All examples completed.");

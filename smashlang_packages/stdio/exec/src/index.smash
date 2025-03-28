@@ -1,0 +1,123 @@
+// stdio/exec/src/index.smash - Process execution utilities for SmashLang
+
+import "fs";
+import "path";
+
+/**
+ * Simple command execution - shorthand for executing commands
+ * @param {string} command - The command to execute
+ * @param {object} options - Options for execution (optional)
+ * @returns {Promise<string>} - A promise that resolves with stdout or rejects with stderr
+ */
+export default async function(command, options = {}) {
+  return await exec(command, options);
+}
+
+/**
+ * Execute a command asynchronously and return a Promise
+ * @param {string} command - The command to execute
+ * @param {object} options - Options for execution
+ * @param {string} options.cwd - Current working directory
+ * @param {object} options.env - Environment variables
+ * @param {number} options.timeout - Timeout in milliseconds
+ * @param {string} options.encoding - Output encoding (default: 'utf8')
+ * @param {boolean} options.shell - Whether to execute the command in a shell (default: true)
+ * @returns {Promise<string>} - A promise that resolves with stdout or rejects with stderr
+ */
+export function exec(command, options = {}) {
+  return new Promise((resolve, reject) => {
+    // Set default options
+    const defaultOptions = {
+      cwd: process.cwd(),
+      env: process.env,
+      encoding: 'utf8',
+      shell: true
+    };
+    
+    // Merge with provided options
+    const execOptions = { ...defaultOptions, ...options };
+    
+    // Execute the command
+    const childProcess = fs.spawn(command, execOptions);
+    
+    let stdout = '';
+    let stderr = '';
+    
+    // Collect stdout data
+    childProcess.stdout.on('data', (data) => {
+      stdout += data.toString(execOptions.encoding);
+    });
+    
+    // Collect stderr data
+    childProcess.stderr.on('data', (data) => {
+      stderr += data.toString(execOptions.encoding);
+    });
+    
+    // Handle process completion
+    childProcess.on('close', (code) => {
+      if (code === 0) {
+        resolve(stdout);
+      } else {
+        reject(stderr || `Process exited with code ${code}`);
+      }
+    });
+    
+    // Handle process errors
+    childProcess.on('error', (err) => {
+      reject(`Failed to execute command: ${err.message}`);
+    });
+    
+    // Handle timeout if specified
+    if (execOptions.timeout) {
+      setTimeout(() => {
+        childProcess.kill();
+        reject(`Command timed out after ${execOptions.timeout}ms`);
+      }, execOptions.timeout);
+    }
+  });
+}
+
+/**
+ * Execute a command synchronously and return the result
+ * @param {string} command - The command to execute
+ * @param {object} options - Options for execution
+ * @param {string} options.cwd - Current working directory
+ * @param {object} options.env - Environment variables
+ * @param {string} options.encoding - Output encoding (default: 'utf8')
+ * @param {boolean} options.shell - Whether to execute the command in a shell (default: true)
+ * @returns {string} - The stdout output from the command
+ * @throws {Error} - If the command fails
+ */
+export function execSync(command, options = {}) {
+  // Set default options
+  const defaultOptions = {
+    cwd: process.cwd(),
+    env: process.env,
+    encoding: 'utf8',
+    shell: true
+  };
+  
+  // Merge with provided options
+  const execOptions = { ...defaultOptions, ...options };
+  
+  try {
+    // Execute the command synchronously
+    const result = fs.spawnSync(command, execOptions);
+    
+    // Check for errors
+    if (result.error) {
+      throw new Error(`Failed to execute command: ${result.error.message}`);
+    }
+    
+    // Check exit code
+    if (result.status !== 0) {
+      const stderr = result.stderr ? result.stderr.toString(execOptions.encoding) : '';
+      throw new Error(stderr || `Process exited with code ${result.status}`);
+    }
+    
+    // Return stdout
+    return result.stdout.toString(execOptions.encoding);
+  } catch (error) {
+    throw new Error(`Command execution failed: ${error.message}`);
+  }
+}

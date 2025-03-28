@@ -43,10 +43,20 @@
     "pandoc -s README.md -o index.html --metadata title=\"$(grep -m 1 '^# ' README.md | sed 's/^# //g')\" --css=https://cdn.jsdelivr.net/npm/water.css@2/out/water.css --self-contained --include-in-header=\"<link rel=\\\"icon\\\" href=\\\"./assets/favicon.svg\\\" type=\\\"image/svg+xml\\\">\" || { echo \"WARNING: Failed to generate index.html\"; exit 0; }"
   ],
   
+  // Optional: Pre-installation script
+  "preinstall": [
+    "[ -f preinstall.smash ] && smash preinstall.smash || true"
+  ],
+  
   // Required: Installation steps
   "install": [
     "cp -r src/* #{prefix}/",
     "[ -f index.html ] && cp index.html #{prefix}/ || true"
+  ],
+  
+  // Optional: Post-installation script
+  "postinstall": [
+    "[ -f postinstall.smash ] && smash postinstall.smash || true"
   ],
   
   // Required: Validate package structure

@@ -1,0 +1,124 @@
+// preinstall.smash - Pre-installation script for FConvert package
+
+// Import required modules
+import "fs";
+
+console.log("Running FConvert pre-installation checks...");
+
+// Function to check if a command exists
+function commandExists(command) {
+  try {
+    const result = fs.execSync(`command -v ${command}`);
+    return result.toString().trim().length > 0;
+  } catch (error) {
+    return false;
+  }
+}
+
+// Check for required dependencies
+function checkDependencies() {
+  const dependencies = [
+    { name: 'ImageMagick', command: 'convert', usedFor: 'image conversion' },
+    { name: 'Pandoc', command: 'pandoc', usedFor: 'document conversion' },
+    { name: 'FFmpeg', command: 'ffmpeg', usedFor: 'audio and video conversion' }
+  ];
+  
+  const missing = [];
+  const installed = [];
+  
+  for (const dep of dependencies) {
+    if (commandExists(dep.command)) {
+      installed.push(dep);
+    } else {
+      missing.push(dep);
+    }
+  }
+  
+  // Print installed dependencies
+  if (installed.length > 0) {
+    console.log("\nDetected installed dependencies:");
+    for (const dep of installed) {
+      console.log(`✓ ${dep.name} (${dep.command}): Available for ${dep.usedFor}`);
+    }
+  }
+  
+  // Print missing dependencies and installation instructions
+  if (missing.length > 0) {
+    console.log("\nMissing required dependencies:");
+    for (const dep of missing) {
+      console.log(`✗ ${dep.name} (${dep.command}): Required for ${dep.usedFor}`);
+    }
+    
+    console.log("\nInstallation instructions:");
+    
+    // Detect OS for installation instructions
+    const isLinux = process.platform === 'linux';
+    const isMac = process.platform === 'darwin';
+    const isWindows = process.platform === 'win32';
+    
+    if (isLinux) {
+      // Try to detect Linux distribution
+      let isDebian = false;
+      let isFedora = false;
+      let isArch = false;
+      
+      try {
+        if (fs.existsSync('/etc/debian_version')) {
+          isDebian = true;
+        } else if (fs.existsSync('/etc/fedora-release')) {
+          isFedora = true;
+        } else if (fs.existsSync('/etc/arch-release')) {
+          isArch = true;
+        }
+      } catch (error) {
+        // Ignore errors in OS detection
+      }
+      
+      if (isDebian) {
+        console.log("Debian/Ubuntu:");
+        console.log("sudo apt-get install imagemagick pandoc ffmpeg");
+      } else if (isFedora) {
+        console.log("Fedora:");
+        console.log("sudo dnf install ImageMagick pandoc ffmpeg");
+      } else if (isArch) {
+        console.log("Arch Linux:");
+        console.log("sudo pacman -S imagemagick pandoc ffmpeg");
+      } else {
+        console.log("Linux (generic):");
+        console.log("Please use your distribution's package manager to install the missing dependencies.");
+      }
+    } else if (isMac) {
+      console.log("macOS (using Homebrew):");
+      console.log("brew install imagemagick pandoc ffmpeg");
+    } else if (isWindows) {
+      console.log("Windows:");
+      console.log("Please download and install the following:");
+      console.log("- ImageMagick: https://imagemagick.org/script/download.php");
+      console.log("- Pandoc: https://pandoc.org/installing.html");
+      console.log("- FFmpeg: https://ffmpeg.org/download.html");
+    } else {
+      console.log("Please install the missing dependencies for your operating system.");
+    }
+  }
+  
+  return missing.length === 0;
+}
+
+// Main function
+function main() {
+  console.log("Checking for required dependencies...");
+  
+  const allDependenciesInstalled = checkDependencies();
+  
+  if (allDependenciesInstalled) {
+    console.log("\n✓ All required dependencies are installed.");
+    console.log("Pre-installation checks completed successfully.\n");
+  } else {
+    console.log("\n⚠ Some dependencies are missing. FConvert will have limited functionality.");
+    console.log("Please install the missing dependencies for full functionality.\n");
+    // We don't exit with an error to allow installation to continue
+  }
+}
+
+// Run the main function
+main();

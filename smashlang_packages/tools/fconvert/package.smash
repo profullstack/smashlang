@@ -1,0 +1,92 @@
+// tools/fconvert/package.smash - File format conversion utility for SmashLang
+{
+  "name": "fconvert",
+  "version": "0.1.0",
+  "description": "A versatile file format conversion utility for SmashLang",
+  "license": "MIT",
+  "authors": [
+    "SmashLang Team"
+  ],
+  "maintainers": [
+    "@profullstack"
+  ],
+  "dependencies": [
+    "fs",
+    "path",
+    "stream"
+  ],
+  "url": "https://github.com/profullstack/smashlang/packages/tools/fconvert",
+  "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+  
+  // Required system dependencies
+  "native_dependencies": [
+    {
+      "name": "imagemagick",
+      "version": ">=6.0.0",
+      "debian": "imagemagick",
+      "fedora": "ImageMagick",
+      "arch": "imagemagick",
+      "macos": "imagemagick",
+      "windows": "imagemagick"
+    },
+    {
+      "name": "pandoc",
+      "version": ">=2.0.0",
+      "debian": "pandoc",
+      "fedora": "pandoc",
+      "arch": "pandoc",
+      "macos": "pandoc",
+      "windows": "pandoc"
+    },
+    {
+      "name": "ffmpeg",
+      "version": ">=4.0.0",
+      "debian": "ffmpeg",
+      "fedora": "ffmpeg",
+      "arch": "ffmpeg",
+      "macos": "ffmpeg",
+      "windows": "ffmpeg"
+    }
+  ],
+  
+  // Required: Validate package structure
+  "validate": [
+    "test -f assets/logo.svg || (test -f assets/logo.png && echo \"WARNING: Using PNG logo instead of preferred SVG format\") || (echo \"ERROR: Missing required logo file (assets/logo.svg or assets/logo.png)\" && exit 1)",
+    "test -f assets/favicon.svg || (test -f assets/favicon.png && echo \"WARNING: Using PNG favicon instead of preferred SVG format\") || (echo \"ERROR: Missing required favicon file (assets/favicon.svg or assets/favicon.png)\" && exit 1)",
+    "command -v convert >/dev/null 2>&1 || { echo \"ERROR: ImageMagick is required but not installed. Please install ImageMagick to use this package.\"; exit 1; }",
+    "command -v pandoc >/dev/null 2>&1 || { echo \"ERROR: Pandoc is required but not installed. Please install Pandoc to use this package.\"; exit 1; }",
+    "command -v ffmpeg >/dev/null 2>&1 || { echo \"ERROR: FFmpeg is required but not installed. Please install FFmpeg to use this package.\"; exit 1; }"
+  ],
+  
+  // Build steps
+  "build": [
+    "command -v pandoc >/dev/null 2>&1 || { echo \"WARNING: pandoc is not installed. Skipping index.html generation.\"; exit 0; }",
+    "pandoc -s README.md -o index.html --metadata title=\"$(grep -m 1 '^# ' README.md | sed 's/^# //g')\" --css=https://cdn.jsdelivr.net/npm/water.css@2/out/water.css --self-contained --include-in-header=\"<link rel=\\\"icon\\\" href=\\\"./assets/favicon.svg\\\" type=\\\"image/svg+xml\\\">\" || { echo \"WARNING: Failed to generate index.html\"; exit 0; }"
+  ],
+  
+  // Required: Installation steps
+  "install": [
+    "cp -r src/* #{prefix}/",
+    "[ -f index.html ] && cp index.html #{prefix}/ || true"
+  ],
+  
+  // Test commands
+  "test": [
+    "smash examples/basic.smash"
+  ],
+  
+  // Exported functions, classes, and objects
+  "exports": {
+    "convert": "fn convert(inputPath, outputPath, options) { /* Implementation */ }",
+    "getFormats": "fn getFormats() { /* Implementation */ }",
+    "Converter": "class Converter { /* Implementation */ }"
+  },
+  
+  // Example files
+  "examples": [
+    "examples/basic.smash",
+    "examples/image_conversion.smash",
+    "examples/document_conversion.smash",
+    "examples/audio_conversion.smash"
+  ]
+}

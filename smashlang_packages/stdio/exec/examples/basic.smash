@@ -1,0 +1,76 @@
+// basic.smash - Basic usage example for exec package
+
+// Import the default export for simple command execution
+import exec from "stdio/exec";
+// Import named exports for more specific usage
+import { exec as execNamed, execSync } from "stdio/exec";
+
+// Example of using the default export (simplest approach)
+async function runDefaultExample() {
+  console.log("Using default export (simplest approach)...");
+  
+  try {
+    // Execute a simple command with clean syntax
+    const output = await exec("ls -la");
+    console.log("Command output:");
+    console.log(output);
+    
+    // Execute with options
+    const homeOutput = await exec("ls -la", { cwd: "/home" });
+    console.log("\nCommand output from /home:");
+    console.log(homeOutput);
+    
+    // Execute with timeout
+    console.log("\nRunning command with timeout...");
+    const timeoutOutput = await exec("sleep 1 && echo 'Done sleeping'", { timeout: 2000 });
+    console.log(timeoutOutput);
+  } catch (error) {
+    console.error("Error executing command:", error);
+  }
+}
+
+// Example of using named exports
+async function runNamedExample() {
+  console.log("\nUsing named exports...");
+  
+  try {
+    // Execute a simple command using the named export
+    const output = await execNamed("ls -la");
+    console.log("Command output (using named export):");
+    console.log(output);
+  } catch (error) {
+    console.error("Error executing command:", error);
+  }
+}
+
+// Example of using execSync to run a command synchronously
+function runSyncExample() {
+  console.log("\nRunning command synchronously...");
+  
+  try {
+    // Execute a simple command
+    const output = execSync("ls -la");
+    console.log("Command output:");
+    console.log(output);
+    
+    // Execute with options
+    const homeOutput = execSync("ls -la", { cwd: "/home" });
+    console.log("\nCommand output from /home:");
+    console.log(homeOutput);
+  } catch (error) {
+    console.error("Error executing command:", error);
+  }
+}
+
+// Run the examples
+console.log("Exec Package - Basic Example\n");
+
+// Run all examples in sequence
+async function runAllExamples() {
+  await runDefaultExample();
+  await runNamedExample();
+  runSyncExample();
+  console.log("\nAll examples completed.");
+}
+
+runAllExamples();
