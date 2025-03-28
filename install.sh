@@ -656,6 +656,13 @@ main() {
     echo -e "${GREEN}SmashLang Upgrader - Target Version: $TARGET_VERSION${NC}"
   fi
   
+  # Debug output for command-line arguments
+  if [ "$USE_MASTER" = true ]; then
+    echo -e "${YELLOW}Debug: Using GitHub master branch for installation${NC}"
+  else
+    echo -e "${YELLOW}Debug: Using release packages for installation${NC}"
+  fi
+  
   # Detect operating system
   local os=$(detect_os)
   
@@ -764,5 +771,26 @@ generate_package_assets() {
   fi
 }
 
+# Check if this is a direct download from GitHub
+if [ -z "$DOWNLOADED_INSTALLER" ] && [ "$1" = "--master" ]; then
+  # This is a direct download and we want to use master branch
+  # Download the script to a temporary file and run it with the proper arguments
+  TEMP_SCRIPT="/tmp/smashlang_installer_$$.sh"
+  echo "Downloading installer script to temporary file..."
+  if command -v curl &> /dev/null; then
+    curl -fsSL "https://raw.githubusercontent.com/profullstack/smashlang/master/install.sh" > "$TEMP_SCRIPT"
+  else
+    wget -q -O "$TEMP_SCRIPT" "https://raw.githubusercontent.com/profullstack/smashlang/master/install.sh"
+  fi
+  chmod +x "$TEMP_SCRIPT"
+  
+  # Run the downloaded script with the --master flag and mark it as downloaded
+  DOWNLOADED_INSTALLER=true "$TEMP_SCRIPT" --master
+  
+  # Clean up
+  rm -f "$TEMP_SCRIPT"
+  exit 0
+fi
+
 # Run the main function
-main
+main "$@"
