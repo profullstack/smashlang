@@ -1,7 +1,7 @@
 # SmashLang Packages
 
 <p align="center">
-  <img src="https://raw.githubusercontent.com/smashlang/smashlang/main/assets/logo.svg" alt="SmashLang logo" width="200" />
+  <img src="https://raw.githubusercontent.com/smashlang/smashlang/master/assets/logo.svg" alt="SmashLang logo" width="200" />
 </p>
 
 ## Overview

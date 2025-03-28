@@ -52,10 +52,10 @@ Install SmashLang with a single command:
 
 ```bash
 # Using curl
-curl -fsSL https://raw.githubusercontent.com/profullstack/smashlang/main/install.sh | bash
+curl -fsSL https://raw.githubusercontent.com/profullstack/smashlang/master/install.sh | bash
 
 # Or using wget
-wget -O- https://raw.githubusercontent.com/profullstack/smashlang/main/install.sh | bash
+wget -O- https://raw.githubusercontent.com/profullstack/smashlang/master/install.sh | bash
 ```
 
 This will automatically:
