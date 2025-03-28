@@ -513,6 +513,41 @@ display_welcome() {
 
 # Main function
 main() {
+  # Parse command line arguments
+  COMMAND="install"
+  TARGET_VERSION="latest"
+  GENERATE_LOGOS=true
+
+  while [[ $# -gt 0 ]]; do
+    case $1 in
+      install)
+        COMMAND="install"
+        shift
+        ;;
+      upgrade)
+        COMMAND="upgrade"
+        shift
+        ;;
+      --version)
+        TARGET_VERSION="$2"
+        shift 2
+        ;;
+      --no-logos)
+        GENERATE_LOGOS=false
+        shift
+        ;;
+      -h|--help)
+        display_help
+        exit 0
+        ;;
+      *)
+        echo -e "${RED}Unknown option: $1${NC}"
+        display_help
+        exit 1
+        ;;
+    esac
+  done
+
   display_welcome
   
   if [[ "$COMMAND" == "install" ]]; then
@@ -548,6 +583,11 @@ main() {
         install_windows
         ;;
     esac
+    
+    # Generate package asset files after installation
+    if [ "$GENERATE_LOGOS" = true ]; then
+      generate_package_assets
+    fi
   else
     # Upgrade command
     case "$os" in
@@ -561,6 +601,65 @@ main() {
         upgrade_windows "$TARGET_VERSION"
         ;;
     esac
+    
+    # Generate package asset files after upgrade
+    if [ "$GENERATE_LOGOS" = true ]; then
+      generate_package_assets
+    fi
+  fi
+}
+
+# Display help message
+display_help() {
+  echo "Usage: ./install.sh [command] [options]"
+  echo "Commands:"
+  echo "  install         Install SmashLang (default)"
+  echo "  upgrade         Upgrade or downgrade SmashLang"
+  echo ""
+  echo "Options:"
+  echo "  --version VER   Specify version for upgrade (default: latest)"
+  echo "  --no-logos      Skip generation of package asset files (logo.txt, favicon.txt)"
+  echo "  --help, -h      Show this help message"
+}
+
+# Generate logo.txt and favicon.txt files for packages
+generate_package_assets() {
+  local script_dir=$(get_script_dir)
+  
+  # Generate logo.txt files
+  if [ -f "$script_dir/scripts/generate_package_logo.sh" ]; then
+    echo -e "${BLUE}Generating logo.txt files for packages...${NC}"
+    
+    # Make sure the script is executable
+    chmod +x "$script_dir/scripts/generate_package_logo.sh"
+    
+    # Update the package template logo.txt
+    "$script_dir/scripts/generate_package_logo.sh" --template
+    
+    # Generate logo.txt for all existing packages
+    "$script_dir/scripts/generate_package_logo.sh" --all
+    
+    echo -e "${GREEN}Package logo.txt files generated successfully.${NC}"
+  else
+    echo -e "${YELLOW}Warning: Package logo generator script not found. Skipping logo.txt generation.${NC}"
+  fi
+  
+  # Generate favicon.txt files
+  if [ -f "$script_dir/scripts/generate_favicon.sh" ]; then
+    echo -e "${BLUE}Generating favicon.txt files for packages...${NC}"
+    
+    # Make sure the script is executable
+    chmod +x "$script_dir/scripts/generate_favicon.sh"
+    
+    # Update the package template favicon.txt
+    "$script_dir/scripts/generate_favicon.sh" --template
+    
+    # Generate favicon.txt for all existing packages
+    "$script_dir/scripts/generate_favicon.sh" --all
+    
+    echo -e "${GREEN}Package favicon.txt files generated successfully.${NC}"
+  else
+    echo -e "${YELLOW}Warning: Package favicon generator script not found. Skipping favicon.txt generation.${NC}"
   fi
 }
 
