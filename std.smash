@@ -1,0 +1,21 @@
+// Standard operator overrides
+fn __add__(a, b) {
+    return a + b;
+}
+
+fn __sub__(a, b) {
+    return a - b;
+}
+
+fn __mul__(a, b) {
+    return a * b;
+}
+
+fn __div__(a, b) {
+    return a / b;
+}
+
+// Core utility
+fn print(x) {
+    return x; // placeholder for native print
+}

@@ -1,0 +1,12 @@
+let x = [1, 2, 3];
+let user = {
+    name: "chovy",
+    age: 33,
+};
+
+let message = "Hello, SmashLang!";
+let year = 2025;
+let pi = 3.14;
+let active = true;
+
+let pattern = /smash.*/;
