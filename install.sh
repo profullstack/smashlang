@@ -33,35 +33,9 @@ LINUX_PACKAGES_DIR="$HOME/.local/share/smashlang/packages"
 MACOS_PACKAGES_DIR="$HOME/Library/Application Support/SmashLang/packages"
 WINDOWS_PACKAGES_DIR="$HOME/AppData/Local/SmashLang/packages"
 
-# Command line arguments
-COMMAND="install"
-TARGET_VERSION="$DEFAULT_VERSION"
-USE_MASTER=false
-
-if [[ "$1" == "upgrade" ]]; then
-  COMMAND="upgrade"
-  shift
-  
-  # Check for version flag
-  if [[ "$1" == "--version" && -n "$2" ]]; then
-    TARGET_VERSION="$2"
-    shift 2
-  fi
-elif [[ "$1" == "--master" ]]; then
-  USE_MASTER=true
-  shift
-elif [[ "$1" == "--help" || "$1" == "-h" ]]; then
-  echo "Usage: ./install.sh [command] [options]"
-  echo "Commands:"
-  echo "  install         Install SmashLang (default)"
-  echo "  upgrade         Upgrade or downgrade SmashLang"
-  echo ""
-  echo "Options:"
-  echo "  --version VER   Specify version for upgrade (default: latest)"
-  echo "  --master        Use GitHub master branch instead of releases"
-  echo "  --help, -h      Show this help message"
-  exit 0
-fi
+# Default values for command line arguments
+DEFAULT_COMMAND="install"
+DEFAULT_USE_MASTER=false
 
 # Detect operating system
 detect_os() {
@@ -638,6 +612,7 @@ main() {
   COMMAND="install"
   TARGET_VERSION="latest"
   GENERATE_LOGOS=true
+  USE_MASTER=false
 
   while [[ $# -gt 0 ]]; do
     case $1 in
@@ -652,6 +627,10 @@ main() {
       --version)
         TARGET_VERSION="$2"
         shift 2
+        ;;
+      --master)
+        USE_MASTER=true
+        shift
         ;;
       --no-logos)
         GENERATE_LOGOS=false
@@ -739,6 +718,7 @@ display_help() {
   echo ""
   echo "Options:"
   echo "  --version VER   Specify version for upgrade (default: latest)"
+  echo "  --master        Use GitHub master branch instead of releases"
   echo "  --no-logos      Skip generation of package asset files (logo.txt, favicon.txt)"
   echo "  --help, -h      Show this help message"
 }
