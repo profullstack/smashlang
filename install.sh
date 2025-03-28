@@ -127,7 +127,10 @@ install_linux() {
       chmod +x "$LINUX_INSTALL_DIR/smash"
     else
       echo -e "${YELLOW}Warning: smash binary not found in repository, creating placeholder...${NC}"
-      echo '#!/bin/bash\necho "SmashLang v0.1.0-dev (placeholder)"' > "$LINUX_INSTALL_DIR/smash"
+      cat > "$LINUX_INSTALL_DIR/smash" << 'EOF'
+#!/bin/bash
+echo "SmashLang v0.1.0-dev (placeholder)"
+EOF
       chmod +x "$LINUX_INSTALL_DIR/smash"
     fi
     
@@ -136,7 +139,10 @@ install_linux() {
       chmod +x "$LINUX_INSTALL_DIR/smashpkg"
     else
       echo -e "${YELLOW}Warning: smashpkg binary not found in repository, creating placeholder...${NC}"
-      echo '#!/bin/bash\necho "SmashLang Package Manager v0.1.0-dev (placeholder)"' > "$LINUX_INSTALL_DIR/smashpkg"
+      cat > "$LINUX_INSTALL_DIR/smashpkg" << 'EOF'
+#!/bin/bash
+echo "SmashLang Package Manager v0.1.0-dev (placeholder)"
+EOF
       chmod +x "$LINUX_INSTALL_DIR/smashpkg"
     fi
     
@@ -209,7 +215,10 @@ install_macos() {
       chmod +x "$MACOS_INSTALL_DIR/smash"
     else
       echo -e "${YELLOW}Warning: smash binary not found in repository, creating placeholder...${NC}"
-      echo '#!/bin/bash\necho "SmashLang v0.1.0-dev (placeholder)"' > "$MACOS_INSTALL_DIR/smash"
+      cat > "$MACOS_INSTALL_DIR/smash" << 'EOF'
+#!/bin/bash
+echo "SmashLang v0.1.0-dev (placeholder)"
+EOF
       chmod +x "$MACOS_INSTALL_DIR/smash"
     fi
     
@@ -218,7 +227,10 @@ install_macos() {
       chmod +x "$MACOS_INSTALL_DIR/smashpkg"
     else
       echo -e "${YELLOW}Warning: smashpkg binary not found in repository, creating placeholder...${NC}"
-      echo '#!/bin/bash\necho "SmashLang Package Manager v0.1.0-dev (placeholder)"' > "$MACOS_INSTALL_DIR/smashpkg"
+      cat > "$MACOS_INSTALL_DIR/smashpkg" << 'EOF'
+#!/bin/bash
+echo "SmashLang Package Manager v0.1.0-dev (placeholder)"
+EOF
       chmod +x "$MACOS_INSTALL_DIR/smashpkg"
     fi
     
@@ -290,14 +302,20 @@ install_windows() {
       cp "$temp_dir/bin/smash.exe" "$WINDOWS_INSTALL_DIR/"
     else
       echo -e "${YELLOW}Warning: smash.exe binary not found in repository, creating placeholder...${NC}"
-      echo '@echo off\necho SmashLang v0.1.0-dev (placeholder)' > "$WINDOWS_INSTALL_DIR/smash.bat"
+      cat > "$WINDOWS_INSTALL_DIR/smash.bat" << 'EOF'
+@echo off
+echo SmashLang v0.1.0-dev (placeholder)
+EOF
     fi
     
     if [ -f "$temp_dir/bin/smashpkg.exe" ]; then
       cp "$temp_dir/bin/smashpkg.exe" "$WINDOWS_INSTALL_DIR/"
     else
       echo -e "${YELLOW}Warning: smashpkg.exe binary not found in repository, creating placeholder...${NC}"
-      echo '@echo off\necho SmashLang Package Manager v0.1.0-dev (placeholder)' > "$WINDOWS_INSTALL_DIR/smashpkg.bat"
+      cat > "$WINDOWS_INSTALL_DIR/smashpkg.bat" << 'EOF'
+@echo off
+echo SmashLang Package Manager v0.1.0-dev (placeholder)
+EOF
     fi
     
     # Copy packages from the repository
