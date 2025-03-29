@@ -60,6 +60,23 @@ pub enum AstNode {
     Block(Vec<AstNode>),  // Block-level scope { ... }
     Return(Box<AstNode>),
     
+    // Error handling
+    Try {
+        body: Vec<AstNode>,
+        catch_param: Option<String>,
+        catch_body: Vec<AstNode>,
+        finally_body: Option<Vec<AstNode>>,
+    },
+    Throw(Box<AstNode>),
+    NewExpr {
+        constructor: String,
+        args: Vec<AstNode>,
+    },
+    
+    // Loop control
+    Break,
+    Continue,
+    
     // Modules
     Import(String),
 }
@@ -174,6 +191,10 @@ impl Parser {
             Some(Token::Let) => self.parse_let(),
             Some(Token::Fn) => self.parse_function(),
             Some(Token::Return) => self.parse_return(),
+            Some(Token::Try) => self.parse_try_catch(),
+            Some(Token::Throw) => self.parse_throw(),
+            Some(Token::Break) => self.parse_break(),
+            Some(Token::Continue) => self.parse_continue(),
             Some(Token::LBrace) => self.parse_block(),
             Some(_) => self.parse_expr().map(Some),
             None => Ok(None),
@@ -505,7 +526,208 @@ impl Parser {
         
         Ok(Some(AstNode::Return(Box::new(expr))))
     }
+    
+    fn parse_throw(&mut self) -> ParseResult<Option<AstNode>> {
+        // Consume the throw keyword
+        self.advance(); // throw
+        
+        // Parse the expression being thrown
+        let expr = self.parse_expr()?;
+        
+        // Expect semicolon
+        self.expect(&Token::Semicolon)?;
+        
+        Ok(Some(AstNode::Throw(Box::new(expr))))
+    }
+    
+    fn parse_break(&mut self) -> ParseResult<Option<AstNode>> {
+        // Consume the break keyword
+        self.advance(); // break
+        
+        // Expect semicolon
+        self.expect(&Token::Semicolon)?;
+        
+        Ok(Some(AstNode::Break))
+    }
+    
+    fn parse_continue(&mut self) -> ParseResult<Option<AstNode>> {
+        // Consume the continue keyword
+        self.advance(); // continue
+        
+        // Expect semicolon
+        self.expect(&Token::Semicolon)?;
+        
+        Ok(Some(AstNode::Continue))
+    }
+    
+    fn parse_try_catch(&mut self) -> ParseResult<Option<AstNode>> {
+        // Consume the try keyword
+        self.advance(); // try
+        
+        // Parse the try block
+        let try_body = if let Some(Token::LBrace) = self.peek() {
+            self.advance(); // {
+            
+            let mut statements = Vec::new();
+            
+            while let Some(token) = self.peek() {
+                if *token == Token::RBrace {
+                    break;
+                }
+                
+                if let Some(stmt) = self.parse_statement()? {
+                    statements.push(stmt);
+                }
+            }
+            
+            // Consume the closing brace
+            self.expect(&Token::RBrace)?;
+            
+            statements
+        } else {
+            return Err(ParseError::new("Expected block after try keyword", self.pos));
+        };
+        
+        // Parse the catch block (if present)
+        let (catch_param, catch_body) = if let Some(Token::Catch) = self.peek() {
+            self.advance(); // catch
+            
+            // Parse catch parameter (if present)
+            let param = if let Some(Token::LParen) = self.peek() {
+                self.advance(); // (
+                
+                let param_name = if let Some(Token::Identifier(name)) = self.peek().cloned() {
+                    self.advance(); // identifier
+                    Some(name)
+                } else {
+                    return Err(ParseError::new("Expected identifier in catch clause", self.pos));
+                };
+                
+                self.expect(&Token::RParen)?;
+                param_name
+            } else {
+                None
+            };
+            
+            // Parse catch block
+            let catch_body = if let Some(Token::LBrace) = self.peek() {
+                self.advance(); // {
+                
+                let mut statements = Vec::new();
+                
+                while let Some(token) = self.peek() {
+                    if *token == Token::RBrace {
+                        break;
+                    }
+                    
+                    if let Some(stmt) = self.parse_statement()? {
+                        statements.push(stmt);
+                    }
+                }
+                
+                // Consume the closing brace
+                self.expect(&Token::RBrace)?;
+                
+                statements
+            } else {
+                return Err(ParseError::new("Expected block after catch keyword", self.pos));
+            };
+            
+            (param, catch_body)
+        } else {
+            return Err(ParseError::new("Expected catch after try block", self.pos));
+        };
+        
+        // Parse the finally block (if present)
+        let finally_body = if let Some(Token::Finally) = self.peek() {
+            self.advance(); // finally
+            
+            if let Some(Token::LBrace) = self.peek() {
+                self.advance(); // {
+                
+                let mut statements = Vec::new();
+                
+                while let Some(token) = self.peek() {
+                    if *token == Token::RBrace {
+                        break;
+                    }
+                    
+                    if let Some(stmt) = self.parse_statement()? {
+                        statements.push(stmt);
+                    }
+                }
+                
+                // Consume the closing brace
+                self.expect(&Token::RBrace)?;
+                
+                Some(statements)
+            } else {
+                return Err(ParseError::new("Expected block after finally keyword", self.pos));
+            }
+        } else {
+            None
+        };
+        
+        Ok(Some(AstNode::Try {
+            body: try_body,
+            catch_param,
+            catch_body,
+            finally_body,
+        }))
+    }
 
+    fn parse_new_expr(&mut self) -> ParseResult<AstNode> {
+        self.advance(); // consume 'new'
+        
+        // Parse constructor name
+        let constructor = if let Some(Token::Identifier(name)) = self.peek().cloned() {
+            self.advance(); // consume constructor name
+            name
+        } else {
+            return Err(ParseError::new("Expected class name after 'new'", self.pos));
+        };
+        
+        // Parse constructor arguments
+        let args = if let Some(Token::LParen) = self.peek() {
+            self.advance(); // consume '('
+            
+            let mut args = Vec::new();
+            
+            // Handle empty argument list
+            if let Some(Token::RParen) = self.peek() {
+                self.advance(); // consume ')'
+                args
+            } else {
+                // Parse arguments
+                loop {
+                    let arg = self.parse_expr()?;
+                    args.push(arg);
+                    
+                    match self.peek() {
+                        Some(Token::Comma) => {
+                            self.advance(); // consume ','
+                        }
+                        Some(Token::RParen) => {
+                            self.advance(); // consume ')'
+                            break;
+                        }
+                        _ => return Err(ParseError::new("Expected ',' or ')'", self.pos)),
+                    }
+                }
+                
+                args
+            }
+        } else {
+            // No arguments
+            Vec::new()
+        };
+        
+        Ok(AstNode::NewExpr {
+            constructor,
+            args,
+        })
+    }
+    
     fn parse_expr(&mut self) -> ParseResult<AstNode> {
         // Handle pre-increment and pre-decrement operators
         if let Some(token) = self.peek() {
@@ -519,6 +741,9 @@ impl Parser {
                     self.advance(); // consume --
                     let expr = self.parse_primary()?;
                     return Ok(AstNode::PreDecrement(Box::new(expr)));
+                },
+                Token::New => {
+                    return self.parse_new_expr();
                 },
                 _ => {}
             }

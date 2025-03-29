@@ -7,6 +7,17 @@ pub enum Token {
     Return,
     Import,
     
+    // Error handling keywords
+    Try,
+    Catch,
+    Finally,
+    Throw,
+    New,
+    
+    // Loop control keywords
+    Break,
+    Continue,
+    
     // Literals
     Identifier(String),
     Number(i64),
@@ -307,6 +318,13 @@ pub fn tokenize(input: &str) -> Vec<Token> {
                     "return" => tokens.push(Token::Return),
                     "const" => tokens.push(Token::Const),
                     "import" => tokens.push(Token::Import),
+                    "try" => tokens.push(Token::Try),
+                    "catch" => tokens.push(Token::Catch),
+                    "finally" => tokens.push(Token::Finally),
+                    "throw" => tokens.push(Token::Throw),
+                    "new" => tokens.push(Token::New),
+                    "break" => tokens.push(Token::Break),
+                    "continue" => tokens.push(Token::Continue),
                     "true" => tokens.push(Token::Bool(true)),
                     "false" => tokens.push(Token::Bool(false)),
                     "null" => tokens.push(Token::Null),
