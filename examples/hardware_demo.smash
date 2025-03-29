@@ -5,7 +5,7 @@
 import { camera, microphone, screen, devices } from "hardware";
 
 // Main function to demonstrate hardware capabilities
-async function main() {
+async fn main() {
   console.log("SmashLang Hardware Interfaces Demo");
   console.log("====================================\n");
   
@@ -28,7 +28,7 @@ async function main() {
 }
 
 // Check hardware availability
-async function checkAvailability() {
+async fn checkAvailability() {
   console.log("Checking hardware availability...");
   
   const cameraAvailable = await camera.isAvailable();
@@ -44,7 +44,7 @@ async function checkAvailability() {
 }
 
 // Camera demo
-async function cameraDemo() {
+async fn cameraDemo() {
   console.log("Camera Demo");
   console.log("-----------");
   
@@ -137,7 +137,7 @@ async function cameraDemo() {
 }
 
 // Microphone demo
-async function microphoneDemo() {
+async fn microphoneDemo() {
   console.log("Microphone Demo");
   console.log("---------------");
   
@@ -221,7 +221,7 @@ async function microphoneDemo() {
 }
 
 // Screen recording demo
-async function screenDemo() {
+async fn screenDemo() {
   console.log("Screen Recording Demo");
   console.log("---------------------");
   
@@ -306,7 +306,7 @@ async function screenDemo() {
 }
 
 // Device management demo
-async function devicesDemo() {
+async fn devicesDemo() {
   console.log("Device Management Demo");
   console.log("----------------------");
   
@@ -419,7 +419,7 @@ async function devicesDemo() {
 }
 
 // Helper function to sleep for a specified duration
-async function sleep(ms) {
+async fn sleep(ms) {
   return new Promise(resolve => setTimeout(resolve, ms));
 }
 

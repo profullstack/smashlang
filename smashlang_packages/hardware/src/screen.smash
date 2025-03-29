@@ -21,7 +21,7 @@ export const DisplayServer = {
  * Get the current display server type (Linux-specific)
  * @returns {string} Display server type ('x11', 'wayland', or 'unknown')
  */
-export function getDisplayServer() {
+export fn getDisplayServer() {
   // Only relevant on Linux
   if (std.platform.os !== 'linux') {
     return DisplayServer.UNKNOWN;

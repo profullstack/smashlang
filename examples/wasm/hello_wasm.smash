@@ -4,17 +4,17 @@
 import { console } from 'stdio';
 
 // A simple function that adds two numbers
-export function add(a: number, b: number): number {
+export fn add(a: number, b: number): number {
   return a + b;
 }
 
 // A function that returns a greeting string
-export function greet(name: string): string {
+export fn greet(name: string): string {
   return `Hello, ${name} from SmashLang WASM!`;
 }
 
 // Main function that runs when the module is loaded
-export function main(): void {
+export fn main(): void {
   console.log('SmashLang WASM module initialized');
   
   // These functions will be callable from JavaScript

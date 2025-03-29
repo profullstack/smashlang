@@ -1,0 +1,106 @@
+// fix_syntax.smash - Script to fix SmashLang syntax across the codebase
+
+import { readFile, writeFile, readdir } from 'std/fs';
+import { join, resolve } from 'std/path';
+import { exit } from 'std/process';
+
+// Get command line arguments
+const args = std.process.args();
+
+// Track statistics
+let stats = {
+  filesScanned: 0,
+  filesModified: 0,
+  functionReplacements: 0
+};
+
+// Process a single file
+async fn processFile(filePath) {
+  try {
+    // Read file content
+    const content = await readFile(filePath, 'utf8');
+    
+    // Skip files that are in node_modules or dist directories
+    if (filePath.includes('node_modules') || filePath.includes('dist')) {
+      return;
+    }
+    
+    stats.filesScanned++;
+    
+    // Replace 'function' with 'fn' but only for function declarations
+    // This regex looks for 'function' followed by a space and then a function name
+    const functionRegex = /\b(async\s+)?function\s+([a-zA-Z0-9_$]+)\s*\(/g;
+    const exportFunctionRegex = /\bexport\s+(async\s+)?function\s+([a-zA-Z0-9_$]+)\s*\(/g;
+    
+    // Count occurrences before replacement
+    const functionMatches = (content.match(functionRegex) || []).length;
+    const exportFunctionMatches = (content.match(exportFunctionRegex) || []).length;
+    const totalMatches = functionMatches + exportFunctionMatches;
+    
+    if (totalMatches > 0) {
+      // Replace function declarations
+      let newContent = content.replace(functionRegex, '$1fn $2(');
+      newContent = newContent.replace(exportFunctionRegex, 'export $1fn $2(');
+      
+      // Write the modified content back to the file
+      await writeFile(filePath, newContent, 'utf8');
+      
+      stats.filesModified++;
+      stats.functionReplacements += totalMatches;
+      
+      console.log(`Modified ${filePath}: replaced ${totalMatches} function declarations`);
+    }
+  } catch (error) {
+    console.error(`Error processing file ${filePath}:`, error);
+  }
+}
+
+// Process all .smash files in a directory recursively
+async fn processDirectory(dirPath) {
+  try {
+    const entries = await readdir(dirPath, { withFileTypes: true });
+    
+    for (const entry of entries) {
+      const fullPath = join(dirPath, entry.name);
+      
+      if (entry.isDirectory()) {
+        // Skip node_modules and dist directories
+        if (entry.name !== 'node_modules' && entry.name !== 'dist') {
+          await processDirectory(fullPath);
+        }
+      } else if (entry.name.endsWith('.smash')) {
+        await processFile(fullPath);
+      }
+    }
+  } catch (error) {
+    console.error(`Error processing directory ${dirPath}:`, error);
+  }
+}
+
+// Main function
+async fn main() {
+  console.log('Starting SmashLang syntax fixer...');
+  
+  // Determine the root directory to scan
+  const rootDir = args.length > 0 ? args[0] : '.';
+  const absoluteRootDir = resolve(rootDir);
+  
+  console.log(`Scanning directory: ${absoluteRootDir}`);
+  
+  // Process all files recursively
+  await processDirectory(absoluteRootDir);
+  
+  // Print summary
+  console.log('\nSummary:');
+  console.log(`Files scanned: ${stats.filesScanned}`);
+  console.log(`Files modified: ${stats.filesModified}`);
+  console.log(`Function declarations replaced: ${stats.functionReplacements}`);
+  
+  console.log('\nDone!');
+}
+
+// Run the main function
+main().catch(error => {
+  console.error('Error:', error);
+  exit(1);
+});

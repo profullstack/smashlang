@@ -128,7 +128,7 @@ export const MouseButton = {
  * @param {string} deviceType - Type of input device to check
  * @returns {Promise<boolean>} Promise resolving to true if the device is available
  */
-export async function isAvailable(deviceType) {
+export async fn isAvailable(deviceType) {
   try {
     return await __native_input_is_available(deviceType);
   } catch (error) {
@@ -142,7 +142,7 @@ export async function isAvailable(deviceType) {
  * @param {string[]} deviceTypes - Array of device types to register for
  * @returns {Promise<string>} Promise resolving to a registration ID
  */
-export async function registerEvents(deviceTypes) {
+export async fn registerEvents(deviceTypes) {
   try {
     return await __native_input_register_events(JSON.stringify(deviceTypes));
   } catch (error) {
@@ -155,7 +155,7 @@ export async function registerEvents(deviceTypes) {
  * @param {string} registrationId - Registration ID from registerEvents
  * @returns {Promise<boolean>} Promise resolving to true if successful
  */
-export async function unregisterEvents(registrationId) {
+export async fn unregisterEvents(registrationId) {
   try {
     return await __native_input_unregister_events(registrationId);
   } catch (error) {
@@ -168,7 +168,7 @@ export async function unregisterEvents(registrationId) {
  * @param {InputEvent} event - Event to simulate
  * @returns {Promise<boolean>} Promise resolving to true if successful
  */
-export async function simulateInput(event) {
+export async fn simulateInput(event) {
   try {
     return await __native_input_simulate_input(JSON.stringify(event));
   } catch (error) {
@@ -180,7 +180,7 @@ export async function simulateInput(event) {
  * Get current keyboard state
  * @returns {Promise<Object>} Promise resolving to an object mapping key codes to boolean states
  */
-export async function getKeyboardState() {
+export async fn getKeyboardState() {
   try {
     const stateJson = await __native_input_get_keyboard_state();
     return JSON.parse(stateJson);
@@ -193,7 +193,7 @@ export async function getKeyboardState() {
  * Get current mouse position
  * @returns {Promise<{x: number, y: number}>} Promise resolving to the current mouse coordinates
  */
-export async function getMousePosition() {
+export async fn getMousePosition() {
   try {
     const positionJson = await __native_input_get_mouse_position();
     return JSON.parse(positionJson);
@@ -206,7 +206,7 @@ export async function getMousePosition() {
  * Get current touch points
  * @returns {Promise<TouchPoint[]>} Promise resolving to an array of active touch points
  */
-export async function getTouchPoints() {
+export async fn getTouchPoints() {
   try {
     const pointsJson = await __native_input_get_touch_points();
     return JSON.parse(pointsJson);
