@@ -1,0 +1,66 @@
+// SmashLang JSON Module (std/json.smash)
+// Provides JSON parsing and serialization functionality similar to JavaScript
+
+// JSON parsing function
+// Converts a JSON string into a SmashLang object
+fn parse(text) {
+    if (typeof text !== 'string') {
+        throw new TypeError('JSON.parse: argument must be a string');
+    }
+    
+    // Use native implementation for performance
+    return __native_json_parse(text);
+}
+
+// JSON serialization function
+// Converts a SmashLang object into a JSON string
+fn stringify(value, replacer = null, space = null) {
+    // Use native implementation for performance
+    return __native_json_stringify(value, replacer, space);
+}
+
+// Asynchronous JSON parsing for large data
+// Returns a Promise that resolves to the parsed object
+async fn parseAsync(text) {
+    if (typeof text !== 'string') {
+        throw new TypeError('JSON.parseAsync: argument must be a string');
+    }
+    
+    // For very large JSON strings, we might want to parse in chunks
+    // or on a separate thread, but for now we'll just use the synchronous version
+    return parse(text);
+}
+
+// JSON validation function
+// Returns true if the string is valid JSON, false otherwise
+fn isValid(text) {
+    if (typeof text !== 'string') {
+        return false;
+    }
+    
+    try {
+        parse(text);
+        return true;
+    } catch (e) {
+        return false;
+    }
+}
+
+// Export individual functions and the JSON object
+export {
+    parse,
+    stringify,
+    parseAsync,
+    isValid
+};
+
+// Export a global JSON object that mimics JavaScript's global JSON object
+const JSON = {
+    parse,
+    stringify,
+    parseAsync,
+    isValid
+};
+
+// Make JSON available globally
+global.JSON = JSON;
