@@ -226,7 +226,9 @@ impl Parser {
     fn parse_function(&mut self) -> ParseResult<Option<AstNode>> {
         self.advance(); // consume fn
         
-        if let Some(Token::Identifier(name)) = self.advance() {
+        // Clone the token to avoid borrowing issues
+        let name_token = self.advance().cloned();
+        if let Some(Token::Identifier(name)) = name_token {
             self.expect(&Token::LParen)?;
             
             let mut params = Vec::new();
@@ -236,8 +238,10 @@ impl Parser {
                 self.advance(); // consume )
             } else {
                 loop {
-                    if let Some(Token::Identifier(param)) = self.advance() {
-                        params.push(param.clone());
+                    // Clone the token to avoid borrowing issues
+                    let param_token = self.advance().cloned();
+                    if let Some(Token::Identifier(param)) = param_token {
+                        params.push(param);
                     } else {
                         return Err(ParseError::new("Expected parameter name", self.pos));
                     }
@@ -270,7 +274,7 @@ impl Parser {
             self.expect(&Token::RBrace)?;
             
             Ok(Some(AstNode::Function {
-                name: name.clone(),
+                name: name,
                 params,
                 body,
             }))
@@ -384,31 +388,52 @@ impl Parser {
     }
 
     fn parse_primary(&mut self) -> ParseResult<AstNode> {
-        if let Some(tok) = self.advance() {
+        let token = self.advance().cloned();
+        if let Some(tok) = token {
             match tok {
-                Token::Number(n) => Ok(AstNode::Number(*n)),
-                Token::Float(f) => Ok(AstNode::Float(*f)),
-                Token::String(s) => Ok(AstNode::String(s.clone())),
-                Token::Bool(b) => Ok(AstNode::Boolean(*b)),
+                Token::Number(n) => Ok(AstNode::Number(n)),
+                Token::Float(f) => Ok(AstNode::Float(f)),
+                Token::String(s) => Ok(AstNode::String(s)),
+                Token::Bool(b) => Ok(AstNode::Boolean(b)),
                 Token::Null => Ok(AstNode::Null),
                 Token::Identifier(name) => {
+                    // Clone the name to avoid borrowing issues
+                    let name_clone = name.clone();
+                    
                     // Check if this is a function call
-                    if let Some(Token::LParen) = self.peek() {
+                    let is_function_call = if let Some(Token::LParen) = self.peek() {
+                        true
+                    } else {
+                        false
+                    };
+                    
+                    if is_function_call {
                         self.advance(); // consume (
                         
                         let mut args = Vec::new();
                         
                         // Parse arguments
-                        if let Some(Token::RParen) = self.peek() {
+                        let has_args = if let Some(Token::RParen) = self.peek() {
+                            false
+                        } else {
+                            true
+                        };
+                        
+                        if !has_args {
                             self.advance(); // consume )
                         } else {
                             loop {
                                 let arg = self.parse_expr()?;
                                 args.push(arg);
                                 
-                                if let Some(Token::Comma) = self.peek() {
+                                let has_more_args = if let Some(Token::Comma) = self.peek() {
                                     self.advance(); // consume ,
+                                    true
                                 } else {
+                                    false
+                                };
+                                
+                                if !has_more_args {
                                     break;
                                 }
                             }
@@ -417,12 +442,12 @@ impl Parser {
                         }
                         
                         Ok(AstNode::FunctionCall {
-                            name: name.clone(),
+                            name: name_clone,
                             args,
                         })
                     } else {
                         // Check for compound assignment operators
-                        let mut expr = AstNode::Identifier(name.clone());
+                        let expr = AstNode::Identifier(name_clone);
                         
                         if let Some(token) = self.peek() {
                             match token {
@@ -505,18 +530,24 @@ impl Parser {
                         self.advance(); // consume }
                     } else {
                         loop {
-                            if let Some(Token::Identifier(key)) = self.advance() {
+                            let key_token = self.advance().cloned();
+                            if let Some(Token::Identifier(key)) = key_token {
                                 self.expect(&Token::Colon)?;
                                 
                                 let value = self.parse_expr()?;
-                                properties.insert(key.clone(), value);
+                                properties.insert(key, value);
                             } else {
                                 return Err(ParseError::new("Expected property name", self.pos));
                             }
                             
-                            if let Some(Token::Comma) = self.peek() {
+                            let has_more_props = if let Some(Token::Comma) = self.peek() {
                                 self.advance(); // consume ,
+                                true
                             } else {
+                                false
+                            };
+                            
+                            if !has_more_props {
                                 break;
                             }
                         }

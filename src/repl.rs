@@ -39,6 +39,7 @@ impl Scope {
         self.variables.insert(name.to_string(), value);
     }
     
+    #[allow(dead_code)]
     fn has_own(&self, name: &str) -> bool {
         self.variables.contains_key(name)
     }
@@ -78,13 +79,6 @@ impl Repl {
     pub fn run(&mut self) {
         println!("{}", "SmashLang REPL v0.1.0".bright_cyan().bold());
         println!("Type {} for available commands or {} to quit", ".help".green(), ".exit".red());
-        println!("New operators: {}, {}, {}, {}, {}, {}", "++".yellow(), "--".yellow(), "+=".yellow(), "-=".yellow(), "*=".yellow(), "/=".yellow());
-
-        // Add some example variables to demonstrate operators
-        self.global_scope.set("counter", Value::Number(0));
-        self.global_scope.set("value", Value::Number(10));
-        
-        println!("Example variables: {} = 0, {} = 10", "counter".yellow(), "value".yellow());
 
         loop {
             print!("{} ", ">".bright_green());
@@ -194,19 +188,14 @@ impl Repl {
                 println!("{}: {:?}", "Parsed AST".bright_green(), ast);
                 
                 // Simple evaluation of the AST for demonstration purposes
-                // We need to handle Vec<AstNode> differently than a single AstNode
-                let result = if let AstNode::Block(statements) = &ast {
-                    let mut last_result = Ok(Value::Null);
-                    for stmt in statements {
-                        last_result = self.evaluate_ast(stmt);
-                        if last_result.is_err() {
-                            break;
-                        }
+                // Evaluate each statement in the AST
+                let mut result = Ok(Value::Null);
+                for node in &ast {
+                    result = self.evaluate_ast(node);
+                    if result.is_err() {
+                        break;
                     }
-                    last_result
-                } else {
-                    self.evaluate_ast(&ast)
-                };
+                }
                 
                 match result {
                     Ok(result) => {
@@ -259,6 +248,10 @@ impl Repl {
                 let left_val = self.evaluate_ast_with_scope(left, scope)?;
                 let right_val = self.evaluate_ast_with_scope(right, scope)?;
                 
+                // Clone values before matching to avoid ownership issues
+                let left_clone = left_val.clone();
+                let right_clone = right_val.clone();
+                
                 match (left_val, op.as_str(), right_val) {
                     (Value::Number(l), "+", Value::Number(r)) => Ok(Value::Number(l + r)),
                     (Value::Number(l), "-", Value::Number(r)) => Ok(Value::Number(l - r)),
@@ -270,7 +263,7 @@ impl Repl {
                         Ok(Value::Number(l / r))
                     },
                     (Value::String(l), "+", Value::String(r)) => Ok(Value::String(l + &r)),
-                    _ => Err(format!("Invalid operation: {:?} {} {:?}", left_val, op, right_val))
+                    _ => Err(format!("Invalid operation: {:?} {} {:?}", left_clone, op, right_clone))
                 }
             },
             
@@ -372,23 +365,23 @@ impl Repl {
                     let right_value = self.evaluate_ast_with_scope(value, scope)?;
                     
                     if let Some(current_value) = scope.get(name) {
-                        let new_value = match (current_value, &right_value, op.as_str()) {
+                        let new_value = match (current_value.clone(), &right_value, op.as_str()) {
                             (Value::Number(left), Value::Number(right), "+") => {
-                                Value::Number(left + right)
+                                Value::Number(left + *right)
                             },
                             (Value::Number(left), Value::Number(right), "-") => {
-                                Value::Number(left - right)
+                                Value::Number(left - *right)
                             },
                             (Value::Number(left), Value::Number(right), "*") => {
-                                Value::Number(left * right)
+                                Value::Number(left * *right)
                             },
                             (Value::Number(left), Value::Number(right), "/") => {
                                 if *right == 0 {
                                     return Err("Division by zero".to_string());
                                 }
-                                Value::Number(left / right)
+                                Value::Number(left / *right)
                             },
-                            _ => return Err(format!("Invalid operation: {:?} {} {:?}", current_value, op, right_value))
+                            _ => return Err(format!("Invalid operation: {:?} {} {:?}", current_value.clone(), op, right_value))
                         };
                         
                         scope.set(name, new_value.clone());

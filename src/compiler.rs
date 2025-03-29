@@ -1,13 +1,13 @@
+// Only import what we need based on feature flags
+#[cfg(feature = "compiler")]
 use std::fs;
+#[cfg(feature = "compiler")]
 use std::path::Path;
-use std::process::Command;
-use crate::lexer::tokenize;
-use crate::parser::Parser;
 
 #[cfg(feature = "compiler")]
 use crate::codegen::generate_llvm_ir;
 
-pub fn compile_file(path: &str, output: &str, target: Option<&str>, emit: &str) {
+pub fn compile_file(_path: &str, _output: &str, _target: Option<&str>, _emit: &str) {
     #[cfg(not(feature = "compiler"))]
     {
         println!("Compilation requires the 'compiler' feature to be enabled.");
@@ -23,8 +23,7 @@ pub fn compile_file(path: &str, output: &str, target: Option<&str>, emit: &str) 
         if Path::new("std.smash").exists() {
             let std_code = fs::read_to_string("std.smash").expect("Failed to read std.smash");
             full_code.push_str(&std_code);
-            full_code.push('
-');
+            full_code.push('\n');
         }
 
         // Then user program
