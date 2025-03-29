@@ -9,6 +9,9 @@ use smashlang::repl::Repl;
 
 const VERSION: &str = "0.1.0";
 
+// Get git hash at compile time if available
+const GIT_HASH: Option<&str> = option_env!("GIT_HASH");
+
 fn display_help() {
     println!("{}", "SmashLang Compiler".bright_cyan().bold());
     println!("Version: {}", VERSION);
@@ -293,30 +296,10 @@ fn main() {
             return;
         },
         "--version" | "-v" => {
-            // Try to read git hash if available
-            // Try multiple possible locations for the git hash file
-            let git_hash = std::fs::read_to_string("src/git_hash.txt")
-                .or_else(|_| std::fs::read_to_string("git_hash.txt"))
-                .or_else(|_| {
-                    // Try to find the executable path and look for git_hash.txt next to it
-                    if let Ok(exe_path) = std::env::current_exe() {
-                        if let Some(dir) = exe_path.parent() {
-                            return std::fs::read_to_string(dir.join("git_hash.txt"));
-                        }
-                    }
-                    Err(std::io::Error::new(std::io::ErrorKind::NotFound, "git hash file not found"))
-                })
-                .ok();
-            
-            if let Some(hash) = git_hash {
-                let hash = hash.trim();
-                if !hash.is_empty() {
-                    println!("SmashLang version {} (git: {})", VERSION, hash);
-                } else {
-                    println!("SmashLang version {}", VERSION);
-                }
-            } else {
-                println!("SmashLang version {}", VERSION);
+            // Display version with git hash if available
+            match GIT_HASH {
+                Some(hash) if !hash.is_empty() => println!("SmashLang version {} (git: {})", VERSION, hash),
+                _ => println!("SmashLang version {}", VERSION),
             }
             return;
         },
