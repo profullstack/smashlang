@@ -11,6 +11,11 @@
 
 ---
 
+[![GitHub](https://img.shields.io/github/license/profullstack/smashlang)](https://github.com/profullstack/smashlang/blob/master/LICENSE)
+[![GitHub commit activity](https://img.shields.io/github/commit-activity/m/profullstack/smashlang)](https://github.com/profullstack/smashlang/pulse)
+[![GitHub last commit](https://img.shields.io/github/last-commit/profullstack/smashlang)](https://github.com/profullstack/smashlang/commits/master)
+
+
 ## ✨ Features
 
 - 🔥 JavaScript-inspired syntax with modern improvements
@@ -442,9 +447,15 @@ smashtest ./smashlang_packages/my-package/tests
 
 ## 🖤 Logo
 
-The SmashLang logo represents resistance, speed, and clarity. The raised fist reflects a new era in programming — strong, expressive, and free.
+The SmashLang logo represents resistance, speed, and clarity. The raised fist reflects a new era in programming — strong, expressive, and free. We are also inspired by Bernie Sanders and his relentless fight for the people.
 
 ---
+
+## Contact
+For technical contributions or questions: protocol@infernet.tech
+
+[![Discord](https://img.shields.io/discord/1011308539819597844?label=Discord&logo=Discord&style=for-the-badge)](https://discord.gg/U7dEXfBA3s)
+[![Reddit](https://img.shields.io/badge/Reddit-FF4500?logo=reddit&logoColor=fff&style=for-the-badge)](https://www.reddit.com/r/smashlang/)
 
 ## License
 
