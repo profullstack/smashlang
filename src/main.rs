@@ -18,7 +18,8 @@ fn display_help() {
   smash <file.smash>       Compile a SmashLang file
   smash --help             Display this help message
   smash --version          Display version information
-  smash --docs [topic]     View documentation in the terminal");
+  smash docs [topic]       View documentation in the terminal
+  smash docs browser       Generate HTML docs and open in browser");
     println!("{}", "Options:".yellow());
     println!("  --out <output>          Specify output filename
   --target <target>        Specify target platform
@@ -27,19 +28,39 @@ fn display_help() {
     println!("  smash example.smash
   smash example.smash --out myprogram --emit exe
   smash example.smash --target wasm32
-  smash --docs             View documentation topics
-  smash --docs functions   View documentation on functions");
+  smash docs               View documentation topics
+  smash docs functions     View documentation on functions
+  smash docs browser       Generate HTML docs and open in browser");
 }
 
-fn display_docs(topic: Option<&String>) {
+use std::process::Command;
+
+fn display_docs(topic: Option<&String>, browser_mode: bool) {
     // Base directory for documentation
-    let docs_dir = Path::new(env!("")).join("../../docs");
+    let docs_dir = Path::new("docs");
     
     if !docs_dir.exists() {
         println!("{}: Documentation directory not found", "Error".red());
         println!("Expected documentation at: {}", docs_dir.display());
         process::exit(1);
     }
+    
+    // Create output directory for HTML docs if in browser mode
+    let html_output_dir = if browser_mode {
+        let output_dir = Path::new("docs_html");
+        if !output_dir.exists() {
+            match fs::create_dir_all(output_dir) {
+                Ok(_) => {},
+                Err(e) => {
+                    println!("{}: Failed to create HTML output directory: {}", "Error".red(), e);
+                    process::exit(1);
+                }
+            }
+        }
+        Some(output_dir)
+    } else {
+        None
+    };
     
     match topic {
         None => {
@@ -51,8 +72,14 @@ fn display_docs(topic: Option<&String>) {
             // Read README.md to display main topics
             let readme_path = docs_dir.join("README.md");
             if readme_path.exists() {
-                let content = fs::read_to_string(readme_path)
+                let content = fs::read_to_string(&readme_path)
                     .expect("Failed to read documentation index");
+                
+                // If in browser mode, convert README to HTML and open it
+                if browser_mode {
+                    generate_html_doc(&readme_path, html_output_dir.as_ref().unwrap(), true);
+                    return;
+                }
                 
                 // Extract and display section headers from README
                 for line in content.lines() {
@@ -66,14 +93,14 @@ fn display_docs(topic: Option<&String>) {
                             let path_end = line[path_start..].find(")").unwrap_or(line.len() - path_start) + path_start;
                             let path = line[path_start..path_end].to_string();
                             
-                            println!("    - {} (--docs {})", name, path.replace(".md", "").replace("/", "."));
+                            println!("    - {} (docs {})", name, path.replace(".md", "").replace("/", "."));
                         }
                     }
                 }
                 
                 println!("
-Usage: smash --docs <topic>
-Example: smash --docs getting-started.installation");
+Usage: smash docs <topic>
+Example: smash docs getting-started.installation");
             } else {
                 println!("{}: Documentation index not found", "Warning".yellow());
                 // Fall back to listing directories
@@ -87,6 +114,12 @@ Example: smash --docs getting-started.installation");
             }
         },
         Some(topic) => {
+            // Check if it's a special subcommand
+            if topic == "browser" {
+                display_docs(None, true);
+                return;
+            }
+            
             // Try to find and display the requested documentation
             let topic_path = topic.replace(".", "/");
             let mut doc_path = docs_dir.join(&topic_path);
@@ -113,7 +146,13 @@ Example: smash --docs getting-started.installation");
             }
             
             if doc_path.exists() {
-                // Read and display the documentation file
+                // If in browser mode, convert to HTML and open it
+                if browser_mode {
+                    generate_html_doc(&doc_path, html_output_dir.as_ref().unwrap(), true);
+                    return;
+                }
+                
+                // Read and display the documentation file in terminal mode
                 match fs::read_to_string(&doc_path) {
                     Ok(content) => {
                         // Simple markdown to terminal text conversion
@@ -154,9 +193,69 @@ Example: smash --docs getting-started.installation");
                 }
             } else {
                 println!("{}: Documentation topic '{}' not found", "Error".red(), topic);
-                println!("Try 'smash --docs' to see available topics");
+                println!("Try 'smash docs' to see available topics");
                 process::exit(1);
             }
+        }
+    }
+}
+
+// Function to generate HTML documentation using Pandoc
+fn generate_html_doc(markdown_path: &Path, output_dir: &Path, open_browser: bool) {
+    let file_stem = markdown_path.file_stem().unwrap_or_default().to_string_lossy();
+    let html_path = output_dir.join(format!("{}.html", file_stem));
+    
+    println!("{} Converting {} to HTML...", "Docs:".blue(), markdown_path.display());
+    
+    // Call pandoc to convert markdown to HTML
+    let status = Command::new("pandoc")
+        .arg(markdown_path)
+        .arg("-o")
+        .arg(&html_path)
+        .arg("--standalone")
+        .arg("--metadata")
+        .arg("title=SmashLang Documentation")
+        .arg("--css=https://cdn.jsdelivr.net/npm/water.css@2/out/water.css")
+        .status();
+    
+    match status {
+        Ok(exit_status) => {
+            if exit_status.success() {
+                println!("{} HTML documentation generated: {}", "Success:".green(), html_path.display());
+                
+                // Open in browser if requested
+                if open_browser {
+                    println!("{} Opening documentation in browser...", "Docs:".blue());
+                    
+                    #[cfg(target_os = "linux")]
+                    {
+                        let _ = Command::new("xdg-open")
+                            .arg(&html_path)
+                            .spawn();
+                    }
+                    
+                    #[cfg(target_os = "macos")]
+                    {
+                        let _ = Command::new("open")
+                            .arg(&html_path)
+                            .spawn();
+                    }
+                    
+                    #[cfg(target_os = "windows")]
+                    {
+                        let _ = Command::new("cmd")
+                            .args(["/c", "start", html_path.to_str().unwrap_or("")])
+                            .spawn();
+                    }
+                }
+            } else {
+                println!("{} Failed to generate HTML documentation", "Error:".red());
+                println!("Make sure pandoc is installed: https://pandoc.org/installing.html");
+            }
+        },
+        Err(e) => {
+            println!("{} Failed to run pandoc: {}", "Error:".red(), e);
+            println!("Make sure pandoc is installed: https://pandoc.org/installing.html");
         }
     }
 }
@@ -180,6 +279,15 @@ fn main() {
             repl.run();
             return;
         },
+        "docs" => {
+            // Check if we have a browser subcommand
+            if args.len() > 2 && args[2] == "browser" {
+                display_docs(None, true);
+            } else {
+                display_docs(if args.len() > 2 { Some(&args[2]) } else { None }, false);
+            }
+            return;
+        },
         "--help" | "-h" => {
             display_help();
             return;
@@ -189,7 +297,8 @@ fn main() {
             return;
         },
         "--docs" => {
-            display_docs(if args.len() > 2 { Some(&args[2]) } else { None });
+            // For backward compatibility
+            display_docs(if args.len() > 2 { Some(&args[2]) } else { None }, false);
             return;
         },
 
