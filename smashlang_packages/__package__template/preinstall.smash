@@ -2,14 +2,14 @@
 
 import "stdio/exec";
 
-console.log("Running pre-installation script...");
+print("Running pre-installation script...");
 
 // Check for required system dependencies
-async function checkDependencies() {
+async fn checkDependencies() {
   try {
     // Example: Check if a specific command is available
     await exec.exec("command -v git", { shell: true });
-    console.log("✓ Git is installed");
+    print("✓ Git is installed");
   } catch (error) {
     console.warn("⚠ Git is not installed. Some features may not work properly.");
   }
@@ -17,30 +17,30 @@ async function checkDependencies() {
   // Example: Check for other dependencies
   try {
     const nodeVersion = await exec.exec("node --version");
-    console.log(`✓ Node.js is installed (${nodeVersion.trim()})`); 
+    print(`✓ Node.js is installed (${nodeVersion.trim()})`); 
   } catch (error) {
     console.warn("⚠ Node.js is not installed. Some features may not work properly.");
   }
 }
 
 // Example: Create necessary directories
-async function setupDirectories() {
+async fn setupDirectories() {
   try {
     await exec.exec("mkdir -p ~/.package_name/cache");
-    console.log("✓ Created cache directory");
+    print("✓ Created cache directory");
   } catch (error) {
     console.error("✗ Failed to create cache directory:", error);
   }
 }
 
 // Run pre-installation tasks
-async function main() {
-  console.log("Performing pre-installation checks and setup...");
+async fn main() {
+  print("Performing pre-installation checks and setup...");
   
   await checkDependencies();
   await setupDirectories();
   
-  console.log("Pre-installation completed successfully.");
+  print("Pre-installation completed successfully.");
 }
 
 // Execute the main function

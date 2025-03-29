@@ -1,7 +1,7 @@
 import { example } from 'tools/smashier';
 import { test, describe, expect, beforeEach, afterEach } from 'std/testing';
 
-test('example function returns correct greeting', () => {
+test('example fn returns correct greeting', () => {
   expect(example()).toBe('Hello from SmashLang package!');
 });
 

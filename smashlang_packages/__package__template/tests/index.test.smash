@@ -9,18 +9,18 @@ import { test, describe, expect, beforeEach, afterEach } from 'std/testing';
 import { greet, sum, isValidEmail, createCounter, fetchData, stringUtils, mathUtils, validator } from '../src/index.smash';
 
 // Basic tests for the main functions
-test('greet function returns correct greeting', () => {
+test('greet fn returns correct greeting', () => {
   expect(greet()).toBe('Hello, World!');
   expect(greet('SmashLang')).toBe('Hello, SmashLang!');
 });
 
-test('sum function calculates correctly', () => {
+test('sum fn calculates correctly', () => {
   expect(sum([1, 2, 3, 4])).toBe(10);
   expect(sum([])).toBe(0);
   expect(sum([5])).toBe(5);
 });
 
-test('isValidEmail function validates emails correctly', () => {
+test('isValidEmail fn validates emails correctly', () => {
   expect(isValidEmail('user@example.com')).toBeTrue();
   expect(isValidEmail('invalid-email')).toBeFalse();
   expect(isValidEmail('')).toBeFalse();

@@ -373,7 +373,7 @@ app.get("/", (c) => {
 # }`;
 
           // Set up GraphiQL
-          function graphQLFetcher(graphQLParams) {
+          fn graphQLFetcher(graphQLParams) {
             return fetch('/graphql', {
               method: 'post',
               headers: {
@@ -387,7 +387,7 @@ app.get("/", (c) => {
 
           let editor;
 
-          function setQuery(query) {
+          fn setQuery(query) {
             if (editor) {
               editor._updateQueryString(query);
             }
@@ -412,6 +412,6 @@ app.get("/", (c) => {
 
 // Start the server
 app.listen(3000, () => {
-  console.log("SmashHono GraphQL server is running on http://localhost:3000");
-  console.log("GraphQL endpoint available at http://localhost:3000/graphql");
+  print("SmashHono GraphQL server is running on http://localhost:3000");
+  print("GraphQL endpoint available at http://localhost:3000/graphql");
 });

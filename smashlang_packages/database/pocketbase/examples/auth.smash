@@ -6,41 +6,41 @@ import "pocketbase";
 const pb = pocketbase.createClient("http://127.0.0.1:8090");
 
 async fn main() {
-  console.log("=== PocketBase Authentication Example ===");
+  print("=== PocketBase Authentication Example ===");
   
   try {
     // Login with email and password
-    console.log("Logging in with email and password...");
+    print("Logging in with email and password...");
     const authData = await pb.authWithPassword("users", "test@example.com", "password123");
-    console.log("Logged in successfully!");
-    console.log(`User ID: ${authData.model.id}`);
-    console.log(`Username: ${authData.model.username}`);
-    console.log(`Email: ${authData.model.email}`);
-    console.log(`Token: ${authData.token.substring(0, 15)}...`);
+    print("Logged in successfully!");
+    print(`User ID: ${authData.model.id}`);
+    print(`Username: ${authData.model.username}`);
+    print(`Email: ${authData.model.email}`);
+    print(`Token: ${authData.token.substring(0, 15)}...`);
     
     // Check if user is authenticated
     if (pb.authStore.token) {
-      console.log("User is authenticated");
+      print("User is authenticated");
       
       // Get user data
-      console.log("\nUser data:");
-      console.log(`ID: ${pb.authStore.model.id}`);
-      console.log(`Email: ${pb.authStore.model.email}`);
-      console.log(`Created: ${pb.authStore.model.created}`);
+      print("\nUser data:");
+      print(`ID: ${pb.authStore.model.id}`);
+      print(`Email: ${pb.authStore.model.email}`);
+      print(`Created: ${pb.authStore.model.created}`);
     }
     
     // Refresh auth
-    console.log("\nRefreshing authentication token...");
+    print("\nRefreshing authentication token...");
     await pb.refreshAuth();
-    console.log("Token refreshed successfully!");
+    print("Token refreshed successfully!");
     
     // Logout
-    console.log("\nLogging out...");
+    print("\nLogging out...");
     await pb.logout();
-    console.log("Logged out successfully!");
+    print("Logged out successfully!");
     
     if (!pb.authStore.token) {
-      console.log("User is no longer authenticated");
+      print("User is no longer authenticated");
     }
     
     // OAuth2 example (commented out as it requires browser interaction)
@@ -51,7 +51,7 @@ async fn main() {
       .find(p => p.name === "google")
       .authUrl + "&redirectUrl=http://localhost:8090/redirect";
       
-    console.log("Open this URL in your browser:", googleAuthUrl);
+    print("Open this URL in your browser:", googleAuthUrl);
     
     // After redirect, handle the OAuth2 authentication
     const code = "..."  // code from the redirect URL
@@ -65,7 +65,7 @@ async fn main() {
       redirectUrl
     );
     
-    console.log("Logged in with Google:", oauthData.model.email);
+    print("Logged in with Google:", oauthData.model.email);
     */
   } catch (error) {
     console.error(`Authentication error: ${error.message}`);

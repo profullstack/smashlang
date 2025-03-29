@@ -16,7 +16,7 @@ import { defaultOptions } from './options.smash';
  * @param {Object} options - Formatting options (optional)
  * @returns {string} The formatted code
  */
-export function format(code, options = {}) {
+export fn format(code, options = {}) {
   // Merge provided options with defaults
   const mergedOptions = { ...defaultOptions, ...options };
   
@@ -33,7 +33,7 @@ export function format(code, options = {}) {
  * @param {string} theme - The color theme to use (default: 'default')
  * @returns {string} HTML string with syntax highlighting
  */
-export function highlight(code, theme = 'default') {
+export fn highlight(code, theme = 'default') {
   // Tokenize the code
   const tokens = tokenizer.tokenize(code);
   
@@ -47,7 +47,7 @@ export function highlight(code, theme = 'default') {
  * @param {Object} options - Linting options (optional)
  * @returns {Array} Array of style issues found
  */
-export function lint(code, options = {}) {
+export fn lint(code, options = {}) {
   // Merge provided options with defaults
   const mergedOptions = { ...defaultOptions, ...options };
   
@@ -64,7 +64,7 @@ export function lint(code, options = {}) {
  * @param {Object} options - Processing options (optional)
  * @returns {string} HTML string with formatted and highlighted code
  */
-export function formatAndHighlight(code, options = {}) {
+export fn formatAndHighlight(code, options = {}) {
   const formatted = format(code, options);
   return highlight(formatted, options.theme || 'default');
 }

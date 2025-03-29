@@ -4,7 +4,7 @@ import "redis";
 import "std";
 
 async fn main() {
-  console.log("=== Advanced Redis Features Example ===");
+  print("=== Advanced Redis Features Example ===");
   
   // Create the main client
   const client = redis.createClient({
@@ -30,7 +30,7 @@ async fn main() {
     
     // Close the main client connection
     await client.quit();
-    console.log("\nMain connection closed.");
+    print("\nMain connection closed.");
   } catch (error) {
     console.error(`Error in main: ${error.message}`);
     await client.quit();
@@ -39,7 +39,7 @@ async fn main() {
 
 // Example: Transactions (MULTI/EXEC)
 async fn transactionExample(client) {
-  console.log("\n--- Transactions Example ---");
+  print("\n--- Transactions Example ---");
   
   try {
     // Start a transaction
@@ -55,9 +55,9 @@ async fn transactionExample(client) {
     multi.commands.string.get("transaction-counter");
     
     // Execute the transaction
-    console.log("Executing transaction...");
+    print("Executing transaction...");
     const results = await multi.commands.transaction.exec();
-    console.log("Transaction results:", results);
+    print("Transaction results:", results);
     
     // Clean up
     await client.del("transaction-key1", "transaction-key2", "transaction-counter");
@@ -68,36 +68,36 @@ async fn transactionExample(client) {
 
 // Example: Pipelining for improved performance
 async fn pipelineExample(client) {
-  console.log("\n--- Pipelining Example ---");
+  print("\n--- Pipelining Example ---");
   
   try {
     // Create a pipeline
     const pipeline = client.pipeline();
     
     // Add commands to the pipeline
-    console.log("Adding 1000 commands to pipeline...");
+    print("Adding 1000 commands to pipeline...");
     for (let i = 0; i < 1000; i++) {
       pipeline.commands.string.set(`pipeline-key${i}`, `value${i}`);
     }
     
     // Execute the pipeline
-    console.log("Executing pipeline...");
+    print("Executing pipeline...");
     const startTime = Date.now();
     await pipeline.exec();
     const endTime = Date.now();
-    console.log(`Pipeline executed in ${endTime - startTime}ms`);
+    print(`Pipeline executed in ${endTime - startTime}ms`);
     
     // Compare with individual commands
-    console.log("Executing 10 individual commands for comparison...");
+    print("Executing 10 individual commands for comparison...");
     const startTime2 = Date.now();
     for (let i = 0; i < 10; i++) {
       await client.commands.string.set(`individual-key${i}`, `value${i}`);
     }
     const endTime2 = Date.now();
-    console.log(`Individual commands executed in ${endTime2 - startTime2}ms`);
+    print(`Individual commands executed in ${endTime2 - startTime2}ms`);
     
     // Clean up
-    console.log("Cleaning up pipeline keys...");
+    print("Cleaning up pipeline keys...");
     const cleanupPipeline = client.pipeline();
     for (let i = 0; i < 1000; i++) {
       cleanupPipeline.del(`pipeline-key${i}`);
@@ -113,7 +113,7 @@ async fn pipelineExample(client) {
 
 // Example: Pub/Sub for real-time messaging
 async fn pubSubExample() {
-  console.log("\n--- Pub/Sub Example ---");
+  print("\n--- Pub/Sub Example ---");
   
   try {
     // Create separate clients for subscriber and publisher
@@ -121,13 +121,13 @@ async fn pubSubExample() {
     const publisher = redis.createClient();
     
     // Set up the subscriber
-    console.log("Subscribing to channel 'news-channel'...");
+    print("Subscribing to channel 'news-channel'...");
     await subscriber.commands.pubsub.subscribe("news-channel");
     
     // Set up message handler
     let messageCount = 0;
     subscriber.on("message", (channel, message) => {
-      console.log(`Received message from ${channel}: ${message}`);
+      print(`Received message from ${channel}: ${message}`);
       messageCount++;
       
       // Unsubscribe after receiving 3 messages
@@ -139,7 +139,7 @@ async fn pubSubExample() {
     });
     
     // Publish messages
-    console.log("Publishing messages...");
+    print("Publishing messages...");
     await publisher.commands.pubsub.publish("news-channel", "Breaking news: SmashLang 1.0 released!");
     await std.sleep(500);
     await publisher.commands.pubsub.publish("news-channel", "Weather update: Sunny with a chance of code");
@@ -155,7 +155,7 @@ async fn pubSubExample() {
 
 // Example: Lua scripting for atomic operations
 async fn luaScriptingExample(client) {
-  console.log("\n--- Lua Scripting Example ---");
+  print("\n--- Lua Scripting Example ---");
   
   try {
     // Simple Lua script to check and set a value atomically
@@ -173,7 +173,7 @@ async fn luaScriptingExample(client) {
     await client.commands.string.set("user-status", "online");
     
     // Execute the script
-    console.log("Executing Lua script for atomic check-and-set...");
+    print("Executing Lua script for atomic check-and-set...");
     const result1 = await client.commands.scripting.eval(
       checkAndSetScript,
       1,  // number of keys
@@ -182,9 +182,9 @@ async fn luaScriptingExample(client) {
       "away"  // new value if match
     );
     
-    console.log(`Script result (should be 1): ${result1}`);
+    print(`Script result (should be 1): ${result1}`);
     const newStatus = await client.commands.string.get("user-status");
-    console.log(`New status: ${newStatus}`);
+    print(`New status: ${newStatus}`);
     
     // Try again with wrong current value
     const result2 = await client.commands.scripting.eval(
@@ -195,9 +195,9 @@ async fn luaScriptingExample(client) {
       "offline"
     );
     
-    console.log(`Script result (should be 0): ${result2}`);
+    print(`Script result (should be 0): ${result2}`);
     const finalStatus = await client.commands.string.get("user-status");
-    console.log(`Final status (should still be "away"): ${finalStatus}`);
+    print(`Final status (should still be "away"): ${finalStatus}`);
     
     // Clean up
     await client.del("user-status");
@@ -208,12 +208,12 @@ async fn luaScriptingExample(client) {
 
 // Example: Using Redis for caching
 async fn cachingExample(client) {
-  console.log("\n--- Caching Example ---");
+  print("\n--- Caching Example ---");
   
   try {
     // Function that simulates an expensive operation
     async fn expensiveOperation(id) {
-      console.log(`Performing expensive operation for ID ${id}...`);
+      print(`Performing expensive operation for ID ${id}...`);
       await std.sleep(1000);  // Simulate long processing time
       return { id, data: `Result for ${id}`, timestamp: Date.now() };
     }
@@ -226,12 +226,12 @@ async fn cachingExample(client) {
       const cachedData = await client.commands.string.get(cacheKey);
       
       if (cachedData) {
-        console.log(`Cache hit for ID ${id}`);
+        print(`Cache hit for ID ${id}`);
         return JSON.parse(cachedData);
       }
       
       // Cache miss, perform the expensive operation
-      console.log(`Cache miss for ID ${id}`);
+      print(`Cache miss for ID ${id}`);
       const result = await expensiveOperation(id);
       
       // Store in cache with expiration (60 seconds)
@@ -245,19 +245,19 @@ async fn cachingExample(client) {
     }
     
     // First call - should be a cache miss
-    console.log("First call for ID 'user123'...");
+    print("First call for ID 'user123'...");
     const result1 = await getCachedData("user123");
-    console.log("Result:", result1);
+    print("Result:", result1);
     
     // Second call - should be a cache hit
-    console.log("\nSecond call for ID 'user123'...");
+    print("\nSecond call for ID 'user123'...");
     const result2 = await getCachedData("user123");
-    console.log("Result:", result2);
+    print("Result:", result2);
     
     // Different ID - should be a cache miss
-    console.log("\nCall for different ID 'user456'...");
+    print("\nCall for different ID 'user456'...");
     const result3 = await getCachedData("user456");
-    console.log("Result:", result3);
+    print("Result:", result3);
     
     // Clean up
     await client.del("cache:user123", "cache:user456");

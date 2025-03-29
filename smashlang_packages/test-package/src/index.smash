@@ -2,6 +2,6 @@
  * Example function
  * @returns {string} A greeting message
  */
-export function example() {
+export fn example() {
   return 'Hello from SmashLang package!';
 }

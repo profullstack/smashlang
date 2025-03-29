@@ -9,64 +9,64 @@ const client = redis.createClient({
 });
 
 async fn main() {
-  console.log("=== Basic Redis Operations Example ===");
+  print("=== Basic Redis Operations Example ===");
   
   try {
     // String operations
-    console.log("\n--- String Operations ---");
+    print("\n--- String Operations ---");
     await client.commands.string.set("greeting", "Hello, SmashLang!");
     const greeting = await client.commands.string.get("greeting");
-    console.log(`Retrieved greeting: ${greeting}`);
+    print(`Retrieved greeting: ${greeting}`);
     
     await client.commands.string.set("counter", "10");
     const incremented = await client.commands.string.incr("counter");
-    console.log(`Incremented counter: ${incremented}`);
+    print(`Incremented counter: ${incremented}`);
     
     // Hash operations
-    console.log("\n--- Hash Operations ---");
+    print("\n--- Hash Operations ---");
     await client.commands.hash.hset("user:1000", "name", "John");
     await client.commands.hash.hset("user:1000", "email", "john@example.com");
     await client.commands.hash.hset("user:1000", "age", "30");
     
     const name = await client.commands.hash.hget("user:1000", "name");
-    console.log(`User name: ${name}`);
+    print(`User name: ${name}`);
     
     const userData = await client.commands.hash.hgetall("user:1000");
-    console.log("User data:", userData);
+    print("User data: " + JSON.stringify(userData));
     
     // List operations
-    console.log("\n--- List Operations ---");
+    print("\n--- List Operations ---");
     await client.commands.list.lpush("tasks", "Learn SmashLang");
     await client.commands.list.lpush("tasks", "Build Redis app");
     await client.commands.list.rpush("tasks", "Write documentation");
     
     const tasks = await client.commands.list.lrange("tasks", 0, -1);
-    console.log("Tasks:", tasks);
+    print("Tasks: " + JSON.stringify(tasks));
     
     const nextTask = await client.commands.list.lpop("tasks");
-    console.log(`Next task to do: ${nextTask}`);
+    print(`Next task to do: ${nextTask}`);
     
     // Set operations
-    console.log("\n--- Set Operations ---");
+    print("\n--- Set Operations ---");
     await client.commands.set.sadd("tags", "programming", "database", "redis", "smashlang");
     
     const isMember = await client.commands.set.sismember("tags", "redis");
-    console.log(`Is 'redis' in tags? ${isMember ? 'Yes' : 'No'}`);
+    print(`Is 'redis' in tags? ${isMember ? 'Yes' : 'No'}`);
     
     const tags = await client.commands.set.smembers("tags");
-    console.log("All tags:", tags);
+    print("All tags:", tags);
     
     // Sorted Set operations
-    console.log("\n--- Sorted Set Operations ---");
+    print("\n--- Sorted Set Operations ---");
     await client.commands.sorted_set.zadd("scores", 100, "player1");
     await client.commands.sorted_set.zadd("scores", 85, "player2");
     await client.commands.sorted_set.zadd("scores", 95, "player3");
     
     const topScores = await client.commands.sorted_set.zrange("scores", 0, 2, { withScores: true });
-    console.log("Top scores:", topScores);
+    print("Top scores:", topScores);
     
     // Clean up
-    console.log("\n--- Cleaning Up ---");
+    print("\n--- Cleaning Up ---");
     // Delete the keys we created
     await client.del("greeting");
     await client.del("counter");
@@ -75,11 +75,11 @@ async fn main() {
     await client.del("tags");
     await client.del("scores");
     
-    console.log("Cleanup complete!");
+    print("Cleanup complete!");
     
     // Close the connection
     await client.quit();
-    console.log("\nConnection closed.");
+    print("\nConnection closed.");
   } catch (error) {
     console.error(`Error: ${error.message}`);
     // Make sure to close the connection even if there's an error

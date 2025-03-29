@@ -5,30 +5,30 @@ import "std";  // Import standard library for additional functionality
 
 // Advanced usage example demonstrating more complex features
 async fn advancedExample() {
-  console.log("=== Advanced Package Example ===");
+  print("=== Advanced Package Example ===");
   
   try {
     // Example of using nested objects/functions
     const nestedResult = package_name.nestedObject.nestedFunction();
-    console.log("Nested function result:", nestedResult);
+    print("Nested fn result:", nestedResult);
     
     // Example of chaining operations
     const chainedResult = package_name.nestedObject
       .anotherFunction()
       .transform()
       .process();
-    console.log("Chained operations result:", chainedResult);
+    print("Chained operations result:", chainedResult);
     
     // Example of async operations
-    console.log("Starting async operation...");
+    print("Starting async operation...");
     const asyncResult = await package_name.asyncFunction();
-    console.log("Async operation completed with result:", asyncResult);
+    print("Async operation completed with result:", asyncResult);
     
     // Example of error handling
     try {
       package_name.functionThatMightFail();
     } catch (error) {
-      console.log("Caught expected error:", error.message);
+      print("Caught expected error:", error.message);
     }
     
     // Example of using with configuration options
@@ -39,9 +39,9 @@ async fn advancedExample() {
     });
     
     const configuredResult = await configuredInstance.processWithOptions();
-    console.log("Configured instance result:", configuredResult);
+    print("Configured instance result:", configuredResult);
     
-    console.log("Advanced example completed successfully!");
+    print("Advanced example completed successfully!");
   } catch (error) {
     console.error("Error in advanced example:", error.message);
   }

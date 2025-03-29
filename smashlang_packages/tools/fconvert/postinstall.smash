@@ -4,10 +4,10 @@
 import "fs";
 import "path";
 
-console.log("Running FConvert post-installation setup...");
+print("Running FConvert post-installation setup...");
 
 // Function to check if a command exists
-function commandExists(command) {
+fn commandExists(command) {
   try {
     const result = fs.execSync(`command -v ${command}`);
     return result.toString().trim().length > 0;
@@ -17,7 +17,7 @@ function commandExists(command) {
 }
 
 // Create configuration directory and default config
-function setupConfig() {
+fn setupConfig() {
   try {
     // Create config directory in user's home
     const configDir = path.join(process.env.HOME, ".config", "fconvert");
@@ -26,7 +26,7 @@ function setupConfig() {
     // Create directory if it doesn't exist
     if (!fs.existsSync(configDir)) {
       fs.mkdirSync(configDir, { recursive: true });
-      console.log(`\u2713 Created configuration directory: ${configDir}`);
+      print(`\u2713 Created configuration directory: ${configDir}`);
     }
     
     // Create default configuration file if it doesn't exist
@@ -59,15 +59,15 @@ function setupConfig() {
       
       // Write the config file
       fs.writeFileSync(configFile, JSON.stringify(defaultConfig, null, 2));
-      console.log(`\u2713 Created default configuration file: ${configFile}`);
+      print(`\u2713 Created default configuration file: ${configFile}`);
       
       // Create cache directory
       if (!fs.existsSync(defaultConfig.cacheDir)) {
         fs.mkdirSync(defaultConfig.cacheDir, { recursive: true });
-        console.log(`\u2713 Created cache directory: ${defaultConfig.cacheDir}`);
+        print(`\u2713 Created cache directory: ${defaultConfig.cacheDir}`);
       }
     } else {
-      console.log(`\u2713 Configuration file already exists: ${configFile}`);
+      print(`\u2713 Configuration file already exists: ${configFile}`);
     }
     
     return true;
@@ -78,7 +78,7 @@ function setupConfig() {
 }
 
 // Check for optional dependencies
-function checkOptionalDependencies() {
+fn checkOptionalDependencies() {
   const optionalDeps = [
     { name: 'Inkscape', command: 'inkscape', usedFor: 'SVG processing' },
     { name: 'Ghostscript', command: 'gs', usedFor: 'PDF processing' },
@@ -97,39 +97,39 @@ function checkOptionalDependencies() {
   }
   
   if (available.length > 0) {
-    console.log("\nDetected optional dependencies:");
+    print("\nDetected optional dependencies:");
     for (const dep of available) {
-      console.log(`\u2713 ${dep.name} (${dep.command}): Available for ${dep.usedFor}`);
+      print(`\u2713 ${dep.name} (${dep.command}): Available for ${dep.usedFor}`);
     }
   }
   
   if (missing.length > 0) {
-    console.log("\nOptional dependencies not found:");
+    print("\nOptional dependencies not found:");
     for (const dep of missing) {
-      console.log(`\u2139 ${dep.name} (${dep.command}): Useful for ${dep.usedFor}`);
+      print(`\u2139 ${dep.name} (${dep.command}): Useful for ${dep.usedFor}`);
     }
-    console.log("These dependencies are optional but can enhance FConvert's capabilities.");
+    print("These dependencies are optional but can enhance FConvert's capabilities.");
   }
 }
 
 // Print success message with usage examples
-function printSuccessMessage() {
-  console.log("\n\u2728 FConvert has been successfully installed! \u2728\n");
-  console.log("Quick Start Guide:");
-  console.log("  1. Convert an image:         fconvert image.jpg image.png");
-  console.log("  2. Convert a document:       fconvert document.md document.pdf");
-  console.log("  3. Convert audio:            fconvert audio.wav audio.mp3");
-  console.log("  4. Convert video:            fconvert video.mp4 video.webm");
-  console.log("  5. See all supported formats: fconvert --formats");
-  console.log("  6. Get help:                 fconvert --help\n");
+fn printSuccessMessage() {
+  print("\n\u2728 FConvert has been successfully installed! \u2728\n");
+  print("Quick Start Guide:");
+  print("  1. Convert an image:         fconvert image.jpg image.png");
+  print("  2. Convert a document:       fconvert document.md document.pdf");
+  print("  3. Convert audio:            fconvert audio.wav audio.mp3");
+  print("  4. Convert video:            fconvert video.mp4 video.webm");
+  print("  5. See all supported formats: fconvert --formats");
+  print("  6. Get help:                 fconvert --help\n");
   
-  console.log("Configuration file: ~/.config/fconvert/config.json");
-  console.log("Documentation: https://github.com/profullstack/smashlang/packages/tools/fconvert\n");
+  print("Configuration file: ~/.config/fconvert/config.json");
+  print("Documentation: https://github.com/profullstack/smashlang/packages/tools/fconvert\n");
 }
 
 // Main function
-function main() {
-  console.log("Setting up FConvert...");
+fn main() {
+  print("Setting up FConvert...");
   
   // Set up configuration
   const configSetup = setupConfig();
@@ -143,7 +143,7 @@ function main() {
   // Print success message
   printSuccessMessage();
   
-  console.log("Post-installation setup completed successfully.\n");
+  print("Post-installation setup completed successfully.\n");
 }
 
 // Run the main function

@@ -165,7 +165,7 @@ app.get("/", (c) => {
           usernameInput.value = username;
           
           // Connect to WebSocket server
-          function connect() {
+          fn connect() {
             const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
             const wsUrl = `${protocol}//${window.location.host}/ws`;
             
@@ -220,7 +220,7 @@ app.get("/", (c) => {
           }
           
           // Add a message to the chat
-          function addMessage(data) {
+          fn addMessage(data) {
             const messageEl = document.createElement('div');
             const isSelf = data.userId === userId;
             
@@ -239,7 +239,7 @@ app.get("/", (c) => {
           }
           
           // Add a system message
-          function addSystemMessage(content) {
+          fn addSystemMessage(content) {
             const messageEl = document.createElement('div');
             messageEl.className = 'message system';
             messageEl.textContent = content;
@@ -249,7 +249,7 @@ app.get("/", (c) => {
           }
           
           // Update the list of online users
-          function updateUserList(users) {
+          fn updateUserList(users) {
             userListEl.innerHTML = '';
             
             users.forEach(user => {
@@ -267,7 +267,7 @@ app.get("/", (c) => {
           }
           
           // Send a chat message
-          function sendMessage() {
+          fn sendMessage() {
             const content = messageInput.value.trim();
             
             if (!content || !isConnected) return;
@@ -282,7 +282,7 @@ app.get("/", (c) => {
           }
           
           // Send a control message
-          function sendControlMessage(type, data) {
+          fn sendControlMessage(type, data) {
             if (!isConnected) return;
             
             const message = {
@@ -294,7 +294,7 @@ app.get("/", (c) => {
           }
           
           // Set username
-          function setUsername() {
+          fn setUsername() {
             const newUsername = usernameInput.value.trim();
             
             if (!newUsername) return;
@@ -307,14 +307,14 @@ app.get("/", (c) => {
           }
           
           // Escape HTML to prevent XSS
-          function escapeHtml(text) {
+          fn escapeHtml(text) {
             const div = document.createElement('div');
             div.textContent = text;
             return div.innerHTML;
           }
           
           // Scroll to the bottom of the messages
-          function scrollToBottom() {
+          fn scrollToBottom() {
             messagesEl.scrollTop = messagesEl.scrollHeight;
           }
           
@@ -349,7 +349,7 @@ app.ws("/ws", (ws) => {
     // Add to clients map
     clients.set(userId, { socket, username });
     
-    console.log(`Client connected: ${userId} (${username})`);
+    print(`Client connected: ${userId} (${username})`);
     
     // Send welcome message
     socket.send(JSON.stringify({
@@ -399,7 +399,7 @@ app.ws("/ws", (ws) => {
     
     // Handle client disconnect
     socket.on("close", () => {
-      console.log(`Client disconnected: ${userId} (${username})`);
+      print(`Client disconnected: ${userId} (${username})`);
       
       // Remove from clients map
       clients.delete(userId);
@@ -412,7 +412,7 @@ app.ws("/ws", (ws) => {
 });
 
 // Broadcast a chat message to all clients
-function broadcastMessage(userId, username, content) {
+fn broadcastMessage(userId, username, content) {
   const message = {
     type: "message",
     userId,
@@ -429,7 +429,7 @@ function broadcastMessage(userId, username, content) {
 }
 
 // Broadcast a system message to all clients
-function broadcastSystemMessage(content) {
+fn broadcastSystemMessage(content) {
   const message = {
     type: "system",
     content,
@@ -444,7 +444,7 @@ function broadcastSystemMessage(content) {
 }
 
 // Broadcast the current user list to all clients
-function broadcastUserList() {
+fn broadcastUserList() {
   const users = Array.from(clients.entries()).map(([id, client]) => ({
     id,
     username: client.username
@@ -464,5 +464,5 @@ function broadcastUserList() {
 
 // Start the server
 app.listen(3000, () => {
-  console.log("SmashHono WebSocket chat server is running on http://localhost:3000");
+  print("SmashHono WebSocket chat server is running on http://localhost:3000");
 });

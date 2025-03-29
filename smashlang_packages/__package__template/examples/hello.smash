@@ -8,14 +8,14 @@
 import { greet } from '../src/index.smash';
 
 // Simple hello world
-console.log(greet());
+print(greet());
 
 // Greeting with a custom name
-console.log(greet('SmashLang'));
+print(greet('SmashLang'));
 
 // You can also use the package in your own functions
-function sayHello(name) {
-  console.log(`${greet(name)} Welcome to SmashLang!`);
+fn sayHello(name) {
+  print(`${greet(name)} Welcome to SmashLang!`);
 }
 
 // Call the function

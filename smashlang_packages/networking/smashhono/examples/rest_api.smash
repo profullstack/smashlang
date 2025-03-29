@@ -297,7 +297,7 @@ app.get("/", (c) => {
         <pre id="result">// Results will appear here</pre>
         
         <script>
-          async function fetchData(url) {
+          async fn fetchData(url) {
             try {
               const response = await fetch(url);
               const data = await response.json();
@@ -307,7 +307,7 @@ app.get("/", (c) => {
             }
           }
           
-          async function createUser() {
+          async fn createUser() {
             try {
               const response = await fetch('/api/users', {
                 method: 'POST',
@@ -325,7 +325,7 @@ app.get("/", (c) => {
             }
           }
           
-          async function updateUser() {
+          async fn updateUser() {
             try {
               const response = await fetch('/api/users/1', {
                 method: 'PUT',
@@ -342,7 +342,7 @@ app.get("/", (c) => {
             }
           }
           
-          async function deleteUser() {
+          async fn deleteUser() {
             try {
               const response = await fetch('/api/users/3', {
                 method: 'DELETE'
@@ -361,6 +361,6 @@ app.get("/", (c) => {
 
 // Start the server
 app.listen(3000, () => {
-  console.log("REST API server is running on http://localhost:3000");
-  console.log("API documentation available at http://localhost:3000/api");
+  print("REST API server is running on http://localhost:3000");
+  print("API documentation available at http://localhost:3000/api");
 });

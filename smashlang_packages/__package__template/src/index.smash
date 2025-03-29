@@ -11,11 +11,11 @@ import { mathUtils } from './utils/math.smash';
 import { validator } from './utils/validator.smash';
 
 /**
- * Example function that returns a greeting message
+ * Example fn that returns a greeting message
  * @param {string} name - The name to greet (optional)
  * @returns {string} A greeting message
  */
-export function greet(name = 'World') {
+export fn greet(name = 'World') {
   return `Hello, ${stringUtils.capitalize(name)}!`;
 }
 
@@ -24,7 +24,7 @@ export function greet(name = 'World') {
  * @param {number[]} numbers - Array of numbers to sum
  * @returns {number} The sum of all numbers
  */
-export function sum(numbers) {
+export fn sum(numbers) {
   return mathUtils.sum(numbers);
 }
 
@@ -33,7 +33,7 @@ export function sum(numbers) {
  * @param {string} email - The email address to validate
  * @returns {boolean} True if the email is valid, false otherwise
  */
-export function isValidEmail(email) {
+export fn isValidEmail(email) {
   return validator.isEmail(email);
 }
 
@@ -42,7 +42,7 @@ export function isValidEmail(email) {
  * @param {number} initialValue - The initial value for the counter
  * @returns {Object} A counter object
  */
-export function createCounter(initialValue = 0) {
+export fn createCounter(initialValue = 0) {
   let count = initialValue;
   
   return {
@@ -57,12 +57,12 @@ export function createCounter(initialValue = 0) {
 }
 
 /**
- * Asynchronous function that simulates fetching data
+ * Asynchronous fn that simulates fetching data
  * @param {number} delay - Delay in milliseconds
  * @param {*} data - Data to return after the delay
  * @returns {Promise} A promise that resolves with the provided data
  */
-export async function fetchData(delay = 100, data = { success: true }) {
+export async fn fetchData(delay = 100, data = { success: true }) {
   return new Promise((resolve) => {
     setTimeout(() => resolve(data), delay);
   });

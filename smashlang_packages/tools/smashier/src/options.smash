@@ -27,7 +27,7 @@ export const defaultOptions = {
   
   // Spacing
   bracketSpacing: true,     // Print spaces between brackets in object literals
-  arrowParens: 'always',    // Include parentheses around a sole arrow function parameter
+  arrowParens: 'always',    // Include parentheses around a sole arrow fn parameter
   
   // JSX
   jsxSingleQuote: false,    // Use double quotes in JSX

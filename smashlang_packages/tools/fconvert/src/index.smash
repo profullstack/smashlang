@@ -13,13 +13,13 @@ const FORMATS = {
   data: ["json", "yaml", "xml", "csv", "tsv", "xlsx"]
 };
 
-// Utility function to get file extension
-function getExtension(filePath) {
+// Utility fn to get file extension
+fn getExtension(filePath) {
   return path.extname(filePath).toLowerCase().substring(1);
 }
 
-// Utility function to check if a command exists
-function commandExists(command) {
+// Utility fn to check if a command exists
+fn commandExists(command) {
   try {
     const result = fs.execSync(`command -v ${command}`);
     return result.toString().trim().length > 0;
@@ -29,7 +29,7 @@ function commandExists(command) {
 }
 
 // Function to check required dependencies
-function checkDependencies() {
+fn checkDependencies() {
   const dependencies = [
     { name: 'ImageMagick', command: 'convert', usedFor: 'image conversion' },
     { name: 'Pandoc', command: 'pandoc', usedFor: 'document conversion' },
@@ -56,7 +56,7 @@ function checkDependencies() {
 }
 
 // Main conversion function
-export function convert(inputPath, outputPath, options = {}) {
+export fn convert(inputPath, outputPath, options = {}) {
   // Validate input and output paths
   if (!fs.existsSync(inputPath)) {
     throw new Error(`Input file not found: ${inputPath}`);
@@ -97,7 +97,7 @@ export function convert(inputPath, outputPath, options = {}) {
 }
 
 // Image conversion function
-function convertImage(inputPath, outputPath, options = {}) {
+fn convertImage(inputPath, outputPath, options = {}) {
   // Check if ImageMagick is installed
   if (!commandExists("convert")) {
     throw new Error("ImageMagick is required for image conversion but not found. Please install ImageMagick and try again.");
@@ -134,7 +134,7 @@ function convertImage(inputPath, outputPath, options = {}) {
 }
 
 // Document conversion function
-function convertDocument(inputPath, outputPath, options = {}) {
+fn convertDocument(inputPath, outputPath, options = {}) {
   // Check if Pandoc is installed
   if (!commandExists("pandoc")) {
     throw new Error("Pandoc is required for document conversion but not found. Please install Pandoc and try again.");
@@ -166,7 +166,7 @@ function convertDocument(inputPath, outputPath, options = {}) {
 }
 
 // Audio conversion function
-function convertAudio(inputPath, outputPath, options = {}) {
+fn convertAudio(inputPath, outputPath, options = {}) {
   // Check if FFmpeg is installed
   if (!commandExists("ffmpeg")) {
     throw new Error("FFmpeg is required for audio conversion but not found. Please install FFmpeg and try again.");
@@ -201,7 +201,7 @@ function convertAudio(inputPath, outputPath, options = {}) {
 }
 
 // Video conversion function
-function convertVideo(inputPath, outputPath, options = {}) {
+fn convertVideo(inputPath, outputPath, options = {}) {
   // Check if FFmpeg is installed
   if (!commandExists("ffmpeg")) {
     throw new Error("FFmpeg is required for video conversion but not found. Please install FFmpeg and try again.");
@@ -241,7 +241,7 @@ function convertVideo(inputPath, outputPath, options = {}) {
 }
 
 // Data conversion function
-function convertData(inputPath, outputPath, options = {}) {
+fn convertData(inputPath, outputPath, options = {}) {
   // Get file content
   const content = fs.readFileSync(inputPath, "utf8");
   
@@ -305,7 +305,7 @@ function convertData(inputPath, outputPath, options = {}) {
 }
 
 // Get supported formats
-export function getFormats() {
+export fn getFormats() {
   return FORMATS;
 }
 
@@ -355,27 +355,27 @@ if (process.argv.length > 2 && process.argv[1].endsWith("fconvert")) {
   
   // Handle --help flag
   if (args.includes("-h") || args.includes("--help")) {
-    console.log("FConvert - File Format Conversion Utility");
-    console.log("Usage: fconvert [options] input_file output_file");
-    console.log("\nOptions:");
-    console.log("  -h, --help           Display this help menu");
-    console.log("  -q, --quality        Set the quality level (low, medium, high)");
-    console.log("  -s, --size           Set the output size (e.g., 800x600)");
-    console.log("  -f, --format         Explicitly specify the output format");
-    console.log("  -b, --batch          Process multiple files (glob pattern)");
-    console.log("  -o, --output-dir     Specify output directory for batch processing");
-    console.log("  --list-formats       Show all supported formats");
+    print("FConvert - File Format Conversion Utility");
+    print("Usage: fconvert [options] input_file output_file");
+    print("\nOptions:");
+    print("  -h, --help           Display this help menu");
+    print("  -q, --quality        Set the quality level (low, medium, high)");
+    print("  -s, --size           Set the output size (e.g., 800x600)");
+    print("  -f, --format         Explicitly specify the output format");
+    print("  -b, --batch          Process multiple files (glob pattern)");
+    print("  -o, --output-dir     Specify output directory for batch processing");
+    print("  --list-formats       Show all supported formats");
     process.exit(0);
   }
   
   // Handle --list-formats flag
   if (args.includes("--list-formats")) {
-    console.log("Supported formats:\n");
-    console.log("Image formats:", FORMATS.image.join(", "));
-    console.log("Document formats:", FORMATS.document.join(", "));
-    console.log("Audio formats:", FORMATS.audio.join(", "));
-    console.log("Video formats:", FORMATS.video.join(", "));
-    console.log("Data formats:", FORMATS.data.join(", "));
+    print("Supported formats:\n");
+    print("Image formats:", FORMATS.image.join(", "));
+    print("Document formats:", FORMATS.document.join(", "));
+    print("Audio formats:", FORMATS.audio.join(", "));
+    print("Video formats:", FORMATS.video.join(", "));
+    print("Data formats:", FORMATS.data.join(", "));
     process.exit(0);
   }
   
@@ -421,7 +421,7 @@ if (process.argv.length > 2 && process.argv[1].endsWith("fconvert")) {
   // Perform conversion
   try {
     convert(inputFile, outputFile, options);
-    console.log(`Successfully converted ${inputFile} to ${outputFile}`);
+    print(`Successfully converted ${inputFile} to ${outputFile}`);
   } catch (error) {
     console.error(`Error: ${error.message}`);
     process.exit(1);

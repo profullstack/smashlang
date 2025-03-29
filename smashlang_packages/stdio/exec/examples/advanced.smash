@@ -6,73 +6,73 @@ import exec from "stdio/exec";
 import { exec as execNamed, execSync } from "stdio/exec";
 
 // Example: Running multiple commands in sequence
-async function runCommandSequence() {
-  console.log("Running commands in sequence...");
+async fn runCommandSequence() {
+  print("Running commands in sequence...");
   
   try {
     // Create a temporary directory
     await exec("mkdir -p /tmp/exec-example");
-    console.log("✓ Created temporary directory");
+    print("✓ Created temporary directory");
     
     // Create some files
     await exec("touch /tmp/exec-example/file1.txt /tmp/exec-example/file2.txt");
-    console.log("✓ Created test files");
+    print("✓ Created test files");
     
     // Write content to a file
     await exec("echo 'Hello from exec package' > /tmp/exec-example/file1.txt");
-    console.log("✓ Wrote content to file");
+    print("✓ Wrote content to file");
     
     // Read file content
     const content = await exec("cat /tmp/exec-example/file1.txt");
-    console.log(`✓ File content: ${content.trim()}`);
+    print(`✓ File content: ${content.trim()}`);
     
     // List directory contents
     const files = await exec("ls -la /tmp/exec-example");
-    console.log("\nDirectory contents:");
-    console.log(files);
+    print("\nDirectory contents:");
+    print(files);
     
     // Clean up
     await exec("rm -rf /tmp/exec-example");
-    console.log("✓ Cleaned up temporary directory");
+    print("✓ Cleaned up temporary directory");
   } catch (error) {
-    console.error("Error in command sequence:", error);
+    print("Error in command sequence: " + error);
   }
 }
 
 // Example: Working with environment variables
-async function workWithEnvVars() {
-  console.log("\nWorking with environment variables...");
+async fn workWithEnvVars() {
+  print("\nWorking with environment variables...");
   
   try {
     // Set custom environment variables
     const customEnv = {
-      ...process.env,
+      ...std.env,
       TEST_VAR: "Hello from SmashLang",
       NODE_ENV: "development"
     };
     
     // Execute command with custom environment
     const output = await exec("echo $TEST_VAR in $NODE_ENV mode", { env: customEnv });
-    console.log(`Output: ${output.trim()}`);
+    print(`Output: ${output.trim()}`);
   } catch (error) {
     console.error("Error with environment variables:", error);
   }
 }
 
 // Example: Handling command timeouts
-async function handleTimeouts() {
-  console.log("\nHandling command timeouts...");
+async fn handleTimeouts() {
+  print("\nHandling command timeouts...");
   
   try {
-    console.log("Running command with sufficient timeout...");
+    print("Running command with sufficient timeout...");
     const output1 = await exec("sleep 1 && echo 'Command completed'", { timeout: 2000 });
-    console.log(`Output: ${output1.trim()}`);
+    print(`Output: ${output1.trim()}`);
     
-    console.log("\nRunning command that will timeout...");
+    print("\nRunning command that will timeout...");
     try {
       await exec("sleep 3 && echo 'This should not be printed'", { timeout: 1000 });
     } catch (error) {
-      console.log(`✓ Caught timeout error: ${error}`);
+      print(`✓ Caught timeout error: ${error}`);
     }
   } catch (error) {
     console.error("Unexpected error:", error);
@@ -80,34 +80,34 @@ async function handleTimeouts() {
 }
 
 // Example: Error handling
-async function handleErrors() {
-  console.log("\nHandling command errors...");
+async fn handleErrors() {
+  print("\nHandling command errors...");
   
   try {
     // Try to run a non-existent command
     await exec("nonexistentcommand");
   } catch (error) {
-    console.log(`✓ Caught error for non-existent command: ${error}`);
+    print(`✓ Caught error for non-existent command: ${error}`);
   }
   
   try {
     // Command that returns non-zero exit code
     await exec("grep 'nonexistentpattern' /etc/hosts");
   } catch (error) {
-    console.log(`✓ Caught error for failed command: ${error}`);
+    print(`✓ Caught error for failed command: ${error}`);
   }
 }
 
 // Run all examples
-async function runAllExamples() {
-  console.log("Exec Package - Advanced Examples\n");
+async fn runAllExamples() {
+  print("Exec Package - Advanced Examples\n");
   
   await runCommandSequence();
   await workWithEnvVars();
   await handleTimeouts();
   await handleErrors();
   
-  console.log("\nAll advanced examples completed.");
+  print("\nAll advanced examples completed.");
 }
 
 runAllExamples();

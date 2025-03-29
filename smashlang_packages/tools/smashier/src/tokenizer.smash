@@ -11,7 +11,7 @@
 export const TokenType = {
   // Keywords
   KEYWORD: 'keyword',
-  // Identifiers (variable names, function names, etc.)
+  // Identifiers (variable names, fn names, etc.)
   IDENTIFIER: 'identifier',
   // Literals (strings, numbers, booleans, etc.)
   STRING: 'string',

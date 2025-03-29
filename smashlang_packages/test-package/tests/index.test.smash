@@ -1,5 +1,5 @@
 import { example } from 'test-package';
 
-test('example function returns correct greeting', () => {
+test('example fn returns correct greeting', () => {
   expect(example()).toBe('Hello from SmashLang package!');
 });

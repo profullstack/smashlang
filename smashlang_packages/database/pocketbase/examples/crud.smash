@@ -6,16 +6,16 @@ import "pocketbase";
 const pb = pocketbase.createClient("http://127.0.0.1:8090");
 
 async fn main() {
-  console.log("=== PocketBase CRUD Operations Example ===");
+  print("=== PocketBase CRUD Operations Example ===");
   
   try {
     // First authenticate
-    console.log("Authenticating...");
+    print("Authenticating...");
     await pb.authWithPassword("users", "test@example.com", "password123");
-    console.log("Authentication successful!\n");
+    print("Authentication successful!\n");
     
     // Create a record
-    console.log("Creating a new task...");
+    print("Creating a new task...");
     const newTask = {
       title: "Learn SmashLang",
       description: "Master the SmashLang programming language",
@@ -24,68 +24,68 @@ async fn main() {
     };
     
     const createdTask = await pb.createRecord("tasks", newTask);
-    console.log("Task created successfully:");
-    console.log(`ID: ${createdTask.id}`);
-    console.log(`Title: ${createdTask.title}`);
-    console.log(`Status: ${createdTask.status}`);
-    console.log(`Created: ${createdTask.created}\n`);
+    print("Task created successfully:");
+    print(`ID: ${createdTask.id}`);
+    print(`Title: ${createdTask.title}`);
+    print(`Status: ${createdTask.status}`);
+    print(`Created: ${createdTask.created}\n`);
     
     // Get a record
-    console.log(`Retrieving task with ID: ${createdTask.id}...`);
+    print(`Retrieving task with ID: ${createdTask.id}...`);
     const task = await pb.getRecord("tasks", createdTask.id);
-    console.log("Task retrieved successfully:");
-    console.log(`Title: ${task.title}`);
-    console.log(`Description: ${task.description}`);
-    console.log(`Status: ${task.status}\n`);
+    print("Task retrieved successfully:");
+    print(`Title: ${task.title}`);
+    print(`Description: ${task.description}`);
+    print(`Status: ${task.status}\n`);
     
     // Update a record
-    console.log("Updating task status to 'completed'...");
+    print("Updating task status to 'completed'...");
     const updatedData = {
       status: "completed",
       completed_at: new Date().toISOString()
     };
     
     const updatedTask = await pb.updateRecord("tasks", task.id, updatedData);
-    console.log("Task updated successfully:");
-    console.log(`Title: ${updatedTask.title}`);
-    console.log(`Status: ${updatedTask.status}`);
-    console.log(`Completed at: ${updatedTask.completed_at}\n`);
+    print("Task updated successfully:");
+    print(`Title: ${updatedTask.title}`);
+    print(`Status: ${updatedTask.status}`);
+    print(`Completed at: ${updatedTask.completed_at}\n`);
     
     // List records with filtering
-    console.log("Listing all completed tasks...");
+    print("Listing all completed tasks...");
     const taskList = await pb.getRecordList("tasks", 1, 10, "status = 'completed'");
-    console.log(`Found ${taskList.items.length} completed tasks:`);
+    print(`Found ${taskList.items.length} completed tasks:`);
     
     for (let i = 0; i < taskList.items.length; i++) {
       const item = taskList.items[i];
-      console.log(`${i + 1}. ${item.title} (ID: ${item.id})`);
+      print(`${i + 1}. ${item.title} (ID: ${item.id})`);
     }
-    console.log("");
+    print("");
     
     // Pagination example
-    console.log("Pagination information:");
-    console.log(`Page: ${taskList.page}`);
-    console.log(`Items per page: ${taskList.perPage}`);
-    console.log(`Total items: ${taskList.totalItems}`);
-    console.log(`Total pages: ${taskList.totalPages}\n`);
+    print("Pagination information:");
+    print(`Page: ${taskList.page}`);
+    print(`Items per page: ${taskList.perPage}`);
+    print(`Total items: ${taskList.totalItems}`);
+    print(`Total pages: ${taskList.totalPages}\n`);
     
     // Delete a record
-    console.log(`Deleting task with ID: ${task.id}...`);
+    print(`Deleting task with ID: ${task.id}...`);
     await pb.deleteRecord("tasks", task.id);
-    console.log("Task deleted successfully!\n");
+    print("Task deleted successfully!\n");
     
     // Verify deletion
     try {
       await pb.getRecord("tasks", task.id);
     } catch (error) {
-      console.log(`Verification: ${error.message}`);
+      print(`Verification: ${error.message}`);
     }
   } catch (error) {
-    console.error(`CRUD error: ${error.message}`);
+    print(`CRUD error: ${error.message}`);
   }
 }
 
 // Run the main function
 main().catch(error => {
-  console.error("Error in main function:", error);
+  print("Error in main function: " + error);
 });

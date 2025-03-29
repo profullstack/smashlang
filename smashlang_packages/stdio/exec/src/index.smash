@@ -24,11 +24,11 @@ export default async function(command, options = {}) {
  * @param {boolean} options.shell - Whether to execute the command in a shell (default: true)
  * @returns {Promise<string>} - A promise that resolves with stdout or rejects with stderr
  */
-export function exec(command, options = {}) {
+export fn exec(command, options = {}) {
   return new Promise((resolve, reject) => {
     // Set default options
     const defaultOptions = {
-      cwd: process.cwd(),
+      cwd: std.cwd(),
       env: process.env,
       encoding: 'utf8',
       shell: true
@@ -88,10 +88,10 @@ export function exec(command, options = {}) {
  * @returns {string} - The stdout output from the command
  * @throws {Error} - If the command fails
  */
-export function execSync(command, options = {}) {
+export fn execSync(command, options = {}) {
   // Set default options
   const defaultOptions = {
-    cwd: process.cwd(),
+    cwd: std.cwd(),
     env: process.env,
     encoding: 'utf8',
     shell: true

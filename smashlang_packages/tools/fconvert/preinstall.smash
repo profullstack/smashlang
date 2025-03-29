@@ -3,10 +3,10 @@
 // Import required modules
 import "fs";
 
-console.log("Running FConvert pre-installation checks...");
+print("Running FConvert pre-installation checks...");
 
 // Function to check if a command exists
-function commandExists(command) {
+fn commandExists(command) {
   try {
     const result = fs.execSync(`command -v ${command}`);
     return result.toString().trim().length > 0;
@@ -16,7 +16,7 @@ function commandExists(command) {
 }
 
 // Check for required dependencies
-function checkDependencies() {
+fn checkDependencies() {
   const dependencies = [
     { name: 'ImageMagick', command: 'convert', usedFor: 'image conversion' },
     { name: 'Pandoc', command: 'pandoc', usedFor: 'document conversion' },
@@ -36,20 +36,20 @@ function checkDependencies() {
   
   // Print installed dependencies
   if (installed.length > 0) {
-    console.log("\nDetected installed dependencies:");
+    print("\nDetected installed dependencies:");
     for (const dep of installed) {
-      console.log(`✓ ${dep.name} (${dep.command}): Available for ${dep.usedFor}`);
+      print(`✓ ${dep.name} (${dep.command}): Available for ${dep.usedFor}`);
     }
   }
   
   // Print missing dependencies and installation instructions
   if (missing.length > 0) {
-    console.log("\nMissing required dependencies:");
+    print("\nMissing required dependencies:");
     for (const dep of missing) {
-      console.log(`✗ ${dep.name} (${dep.command}): Required for ${dep.usedFor}`);
+      print(`✗ ${dep.name} (${dep.command}): Required for ${dep.usedFor}`);
     }
     
-    console.log("\nInstallation instructions:");
+    print("\nInstallation instructions:");
     
     // Detect OS for installation instructions
     const isLinux = process.platform === 'linux';
@@ -75,29 +75,29 @@ function checkDependencies() {
       }
       
       if (isDebian) {
-        console.log("Debian/Ubuntu:");
-        console.log("sudo apt-get install imagemagick pandoc ffmpeg");
+        print("Debian/Ubuntu:");
+        print("sudo apt-get install imagemagick pandoc ffmpeg");
       } else if (isFedora) {
-        console.log("Fedora:");
-        console.log("sudo dnf install ImageMagick pandoc ffmpeg");
+        print("Fedora:");
+        print("sudo dnf install ImageMagick pandoc ffmpeg");
       } else if (isArch) {
-        console.log("Arch Linux:");
-        console.log("sudo pacman -S imagemagick pandoc ffmpeg");
+        print("Arch Linux:");
+        print("sudo pacman -S imagemagick pandoc ffmpeg");
       } else {
-        console.log("Linux (generic):");
-        console.log("Please use your distribution's package manager to install the missing dependencies.");
+        print("Linux (generic):");
+        print("Please use your distribution's package manager to install the missing dependencies.");
       }
     } else if (isMac) {
-      console.log("macOS (using Homebrew):");
-      console.log("brew install imagemagick pandoc ffmpeg");
+      print("macOS (using Homebrew):");
+      print("brew install imagemagick pandoc ffmpeg");
     } else if (isWindows) {
-      console.log("Windows:");
-      console.log("Please download and install the following:");
-      console.log("- ImageMagick: https://imagemagick.org/script/download.php");
-      console.log("- Pandoc: https://pandoc.org/installing.html");
-      console.log("- FFmpeg: https://ffmpeg.org/download.html");
+      print("Windows:");
+      print("Please download and install the following:");
+      print("- ImageMagick: https://imagemagick.org/script/download.php");
+      print("- Pandoc: https://pandoc.org/installing.html");
+      print("- FFmpeg: https://ffmpeg.org/download.html");
     } else {
-      console.log("Please install the missing dependencies for your operating system.");
+      print("Please install the missing dependencies for your operating system.");
     }
   }
   
@@ -105,17 +105,17 @@ function checkDependencies() {
 }
 
 // Main function
-function main() {
-  console.log("Checking for required dependencies...");
+fn main() {
+  print("Checking for required dependencies...");
   
   const allDependenciesInstalled = checkDependencies();
   
   if (allDependenciesInstalled) {
-    console.log("\n✓ All required dependencies are installed.");
-    console.log("Pre-installation checks completed successfully.\n");
+    print("\n✓ All required dependencies are installed.");
+    print("Pre-installation checks completed successfully.\n");
   } else {
-    console.log("\n⚠ Some dependencies are missing. FConvert will have limited functionality.");
-    console.log("Please install the missing dependencies for full functionality.\n");
+    print("\n⚠ Some dependencies are missing. FConvert will have limited functionality.");
+    print("Please install the missing dependencies for full functionality.\n");
     // We don't exit with an error to allow installation to continue
   }
 }
