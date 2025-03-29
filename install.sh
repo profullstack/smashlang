@@ -251,6 +251,24 @@ EOF
     else
       echo -e "${YELLOW}Warning: smashlang_packages directory not found in repository${NC}"
     fi
+    
+    # Copy assets directory if it exists
+    if [ -d "$temp_dir/assets" ]; then
+      echo -e "${BLUE}Copying assets directory...${NC}"
+      mkdir -p "$HOME/.local/share/smashlang/assets"
+      cp -r "$temp_dir/assets"/* "$HOME/.local/share/smashlang/assets/"
+      
+      # Create logo.txt and favicon.txt if they don't exist
+      if [ -f "$temp_dir/assets/logo.ascii" ] && [ ! -f "$HOME/.local/share/smashlang/assets/logo.txt" ]; then
+        cp "$temp_dir/assets/logo.ascii" "$HOME/.local/share/smashlang/assets/logo.txt"
+      fi
+      
+      if [ -f "$temp_dir/assets/favicon.ascii" ] && [ ! -f "$HOME/.local/share/smashlang/assets/favicon.txt" ]; then
+        cp "$temp_dir/assets/favicon.ascii" "$HOME/.local/share/smashlang/assets/favicon.txt"
+      fi
+    else
+      echo -e "${YELLOW}Warning: assets directory not found in repository${NC}"
+    fi
   else
     # Download SmashLang binary
     local binary_url="$RELEASE_URL/smashlang-linux-x64.tar.gz"
@@ -893,7 +911,7 @@ generate_package_assets() {
   local assets_dir=""
   
   # Check possible asset locations
-  for dir in "$script_dir/assets" "$script_dir/../assets" "$(pwd)/assets"; do
+  for dir in "$script_dir/assets" "$script_dir/../assets" "$(pwd)/assets" "$HOME/.local/share/smashlang/assets"; do
     if [ -d "$dir" ]; then
       assets_dir="$dir"
       break
