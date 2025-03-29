@@ -208,20 +208,20 @@ SmashLang supports multiple ways to define functions:
 
 ```js
 // Function declaration
-function add(a, b) {
+fn add(a, b) {
   return a + b;
 }
 
 // Function expression
-let subtract = function(a, b) {
+let subtract = fn(a, b) {
   return a - b;
 };
 
 // Arrow function (concise syntax)
-let multiply = (a, b) => a * b;
+let multiply = fn(a, b) => a * b;
 
 // Arrow function with block body
-let divide = (a, b) => {
+let divide = fn(a, b) => {
   if (b === 0) {
     throw new Error("Division by zero");
   }
@@ -229,12 +229,12 @@ let divide = (a, b) => {
 };
 
 // Function with default parameters
-function greet(name = "Guest") {
+fn greet(name = "Guest") {
   return `Hello, ${name}!`;
 }
 
 // Function with rest parameters
-function sum(...numbers) {
+fn sum(...numbers) {
   return numbers.reduce((total, num) => total + num, 0);
 }
 ```

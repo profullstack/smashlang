@@ -13,7 +13,7 @@ print("Keyboard Monitor - Press keys to see events (Ctrl+C to exit)\n");
 print("Registering for keyboard events...");
 
 // Register for keyboard events
-const registration = input.registerEvents(["keyboard"], event => {
+const registration = input.registerEvents(["keyboard"], fn(event) => {
   if (event.type === "keydown") {
     print(`Key Down: ${event.key} (Code: ${event.keyCode})`);
   } else if (event.type === "keyup") {

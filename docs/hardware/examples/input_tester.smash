@@ -41,7 +41,7 @@ const inputState = {
 const MAX_TRAIL_POINTS = 50;
 
 // Register for all input events
-const registration = input.registerEvents(["keyboard", "mouse", "touch"], event => {
+const registration = input.registerEvents(["keyboard", "mouse", "touch"], fn(event) => {
   // Process keyboard events
   if (event.type === "keydown") {
     inputState.pressedKeys.add(event.key);
@@ -70,7 +70,7 @@ const registration = input.registerEvents(["keyboard", "mouse", "touch"], event 
   
   // Process touch events
   else if (event.type === "touchstart") {
-    event.touches.forEach(touch => {
+    event.touches.forEach(fn(touch) => {
       inputState.touchPoints.set(touch.id, touch);
       
       // Initialize trail for this touch
@@ -87,7 +87,7 @@ const registration = input.registerEvents(["keyboard", "mouse", "touch"], event 
       });
     });
   } else if (event.type === "touchmove") {
-    event.touches.forEach(touch => {
+    event.touches.forEach(fn(touch) => {
       inputState.touchPoints.set(touch.id, touch);
       
       // Add point to trail
@@ -111,7 +111,7 @@ const registration = input.registerEvents(["keyboard", "mouse", "touch"], event 
       inputState.touchPoints.delete(touch.id);
       
       // Keep the trail for a short time before removing
-      setTimeout(() => {
+      setTimeout(fn() => {
         inputState.touchTrails.delete(touch.id);
       }, 2000);
     });
@@ -258,7 +258,7 @@ window.onDraw = (ctx) => {
   }
   
   // Draw touch trails
-  inputState.touchTrails.forEach((trail, id) => {
+  inputState.touchTrails.forEach(fn(trail, id) => {
     if (trail.length > 1) {
       ctx.beginPath();
       ctx.moveTo(trail[0].x, trail[0].y);
@@ -276,7 +276,7 @@ window.onDraw = (ctx) => {
   });
   
   // Draw active touch points
-  inputState.touchPoints.forEach(touch => {
+  inputState.touchPoints.forEach(fn(touch) => {
     const hue = (touch.id * 137) % 360;
     ctx.fillStyle = `hsl(${hue}, 80%, 50%)`;
     

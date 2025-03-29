@@ -28,12 +28,12 @@ const trails = new Map();
 const MAX_TRAIL_POINTS = 50;
 
 // Register for touch events
-const registration = input.registerEvents(["touch"], event => {
+const registration = input.registerEvents(["touch"], fn(event) => {
   if (event.type === "touchstart") {
     print(`Touch started with ${event.touches.length} points`);
     
     // Add new touch points
-    event.touches.forEach(touch => {
+    event.touches.forEach(fn(touch) => {
       touchPoints.set(touch.id, touch);
       
       // Initialize trail for this touch
@@ -53,7 +53,7 @@ const registration = input.registerEvents(["touch"], event => {
     print(`Touch moved with ${event.touches.length} points`);
     
     // Update touch points
-    event.touches.forEach(touch => {
+    event.touches.forEach(fn(touch) => {
       touchPoints.set(touch.id, touch);
       
       // Add point to trail
@@ -76,11 +76,11 @@ const registration = input.registerEvents(["touch"], event => {
     print(`Touch ${event.type === "touchend" ? "ended" : "canceled"} for ${event.touches.length} points`);
     
     // Remove ended touch points
-    event.touches.forEach(touch => {
+    event.touches.forEach(fn(touch) => {
       touchPoints.delete(touch.id);
       
       // Keep the trail for a short time before removing
-      setTimeout(() => {
+      setTimeout(fn() => {
         trails.delete(touch.id);
       }, 2000);
     });

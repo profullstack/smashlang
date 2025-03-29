@@ -25,7 +25,7 @@ const trail = [];
 const MAX_TRAIL_POINTS = 50;
 
 // Register for mouse events
-const registration = input.registerEvents(["mouse"], event => {
+const registration = input.registerEvents(["mouse"], fn(event) => {
   if (event.type === "mousemove") {
     print(`Mouse moved to: ${event.x}, ${event.y}`);
     

@@ -1,0 +1,183 @@
+// destructuring.smash - Examples of destructuring and spread operator in SmashLang
+
+// Array destructuring examples
+print("\n=== Array Destructuring ===\n");
+
+// Basic array destructuring
+let [a, b] = [1, 2];
+print(`a = ${a}, b = ${b}`); // a = 1, b = 2
+
+// Skipping elements
+let [first, , third] = [1, 2, 3];
+print(`first = ${first}, third = ${third}`); // first = 1, third = 3
+
+// Rest pattern
+let [head, ...tail] = [1, 2, 3, 4];
+print(`head = ${head}, tail = ${JSON.stringify(tail)}`); // head = 1, tail = [2, 3, 4]
+
+// Default values
+let [x = 5, y = 7] = [1];
+print(`x = ${x}, y = ${y}`); // x = 1, y = 7
+
+// Swapping variables
+let c = 1;
+let d = 2;
+[c, d] = [d, c];
+print(`After swap: c = ${c}, d = ${d}`); // c = 2, d = 1
+
+// Object destructuring examples
+print("\n=== Object Destructuring ===\n");
+
+// Basic object destructuring
+let person = { name: "John", age: 30 };
+let { name, age } = person;
+print(`name = ${name}, age = ${age}`); // name = John, age = 30
+
+// Assigning to different variable names
+let { name: personName, age: personAge } = person;
+print(`personName = ${personName}, personAge = ${personAge}`); // personName = John, personAge = 30
+
+// Default values
+let { name: n, age: a, job = "Developer" } = person;
+print(`n = ${n}, a = ${a}, job = ${job}`); // n = John, a = 30, job = Developer
+
+// Nested destructuring
+let user = {
+  id: 42,
+  profile: {
+    name: "Alice",
+    address: {
+      city: "San Francisco",
+      country: "USA"
+    }
+  }
+};
+
+let { profile: { name: userName, address: { city } } } = user;
+print(`userName = ${userName}, city = ${city}`); // userName = Alice, city = San Francisco
+
+// Rest pattern with objects
+let { name: personName2, ...rest } = person;
+print(`personName2 = ${personName2}, rest = ${JSON.stringify(rest)}`); // personName2 = John, rest = {"age":30}
+
+// Function parameter destructuring
+print("\n=== Function Parameter Destructuring ===\n");
+
+// Array parameter destructuring
+fn sum([a, b]) {
+  return a + b;
+}
+print(`sum([1, 2]) = ${sum([1, 2])}`); // sum([1, 2]) = 3
+
+// Object parameter destructuring
+fn greet({ name, greeting = "Hello" }) {
+  return `${greeting}, ${name}!`;
+}
+print(greet({ name: "John" })); // Hello, John!
+print(greet({ name: "Alice", greeting: "Hi" })); // Hi, Alice!
+
+// Destructuring with rest parameters
+fn printPersonInfo({ name, age, ...rest }) {
+  print(`Name: ${name}, Age: ${age}`);
+  print("Additional info:", rest);
+  return rest;
+}
+
+let additionalInfo = printPersonInfo({
+  name: "John",
+  age: 30,
+  job: "Developer",
+  city: "New York"
+});
+// Output:
+// Name: John, Age: 30
+// Additional info: { job: "Developer", city: "New York" }
+
+// Spread operator examples
+print("\n=== Array Spread ===\n");
+
+// Combining arrays
+let arr1 = [1, 2, 3];
+let arr2 = [4, 5, 6];
+let combined = [...arr1, ...arr2];
+print(`combined = ${JSON.stringify(combined)}`); // [1, 2, 3, 4, 5, 6]
+
+// Copying arrays
+let original = [1, 2, 3];
+let copy = [...original];
+original[0] = 99;
+print(`original = ${JSON.stringify(original)}`); // [99, 2, 3]
+print(`copy = ${JSON.stringify(copy)}`); // [1, 2, 3]
+
+// Using spread with push
+let numbers = [1, 2];
+numbers.push(...[3, 4, 5]);
+print(`numbers = ${JSON.stringify(numbers)}`); // [1, 2, 3, 4, 5]
+
+// Using spread with function calls
+fn add(a, b, c) {
+  return a + b + c;
+}
+let args = [1, 2, 3];
+print(`add(...args) = ${add(...args)}`); // 6
+
+print("\n=== Object Spread ===\n");
+
+// Combining objects
+let obj1 = { a: 1, b: 2 };
+let obj2 = { c: 3, d: 4 };
+let combinedObj = { ...obj1, ...obj2 };
+print(`combinedObj = ${JSON.stringify(combinedObj)}`); // { a: 1, b: 2, c: 3, d: 4 }
+
+// Copying objects
+let originalObj = { a: 1, b: 2 };
+let copyObj = { ...originalObj };
+originalObj.a = 99;
+print(`originalObj = ${JSON.stringify(originalObj)}`); // { a: 99, b: 2 }
+print(`copyObj = ${JSON.stringify(copyObj)}`); // { a: 1, b: 2 }
+
+// Overriding properties
+let defaults = { theme: "dark", fontSize: 12, showSidebar: true };
+let userPrefs = { theme: "light" };
+let settings = { ...defaults, ...userPrefs };
+print(`settings = ${JSON.stringify(settings)}`); // { theme: "light", fontSize: 12, showSidebar: true }
+
+// Adding new properties while spreading
+let employee = { ...person, jobTitle: "Developer", salary: 100000 };
+print(`employee = ${JSON.stringify(employee)}`); // { name: "John", age: 30, jobTitle: "Developer", salary: 100000 }
+
+// Practical example: Immutable state updates
+print("\n=== Immutable State Updates ===\n");
+
+const initialState = {
+  user: {
+    name: "John",
+    preferences: {
+      theme: "dark",
+      notifications: true
+    }
+  },
+  posts: []
+};
+
+// Update nested property immutably
+const updatedState = {
+  ...initialState,
+  user: {
+    ...initialState.user,
+    preferences: {
+      ...initialState.user.preferences,
+      theme: "light"
+    }
+  }
+};
+
+// Add item to array immutably
+const stateWithNewPost = {
+  ...updatedState,
+  posts: [...updatedState.posts, { id: 1, title: "New Post" }]
+};
+
+print(`Theme: ${stateWithNewPost.user.preferences.theme}`); // "light"
+print(`Posts count: ${stateWithNewPost.posts.length}`); // 1
+print(`First post title: ${stateWithNewPost.posts[0].title}`); // "New Post"
