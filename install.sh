@@ -865,7 +865,7 @@ main() {
     esac
     
     # Generate package asset files after installation
-    if [ "$GENERATE_LOGOS" = true ]; then
+    if [ "$GENERATE_LOGOS" = true ] && [ "$USE_MASTER" = false ]; then
       generate_package_assets
     fi
   else
