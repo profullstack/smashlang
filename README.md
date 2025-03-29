@@ -452,7 +452,7 @@ The SmashLang logo represents resistance, speed, and clarity. The raised fist re
 ---
 
 ## Contact
-For technical contributions or questions: protocol@infernet.tech
+For technical contributions or questions: opensource@smashlang.com
 
 [![Discord](https://img.shields.io/discord/1011308539819597844?label=Discord&logo=Discord&style=for-the-badge)](https://discord.gg/U7dEXfBA3s)
 [![Reddit](https://img.shields.io/badge/Reddit-FF4500?logo=reddit&logoColor=fff&style=for-the-badge)](https://www.reddit.com/r/smashlang/)
