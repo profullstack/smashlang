@@ -148,15 +148,18 @@ install_linux() {
         chmod +x "$LINUX_INSTALL_DIR/smash"
         
         # Copy documentation directory
-        mkdir -p "/usr/local/share/smashlang" || mkdir -p "$HOME/.local/share/smashlang"
+        # Always try to copy to user's home directory first as it doesn't require root permissions
+        mkdir -p "$HOME/.local/share/smashlang"
         if [ -d "$temp_dir/docs" ]; then
-          if [ -w "/usr/local/share/smashlang" ]; then
+          echo -e "${BLUE}Installing documentation...${NC}"
+          cp -r "$temp_dir/docs" "$HOME/.local/share/smashlang/"
+          echo -e "${GREEN}Documentation installed to $HOME/.local/share/smashlang/docs${NC}"
+          
+          # Also try system-wide installation if we have permissions
+          if [ -w "/usr/local/share" ]; then
+            mkdir -p "/usr/local/share/smashlang"
             cp -r "$temp_dir/docs" "/usr/local/share/smashlang/"
-            echo -e "${GREEN}Documentation installed to /usr/local/share/smashlang/docs${NC}"
-          else
-            mkdir -p "$HOME/.local/share/smashlang"
-            cp -r "$temp_dir/docs" "$HOME/.local/share/smashlang/"
-            echo -e "${GREEN}Documentation installed to $HOME/.local/share/smashlang/docs${NC}"
+            echo -e "${GREEN}Documentation also installed to /usr/local/share/smashlang/docs${NC}"
           fi
         else
           echo -e "${YELLOW}Warning: Documentation directory not found in the repository${NC}"
