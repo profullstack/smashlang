@@ -1,0 +1,309 @@
+// Control Flow Test Suite for SmashLang
+// This file tests various control flow constructs in SmashLang
+
+import "assert";
+
+// Test if-else statements
+test "if-else statements" {
+    // Test simple if statement
+    let x = 10;
+    let result = "";
+    
+    if (x > 5) {
+        result = "greater";
+    }
+    
+    assert.equal(result, "greater", "if statement should execute when condition is true");
+    
+    // Test if-else statement
+    x = 3;
+    if (x > 5) {
+        result = "greater";
+    } else {
+        result = "less or equal";
+    }
+    
+    assert.equal(result, "less or equal", "else branch should execute when condition is false");
+    
+    // Test if-else if-else statement
+    x = 5;
+    if (x > 5) {
+        result = "greater";
+    } else if (x < 5) {
+        result = "less";
+    } else {
+        result = "equal";
+    }
+    
+    assert.equal(result, "equal", "else if chain should find the correct branch");
+}
+
+// Test while loops
+test "while loops" {
+    let i = 0;
+    let sum = 0;
+    
+    while (i < 5) {
+        sum += i;
+        i++;
+    }
+    
+    assert.equal(sum, 10, "while loop should sum numbers from 0 to 4");
+    assert.equal(i, 5, "while loop should increment counter to 5");
+    
+    // Test while loop with break
+    i = 0;
+    sum = 0;
+    
+    while (i < 10) {
+        if (i >= 5) {
+            break;
+        }
+        sum += i;
+        i++;
+    }
+    
+    assert.equal(sum, 10, "while loop with break should sum numbers from 0 to 4");
+    assert.equal(i, 5, "while loop with break should stop at i=5");
+    
+    // Test while loop with continue
+    i = 0;
+    sum = 0;
+    
+    while (i < 5) {
+        i++;
+        if (i % 2 === 0) {
+            continue;
+        }
+        sum += i;
+    }
+    
+    assert.equal(sum, 9, "while loop with continue should sum only odd numbers");
+}
+
+// Test do-while loops
+test "do-while loops" {
+    let i = 0;
+    let sum = 0;
+    
+    do {
+        sum += i;
+        i++;
+    } while (i < 5);
+    
+    assert.equal(sum, 10, "do-while loop should sum numbers from 0 to 4");
+    
+    // Test do-while that executes at least once
+    i = 10;
+    sum = 0;
+    
+    do {
+        sum += i;
+        i++;
+    } while (i < 5);
+    
+    assert.equal(sum, 10, "do-while loop should execute at least once");
+}
+
+// Test for loops
+test "for loops" {
+    let sum = 0;
+    
+    for (let i = 0; i < 5; i++) {
+        sum += i;
+    }
+    
+    assert.equal(sum, 10, "for loop should sum numbers from 0 to 4");
+    
+    // Test for loop with break
+    sum = 0;
+    
+    for (let i = 0; i < 10; i++) {
+        if (i >= 5) {
+            break;
+        }
+        sum += i;
+    }
+    
+    assert.equal(sum, 10, "for loop with break should sum numbers from 0 to 4");
+    
+    // Test for loop with continue
+    sum = 0;
+    
+    for (let i = 0; i < 5; i++) {
+        if (i % 2 === 0) {
+            continue;
+        }
+        sum += i;
+    }
+    
+    assert.equal(sum, 4, "for loop with continue should sum only odd numbers");
+}
+
+// Test for-in loops
+test "for-in loops" {
+    let obj = {
+        a: 1,
+        b: 2,
+        c: 3
+    };
+    
+    let keys = [];
+    
+    for (let key in obj) {
+        keys.push(key);
+    }
+    
+    assert.equal(keys.length, 3, "for-in loop should iterate over all object keys");
+    assert.equal(keys.includes("a"), true, "for-in loop should include key 'a'");
+    assert.equal(keys.includes("b"), true, "for-in loop should include key 'b'");
+    assert.equal(keys.includes("c"), true, "for-in loop should include key 'c'");
+    
+    // Test for-in with inherited properties
+    let proto = { d: 4 };
+    let child = Object.create(proto);
+    child.e = 5;
+    
+    keys = [];
+    
+    for (let key in child) {
+        keys.push(key);
+    }
+    
+    assert.equal(keys.includes("d"), true, "for-in loop should include inherited properties");
+    assert.equal(keys.includes("e"), true, "for-in loop should include own properties");
+}
+
+// Test for-of loops
+test "for-of loops" {
+    let arr = [1, 2, 3, 4, 5];
+    let sum = 0;
+    
+    for (let value of arr) {
+        sum += value;
+    }
+    
+    assert.equal(sum, 15, "for-of loop should sum all array elements");
+    
+    // Test for-of with break
+    sum = 0;
+    
+    for (let value of arr) {
+        if (value > 3) {
+            break;
+        }
+        sum += value;
+    }
+    
+    assert.equal(sum, 6, "for-of loop with break should sum elements until break");
+    
+    // Test for-of with continue
+    sum = 0;
+    
+    for (let value of arr) {
+        if (value % 2 === 0) {
+            continue;
+        }
+        sum += value;
+    }
+    
+    assert.equal(sum, 9, "for-of loop with continue should sum only odd elements");
+}
+
+// Test switch statements
+test "switch statements" {
+    let result = "";
+    
+    for (let i = 1; i <= 3; i++) {
+        switch (i) {
+            case 1:
+                result += "one";
+                break;
+            case 2:
+                result += "two";
+                break;
+            case 3:
+                result += "three";
+                break;
+            default:
+                result += "other";
+        }
+    }
+    
+    assert.equal(result, "onetwothree", "switch should execute correct case for each value");
+    
+    // Test switch with fallthrough
+    result = "";
+    
+    for (let i = 1; i <= 3; i++) {
+        switch (i) {
+            case 1:
+                result += "one";
+                // fallthrough
+            case 2:
+                result += "two";
+                break;
+            case 3:
+                result += "three";
+                break;
+            default:
+                result += "other";
+        }
+    }
+    
+    assert.equal(result, "onetwotwothree", "switch should allow fallthrough when break is omitted");
+    
+    // Test switch with default
+    result = "";
+    
+    for (let i = 1; i <= 4; i++) {
+        switch (i) {
+            case 1:
+                result += "one";
+                break;
+            case 2:
+                result += "two";
+                break;
+            default:
+                result += "other";
+        }
+    }
+    
+    assert.equal(result, "onetwootherothe", "switch should execute default case when no case matches");
+}
+
+// Test nested control flow
+test "nested control flow" {
+    let result = [];
+    
+    for (let i = 0; i < 3; i++) {
+        for (let j = 0; j < 3; j++) {
+            if (i === j) {
+                result.push(`${i},${j}`);
+            }
+        }
+    }
+    
+    assert.equal(result.length, 3, "nested loops with if should produce 3 results");
+    assert.equal(result[0], "0,0", "first result should be 0,0");
+    assert.equal(result[1], "1,1", "second result should be 1,1");
+    assert.equal(result[2], "2,2", "third result should be 2,2");
+    
+    // Test labeled break
+    result = [];
+    
+    outer: for (let i = 0; i < 3; i++) {
+        for (let j = 0; j < 3; j++) {
+            if (i === 1 && j === 1) {
+                break outer;
+            }
+            result.push(`${i},${j}`);
+        }
+    }
+    
+    assert.equal(result.length, 4, "labeled break should exit both loops");
+    assert.equal(result[0], "0,0", "first result should be 0,0");
+    assert.equal(result[1], "0,1", "second result should be 0,1");
+    assert.equal(result[2], "0,2", "third result should be 0,2");
+    assert.equal(result[3], "1,0", "fourth result should be 1,0");
+}

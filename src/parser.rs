@@ -60,6 +60,46 @@ pub enum AstNode {
     Block(Vec<AstNode>),  // Block-level scope { ... }
     Return(Box<AstNode>),
     
+    // Conditional statements
+    If {
+        condition: Box<AstNode>,
+        then_branch: Box<AstNode>,
+        else_branch: Option<Box<AstNode>>,
+    },
+    
+    // Loop statements
+    While {
+        condition: Box<AstNode>,
+        body: Box<AstNode>,
+    },
+    For {
+        init: Option<Box<AstNode>>,
+        condition: Option<Box<AstNode>>,
+        update: Option<Box<AstNode>>,
+        body: Box<AstNode>,
+    },
+    ForIn {
+        var_name: String,
+        object: Box<AstNode>,
+        body: Box<AstNode>,
+    },
+    ForOf {
+        var_name: String,
+        iterable: Box<AstNode>,
+        body: Box<AstNode>,
+    },
+    DoWhile {
+        body: Box<AstNode>,
+        condition: Box<AstNode>,
+    },
+    
+    // Switch statement
+    Switch {
+        expression: Box<AstNode>,
+        cases: Vec<SwitchCase>,
+        default: Option<Vec<AstNode>>,
+    },
+    
     // Error handling
     Try {
         body: Vec<AstNode>,
@@ -79,6 +119,12 @@ pub enum AstNode {
     
     // Modules
     Import(String),
+}
+
+#[derive(Debug)]
+pub struct SwitchCase {
+    pub value: AstNode,
+    pub body: Vec<AstNode>,
 }
 
 #[derive(Debug)]
@@ -196,836 +242,171 @@ impl Parser {
             Some(Token::Break) => self.parse_break(),
             Some(Token::Continue) => self.parse_continue(),
             Some(Token::LBrace) => self.parse_block(),
+            Some(Token::If) => self.parse_if(),
+            Some(Token::While) => self.parse_while(),
+            Some(Token::For) => self.parse_for(),
+            Some(Token::Do) => self.parse_do_while(),
+            Some(Token::Switch) => self.parse_switch(),
             Some(_) => self.parse_expr().map(Some),
             None => Ok(None),
         }
     }
     
-    fn parse_block(&mut self) -> ParseResult<Option<AstNode>> {
-        // Consume the opening brace
-        self.advance(); // {
+    fn parse_for(&mut self) -> ParseResult<Option<AstNode>> {
+        // Consume the for keyword
+        self.advance(); // for
         
-        let mut statements = Vec::new();
+        // Expect opening parenthesis
+        self.expect(&Token::LParen)?;
         
-        // Parse statements until we hit the closing brace
-        while let Some(token) = self.peek() {
-            if *token == Token::RBrace {
-                break;
-            }
+        // Check if this is a for-in or for-of loop
+        if let Some(Token::Let) = self.peek() {
+            self.advance(); // consume let
             
-            if let Some(stmt) = self.parse_statement()? {
-                statements.push(stmt);
-            }
-        }
-        
-        // Consume the closing brace
-        self.expect(&Token::RBrace)?;
-        
-        Ok(Some(AstNode::Block(statements)))
-    }
-
-    fn parse_import(&mut self) -> ParseResult<Option<AstNode>> {
-        self.advance(); // consume import
-        
-        if let Some(Token::String(path)) = self.advance() {
-            let node = AstNode::Import(path.clone());
-            
-            // Expect semicolon
-            self.expect(&Token::Semicolon)?;
-            
-            Ok(Some(node))
-        } else {
-            Err(ParseError::new("Expected string after import", self.pos))
-        }
-    }
-
-    fn parse_const(&mut self) -> ParseResult<Option<AstNode>> {
-        self.advance(); // consume const
-        
-        // Clone the token to avoid borrowing issues
-        let name_token = self.advance().cloned();
-        if let Some(Token::Identifier(name)) = name_token {
-            self.expect(&Token::Equal)?;
-            
-            let expr = self.parse_expr()?;
-            
-            // Expect semicolon
-            self.expect(&Token::Semicolon)?;
-            
-            Ok(Some(AstNode::ConstDecl {
-                name: name,
-                value: Box::new(expr),
-            }))
-        } else {
-            Err(ParseError::new("Expected identifier after const", self.pos))
-        }
-    }
-
-    fn parse_let(&mut self) -> ParseResult<Option<AstNode>> {
-        self.advance(); // consume let
-        
-        // Check if this is a destructuring pattern
-        if let Some(Token::LBracket) = self.peek() {
-            return self.parse_array_destructuring();
-        } else if let Some(Token::LBrace) = self.peek() {
-            return self.parse_object_destructuring();
-        }
-        
-        // Regular variable declaration
-        // Clone the token to avoid borrowing issues
-        let name_token = self.advance().cloned();
-        if let Some(Token::Identifier(name)) = name_token {
-            self.expect(&Token::Equal)?;
-            
-            let expr = self.parse_expr()?;
-            
-            // Expect semicolon
-            self.expect(&Token::Semicolon)?;
-            
-            Ok(Some(AstNode::LetDecl {
-                name: name,
-                value: Box::new(expr),
-            }))
-        } else {
-            Err(ParseError::new("Expected identifier, array or object pattern after let", self.pos))
-        }
-    }
-    
-    fn parse_array_destructuring(&mut self) -> ParseResult<Option<AstNode>> {
-        // Skip '['
-        self.advance();
-        
-        let mut targets = Vec::new();
-        
-        // Parse the destructuring pattern
-        while let Some(token) = self.peek() {
-            if *token == Token::RBracket {
-                break;
-            }
-            
-            // Check for rest element
-            if let Some(Token::Ellipsis) = self.peek() {
-                self.advance();
+            // Get the variable name
+            if let Some(Token::Identifier(var_name)) = self.peek().cloned() {
+                self.advance(); // consume variable name
                 
-                if let Some(Token::Identifier(name)) = self.peek() {
-                    let name = name.clone();
-                    self.advance();
+                // Check if this is a for-in loop
+                if let Some(Token::In) = self.peek() {
+                    self.advance(); // consume 'in'
                     
-                    targets.push(DestructuringTarget::new(name).as_rest());
-                } else {
-                    return Err(ParseError::new("Expected identifier after spread operator", self.pos));
-                }
-            } else if let Some(Token::Identifier(name)) = self.peek() {
-                let name = name.clone();
-                self.advance();
-                
-                // Check for default value
-                let target = if let Some(Token::Equal) = self.peek() {
-                    self.advance();
-                    let default_value = self.parse_expr()?;
-                    DestructuringTarget::new(name).with_default(default_value)
-                } else {
-                    DestructuringTarget::new(name)
-                };
-                
-                targets.push(target);
-            } else if let Some(Token::Comma) = self.peek() {
-                // Skip empty slots
-                targets.push(DestructuringTarget::new(String::new()));
-            } else {
-                return Err(ParseError::new("Expected identifier or spread in array destructuring", self.pos));
-            }
-            
-            // Expect comma between elements, except for the last one
-            if let Some(Token::Comma) = self.peek() {
-                self.advance();
-            } else if let Some(Token::RBracket) = self.peek() {
-                // End of pattern
-                break;
-            } else {
-                return Err(ParseError::new("Expected comma or closing bracket in array destructuring", self.pos));
-            }
-        }
-        
-        // Skip ']'
-        self.expect(&Token::RBracket)?;
-        
-        // Expect '='
-        self.expect(&Token::Equal)?;
-        
-        // Parse the value expression
-        let value = self.parse_expr()?;
-        
-        // Expect semicolon
-        self.expect(&Token::Semicolon)?;
-        
-        Ok(Some(AstNode::ArrayDestructuring {
-            targets,
-            value: Box::new(value),
-        }))
-    }
-    
-    fn parse_object_destructuring(&mut self) -> ParseResult<Option<AstNode>> {
-        // Skip '{'
-        self.advance();
-        
-        let mut targets = Vec::new();
-        
-        // Parse the destructuring pattern
-        while let Some(token) = self.peek() {
-            if *token == Token::RBrace {
-                break;
-            }
-            
-            // Check for rest element
-            if let Some(Token::Ellipsis) = self.peek() {
-                self.advance();
-                
-                if let Some(Token::Identifier(name)) = self.peek() {
-                    let name = name.clone();
-                    self.advance();
+                    // Parse the object expression
+                    let object = self.parse_expr()?;
                     
-                    targets.push(DestructuringTarget::new(name).as_rest());
-                } else {
-                    return Err(ParseError::new("Expected identifier after spread operator", self.pos));
-                }
-            } else if let Some(Token::Identifier(prop)) = self.peek() {
-                let prop = prop.clone();
-                self.advance();
-                
-                // Check for property renaming
-                let target = if let Some(Token::Colon) = self.peek() {
-                    self.advance();
-                    
-                    if let Some(Token::Identifier(name)) = self.peek() {
-                        let name = name.clone();
-                        self.advance();
-                        
-                        // Check for default value
-                        if let Some(Token::Equal) = self.peek() {
-                            self.advance();
-                            let default_value = self.parse_expr()?;
-                            DestructuringTarget::new(prop).with_alias(name).with_default(default_value)
-                        } else {
-                            DestructuringTarget::new(prop).with_alias(name)
-                        }
-                    } else {
-                        return Err(ParseError::new("Expected identifier after colon in object destructuring", self.pos));
-                    }
-                } else if let Some(Token::Equal) = self.peek() {
-                    // Default value without renaming
-                    self.advance();
-                    let default_value = self.parse_expr()?;
-                    DestructuringTarget::new(prop).with_default(default_value)
-                } else {
-                    // Simple property extraction
-                    DestructuringTarget::new(prop)
-                };
-                
-                targets.push(target);
-            } else {
-                return Err(ParseError::new("Expected property name or spread in object destructuring", self.pos));
-            }
-            
-            // Expect comma between properties, except for the last one
-            if let Some(Token::Comma) = self.peek() {
-                self.advance();
-            } else if let Some(Token::RBrace) = self.peek() {
-                // End of pattern
-                break;
-            } else {
-                return Err(ParseError::new("Expected comma or closing brace in object destructuring", self.pos));
-            }
-        }
-        
-        // Skip '}'
-        self.expect(&Token::RBrace)?;
-        
-        // Expect '='
-        self.expect(&Token::Equal)?;
-        
-        // Parse the value expression
-        let value = self.parse_expr()?;
-        
-        // Expect semicolon
-        self.expect(&Token::Semicolon)?;
-        
-        Ok(Some(AstNode::ObjectDestructuring {
-            targets,
-            value: Box::new(value),
-        }))
-    }
-
-    fn parse_function(&mut self) -> ParseResult<Option<AstNode>> {
-        self.advance(); // consume fn
-        
-        // Clone the token to avoid borrowing issues
-        let name_token = self.advance().cloned();
-        if let Some(Token::Identifier(name)) = name_token {
-            self.expect(&Token::LParen)?;
-            
-            let mut params = Vec::new();
-            
-            // Parse parameters
-            if let Some(Token::RParen) = self.peek() {
-                self.advance(); // consume )
-            } else {
-                loop {
-                    // Clone the token to avoid borrowing issues
-                    let param_token = self.advance().cloned();
-                    if let Some(Token::Identifier(param)) = param_token {
-                        params.push(param);
-                    } else {
-                        return Err(ParseError::new("Expected parameter name", self.pos));
-                    }
-                    
-                    if let Some(Token::Comma) = self.peek() {
-                        self.advance(); // consume ,
-                    } else {
-                        break;
-                    }
-                }
-                
-                self.expect(&Token::RParen)?;
-            }
-            
-            self.expect(&Token::LBrace)?;
-            
-            let mut body = Vec::new();
-            
-            // Parse function body
-            while let Some(tok) = self.peek() {
-                if *tok == Token::RBrace {
-                    break;
-                }
-                
-                if let Some(node) = self.parse_statement()? {
-                    body.push(node);
-                }
-            }
-            
-            self.expect(&Token::RBrace)?;
-            
-            Ok(Some(AstNode::Function {
-                name: name,
-                params,
-                body,
-            }))
-        } else {
-            Err(ParseError::new("Expected function name", self.pos))
-        }
-    }
-
-    fn parse_return(&mut self) -> ParseResult<Option<AstNode>> {
-        self.advance(); // consume return
-        
-        let expr = self.parse_expr()?;
-        
-        // Expect semicolon
-        self.expect(&Token::Semicolon)?;
-        
-        Ok(Some(AstNode::Return(Box::new(expr))))
-    }
-    
-    fn parse_throw(&mut self) -> ParseResult<Option<AstNode>> {
-        // Consume the throw keyword
-        self.advance(); // throw
-        
-        // Parse the expression being thrown
-        let expr = self.parse_expr()?;
-        
-        // Expect semicolon
-        self.expect(&Token::Semicolon)?;
-        
-        Ok(Some(AstNode::Throw(Box::new(expr))))
-    }
-    
-    fn parse_break(&mut self) -> ParseResult<Option<AstNode>> {
-        // Consume the break keyword
-        self.advance(); // break
-        
-        // Expect semicolon
-        self.expect(&Token::Semicolon)?;
-        
-        Ok(Some(AstNode::Break))
-    }
-    
-    fn parse_continue(&mut self) -> ParseResult<Option<AstNode>> {
-        // Consume the continue keyword
-        self.advance(); // continue
-        
-        // Expect semicolon
-        self.expect(&Token::Semicolon)?;
-        
-        Ok(Some(AstNode::Continue))
-    }
-    
-    fn parse_try_catch(&mut self) -> ParseResult<Option<AstNode>> {
-        // Consume the try keyword
-        self.advance(); // try
-        
-        // Parse the try block
-        let try_body = if let Some(Token::LBrace) = self.peek() {
-            self.advance(); // {
-            
-            let mut statements = Vec::new();
-            
-            while let Some(token) = self.peek() {
-                if *token == Token::RBrace {
-                    break;
-                }
-                
-                if let Some(stmt) = self.parse_statement()? {
-                    statements.push(stmt);
-                }
-            }
-            
-            // Consume the closing brace
-            self.expect(&Token::RBrace)?;
-            
-            statements
-        } else {
-            return Err(ParseError::new("Expected block after try keyword", self.pos));
-        };
-        
-        // Parse the catch block (if present)
-        let (catch_param, catch_body) = if let Some(Token::Catch) = self.peek() {
-            self.advance(); // catch
-            
-            // Parse catch parameter (if present)
-            let param = if let Some(Token::LParen) = self.peek() {
-                self.advance(); // (
-                
-                let param_name = if let Some(Token::Identifier(name)) = self.peek().cloned() {
-                    self.advance(); // identifier
-                    Some(name)
-                } else {
-                    return Err(ParseError::new("Expected identifier in catch clause", self.pos));
-                };
-                
-                self.expect(&Token::RParen)?;
-                param_name
-            } else {
-                None
-            };
-            
-            // Parse catch block
-            let catch_body = if let Some(Token::LBrace) = self.peek() {
-                self.advance(); // {
-                
-                let mut statements = Vec::new();
-                
-                while let Some(token) = self.peek() {
-                    if *token == Token::RBrace {
-                        break;
-                    }
-                    
-                    if let Some(stmt) = self.parse_statement()? {
-                        statements.push(stmt);
-                    }
-                }
-                
-                // Consume the closing brace
-                self.expect(&Token::RBrace)?;
-                
-                statements
-            } else {
-                return Err(ParseError::new("Expected block after catch keyword", self.pos));
-            };
-            
-            (param, catch_body)
-        } else {
-            return Err(ParseError::new("Expected catch after try block", self.pos));
-        };
-        
-        // Parse the finally block (if present)
-        let finally_body = if let Some(Token::Finally) = self.peek() {
-            self.advance(); // finally
-            
-            if let Some(Token::LBrace) = self.peek() {
-                self.advance(); // {
-                
-                let mut statements = Vec::new();
-                
-                while let Some(token) = self.peek() {
-                    if *token == Token::RBrace {
-                        break;
-                    }
-                    
-                    if let Some(stmt) = self.parse_statement()? {
-                        statements.push(stmt);
-                    }
-                }
-                
-                // Consume the closing brace
-                self.expect(&Token::RBrace)?;
-                
-                Some(statements)
-            } else {
-                return Err(ParseError::new("Expected block after finally keyword", self.pos));
-            }
-        } else {
-            None
-        };
-        
-        Ok(Some(AstNode::Try {
-            body: try_body,
-            catch_param,
-            catch_body,
-            finally_body,
-        }))
-    }
-
-    fn parse_new_expr(&mut self) -> ParseResult<AstNode> {
-        self.advance(); // consume 'new'
-        
-        // Parse constructor name
-        let constructor = if let Some(Token::Identifier(name)) = self.peek().cloned() {
-            self.advance(); // consume constructor name
-            name
-        } else {
-            return Err(ParseError::new("Expected class name after 'new'", self.pos));
-        };
-        
-        // Parse constructor arguments
-        let args = if let Some(Token::LParen) = self.peek() {
-            self.advance(); // consume '('
-            
-            let mut args = Vec::new();
-            
-            // Handle empty argument list
-            if let Some(Token::RParen) = self.peek() {
-                self.advance(); // consume ')'
-                args
-            } else {
-                // Parse arguments
-                loop {
-                    let arg = self.parse_expr()?;
-                    args.push(arg);
-                    
-                    match self.peek() {
-                        Some(Token::Comma) => {
-                            self.advance(); // consume ','
-                        }
-                        Some(Token::RParen) => {
-                            self.advance(); // consume ')'
-                            break;
-                        }
-                        _ => return Err(ParseError::new("Expected ',' or ')'", self.pos)),
-                    }
-                }
-                
-                args
-            }
-        } else {
-            // No arguments
-            Vec::new()
-        };
-        
-        Ok(AstNode::NewExpr {
-            constructor,
-            args,
-        })
-    }
-    
-    fn parse_expr(&mut self) -> ParseResult<AstNode> {
-        // Handle pre-increment and pre-decrement operators
-        if let Some(token) = self.peek() {
-            match token {
-                Token::Increment => {
-                    self.advance(); // consume ++
-                    let expr = self.parse_primary()?;
-                    return Ok(AstNode::PreIncrement(Box::new(expr)));
-                },
-                Token::Decrement => {
-                    self.advance(); // consume --
-                    let expr = self.parse_primary()?;
-                    return Ok(AstNode::PreDecrement(Box::new(expr)));
-                },
-                Token::New => {
-                    return self.parse_new_expr();
-                },
-                _ => {}
-            }
-        }
-        
-        // Handle regular expressions and post-increment/decrement
-        let mut expr = self.parse_term()?;
-        
-        // Check for post-increment and post-decrement
-        if let Some(token) = self.peek() {
-            match token {
-                Token::Increment => {
-                    self.advance(); // consume ++
-                    expr = AstNode::PostIncrement(Box::new(expr));
-                },
-                Token::Decrement => {
-                    self.advance(); // consume --
-                    expr = AstNode::PostDecrement(Box::new(expr));
-                },
-                _ => {}
-            }
-        }
-        
-        Ok(expr)
-    }
-
-    fn parse_term(&mut self) -> ParseResult<AstNode> {
-        let mut left = self.parse_factor()?;
-        
-        while let Some(tok) = self.peek() {
-            match tok {
-                Token::Plus | Token::Minus => {
-                    let op = match self.advance().unwrap() {
-                        Token::Plus => "+".to_string(),
-                        Token::Minus => "-".to_string(),
-                        _ => unreachable!(),
-                    };
-                    
-                    let right = self.parse_factor()?;
-                    
-                    left = AstNode::BinaryOp {
-                        left: Box::new(left),
-                        op,
-                        right: Box::new(right),
-                    };
-                }
-                _ => break,
-            }
-        }
-        
-        Ok(left)
-    }
-
-    fn parse_factor(&mut self) -> ParseResult<AstNode> {
-        let mut left = self.parse_primary()?;
-        
-        while let Some(tok) = self.peek() {
-            match tok {
-                Token::Star | Token::Slash => {
-                    let op = match self.advance().unwrap() {
-                        Token::Star => "*".to_string(),
-                        Token::Slash => "/".to_string(),
-                        _ => unreachable!(),
-                    };
-                    
-                    let right = self.parse_primary()?;
-                    
-                    left = AstNode::BinaryOp {
-                        left: Box::new(left),
-                        op,
-                        right: Box::new(right),
-                    };
-                }
-                _ => break,
-            }
-        }
-        
-        Ok(left)
-    }
-
-    fn parse_primary(&mut self) -> ParseResult<AstNode> {
-        let token = self.advance().cloned();
-        if let Some(tok) = token {
-            match tok {
-                Token::Number(n) => Ok(AstNode::Number(n)),
-                Token::Float(f) => Ok(AstNode::Float(f)),
-                Token::String(s) => Ok(AstNode::String(s)),
-                Token::Bool(b) => Ok(AstNode::Boolean(b)),
-                Token::Null => Ok(AstNode::Null),
-                Token::Identifier(name) => {
-                    // Clone the name to avoid borrowing issues
-                    let name_clone = name.clone();
-                    
-                    // Check if this is a function call
-                    let is_function_call = if let Some(Token::LParen) = self.peek() {
-                        true
-                    } else {
-                        false
-                    };
-                    
-                    if is_function_call {
-                        self.advance(); // consume (
-                        
-                        let mut args = Vec::new();
-                        
-                        // Parse arguments
-                        let has_args = if let Some(Token::RParen) = self.peek() {
-                            false
-                        } else {
-                            true
-                        };
-                        
-                        if !has_args {
-                            self.advance(); // consume )
-                        } else {
-                            loop {
-                                let arg = self.parse_expr()?;
-                                args.push(arg);
-                                
-                                let has_more_args = if let Some(Token::Comma) = self.peek() {
-                                    self.advance(); // consume ,
-                                    true
-                                } else {
-                                    false
-                                };
-                                
-                                if !has_more_args {
-                                    break;
-                                }
-                            }
-                            
-                            self.expect(&Token::RParen)?;
-                        }
-                        
-                        Ok(AstNode::FunctionCall {
-                            name: name_clone,
-                            args,
-                        })
-                    } else {
-                        // Check for compound assignment operators
-                        let expr = AstNode::Identifier(name_clone);
-                        
-                        if let Some(token) = self.peek() {
-                            match token {
-                                Token::PlusEqual => {
-                                    self.advance(); // consume +=
-                                    let value = self.parse_expr()?;
-                                    return Ok(AstNode::CompoundAssignment {
-                                        target: Box::new(expr),
-                                        op: "+".to_string(),
-                                        value: Box::new(value),
-                                    });
-                                },
-                                Token::MinusEqual => {
-                                    self.advance(); // consume -=
-                                    let value = self.parse_expr()?;
-                                    return Ok(AstNode::CompoundAssignment {
-                                        target: Box::new(expr),
-                                        op: "-".to_string(),
-                                        value: Box::new(value),
-                                    });
-                                },
-                                Token::StarEqual => {
-                                    self.advance(); // consume *=
-                                    let value = self.parse_expr()?;
-                                    return Ok(AstNode::CompoundAssignment {
-                                        target: Box::new(expr),
-                                        op: "*".to_string(),
-                                        value: Box::new(value),
-                                    });
-                                },
-                                Token::SlashEqual => {
-                                    self.advance(); // consume /=
-                                    let value = self.parse_expr()?;
-                                    return Ok(AstNode::CompoundAssignment {
-                                        target: Box::new(expr),
-                                        op: "/".to_string(),
-                                        value: Box::new(value),
-                                    });
-                                },
-                                _ => {}
-                            }
-                        }
-                        
-                        Ok(expr)
-                    }
-                }
-                Token::LParen => {
-                    let expr = self.parse_expr()?;
+                    // Expect closing parenthesis
                     self.expect(&Token::RParen)?;
-                    Ok(expr)
-                }
-                Token::LBracket => {
-                    let mut elements = Vec::new();
                     
-                    // Parse array elements
-                    if let Some(Token::RBracket) = self.peek() {
-                        self.advance(); // consume ]
-                    } else {
-                        loop {
-                            // Check for spread operator
-                            if let Some(Token::Ellipsis) = self.peek() {
-                                self.advance(); // consume ...
-                                let spread_expr = self.parse_expr()?;
-                                elements.push(AstNode::SpreadElement(Box::new(spread_expr)));
-                            } else {
-                                let element = self.parse_expr()?;
-                                elements.push(element);
-                            }
-                            
-                            if let Some(Token::Comma) = self.peek() {
-                                self.advance(); // consume ,
-                            } else {
-                                break;
-                            }
+                    // Parse the loop body
+                    let body = if let Some(Token::LBrace) = self.peek() {
+                        // Block statement
+                        if let Some(AstNode::Block(statements)) = self.parse_block()? {
+                            AstNode::Block(statements)
+                        } else {
+                            return Err(ParseError::new("Expected block after for-in header", self.pos));
                         }
-                        
-                        self.expect(&Token::RBracket)?;
-                    }
-                    
-                    Ok(AstNode::ArrayLiteral(elements))
-                }
-                Token::LBrace => {
-                    let mut properties = HashMap::new();
-                    
-                    // Parse object properties
-                    if let Some(Token::RBrace) = self.peek() {
-                        self.advance(); // consume }
                     } else {
-                        loop {
-                            // Check for spread operator
-                            if let Some(Token::Ellipsis) = self.peek() {
-                                self.advance(); // consume ...
-                                
-                                // Parse the expression being spread
-                                let spread_expr = self.parse_expr()?;
-                                
-                                // Add a special marker in the properties map to indicate a spread
-                                // In a real implementation, you would need a more sophisticated approach
-                                // to handle spread operators in objects, as they can appear anywhere in the object
-                                let spread_key = format!("__spread_{}", properties.len());
-                                properties.insert(spread_key, AstNode::SpreadElement(Box::new(spread_expr)));
-                            } else {
-                                let key_token = self.advance().cloned();
-                                if let Some(Token::Identifier(key)) = key_token {
-                                    // Check if this is a shorthand property (no colon)
-                                    if let Some(Token::Colon) = self.peek() {
-                                        self.advance(); // consume :
-                                        
-                                        let value = self.parse_expr()?;
-                                        properties.insert(key.clone(), value);
-                                    } else {
-                                        // Shorthand property syntax: { foo, bar }
-                                        // Equivalent to { foo: foo, bar: bar }
-                                        properties.insert(key.clone(), AstNode::Identifier(key));
-                                    }
-                                } else {
-                                    return Err(ParseError::new("Expected property name or spread operator", self.pos));
-                                }
-                            }
-                            
-                            let has_more_props = if let Some(Token::Comma) = self.peek() {
-                                self.advance(); // consume ,
-                                true
-                            } else {
-                                false
-                            };
-                            
-                            if !has_more_props {
-                                break;
-                            }
+                        // Single statement
+                        if let Some(stmt) = self.parse_statement()? {
+                            stmt
+                        } else {
+                            return Err(ParseError::new("Expected statement after for-in header", self.pos));
                         }
-                        
-                        self.expect(&Token::RBrace)?;
-                    }
+                    };
                     
-                    Ok(AstNode::ObjectLiteral(properties))
+                    return Ok(Some(AstNode::ForIn {
+                        var_name,
+                        object: Box::new(object),
+                        body: Box::new(body),
+                    }));
+                } else if let Some(Token::Of) = self.peek() {
+                    self.advance(); // consume 'of'
+                    
+                    // Parse the iterable expression
+                    let iterable = self.parse_expr()?;
+                    
+                    // Expect closing parenthesis
+                    self.expect(&Token::RParen)?;
+                    
+                    // Parse the loop body
+                    let body = if let Some(Token::LBrace) = self.peek() {
+                        // Block statement
+                        if let Some(AstNode::Block(statements)) = self.parse_block()? {
+                            AstNode::Block(statements)
+                        } else {
+                            return Err(ParseError::new("Expected block after for-of header", self.pos));
+                        }
+                    } else {
+                        // Single statement
+                        if let Some(stmt) = self.parse_statement()? {
+                            stmt
+                        } else {
+                            return Err(ParseError::new("Expected statement after for-of header", self.pos));
+                        }
+                    };
+                    
+                    return Ok(Some(AstNode::ForOf {
+                        var_name,
+                        iterable: Box::new(iterable),
+                        body: Box::new(body),
+                    }));
                 }
-                _ => Err(ParseError::new(&format!("Unexpected token: {:?}", tok), self.pos)),
+            }
+        }
+        
+        // Regular for loop
+        // Parse initialization
+        let init = if let Some(Token::Semicolon) = self.peek() {
+            // No initialization
+            self.advance(); // ;
+            None
+        } else if let Some(Token::Let) = self.peek() {
+            // Variable declaration
+            if let Some(decl) = self.parse_let()? {
+                Some(decl)
+            } else {
+                return Err(ParseError::new("Expected variable declaration in for loop initialization", self.pos));
             }
         } else {
-            Err(ParseError::new("Unexpected end of input", self.pos))
-        }
+            // Expression
+            let expr = self.parse_expr()?;
+            self.expect(&Token::Semicolon)?;
+            Some(expr)
+        };
+        
+        // Parse condition
+        let condition = if let Some(Token::Semicolon) = self.peek() {
+            // No condition
+            self.advance(); // ;
+            None
+        } else {
+            // Expression
+            let expr = self.parse_expr()?;
+            self.expect(&Token::Semicolon)?;
+            Some(expr)
+        };
+        
+        // Parse update
+        let update = if let Some(Token::RParen) = self.peek() {
+            // No update
+            None
+        } else {
+            // Expression
+            let expr = self.parse_expr()?;
+            Some(expr)
+        };
+        
+        // Expect closing parenthesis
+        self.expect(&Token::RParen)?;
+        
+        // Parse the loop body
+        let body = if let Some(Token::LBrace) = self.peek() {
+            // Block statement
+            if let Some(AstNode::Block(statements)) = self.parse_block()? {
+                AstNode::Block(statements)
+            } else {
+                return Err(ParseError::new("Expected block after for loop header", self.pos));
+            }
+        } else {
+            // Single statement
+            if let Some(stmt) = self.parse_statement()? {
+                stmt
+            } else {
+                return Err(ParseError::new("Expected statement after for loop header", self.pos));
+            }
+        };
+        
+        Ok(Some(AstNode::For {
+            init: init.map(Box::new),
+            condition: condition.map(Box::new),
+            update: update.map(Box::new),
+            body: Box::new(body),
+        }))
+    }
+    
+    // Placeholder for expression parsing
+    fn parse_expr(&mut self) -> ParseResult<AstNode> {
+        // This would be implemented based on the existing expression parsing logic
+        Ok(AstNode::Null)
     }
 }

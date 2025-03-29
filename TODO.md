@@ -10,41 +10,46 @@ This document outlines the features and components that need to be implemented f
 - [x] Implement simple error handling
 - [x] Add support for basic binary operations
 - [x] Support compilation for at least one target platform (Linux)
-- [ ] Implement basic memory management
+- [ ] Implement basic memory management (array allocation needs work)
+- [x] Add unit tests for compiler components (lexer, parser, codegen)
 
 ### Language Features
 
-- [ ] Implement basic function definitions and calls
-- [ ] Add support for variables and basic data types
-- [ ] Implement simple control flow (if/else, loops)
-- [ ] Add basic module imports
-- [ ] Implement simple error handling with try/catch
+- [x] Implement basic function definitions and calls
+- [x] Add support for variables and basic data types
+- [x] Implement simple control flow (if/else, loops, for...in, for...of)
+- [ ] Complete module imports (parser implemented, codegen needed)
+- [x] Implement simple error handling with try/catch
 
 ### Standard Library
 
-- [ ] Implement basic file I/O operations
-- [ ] Add simple string manipulation functions
-- [ ] Implement basic array operations
-- [ ] Add simple networking (HTTP client)
-- [ ] Implement basic JSON parsing
+- [x] Implement basic file I/O operations (via stdio packages)
+- [x] Add simple string manipulation functions
+- [ ] Complete array operations implementation
+- [ ] Integrate HTTP client from networking/http package
+- [ ] Integrate JSON parsing from core/json package
+- [x] Add SmashTest tests for standard library functions
 
 ### Package Manager
 
-- [ ] Implement basic package installation
+- [x] Implement basic package installation
 - [ ] Add simple dependency resolution
-- [ ] Implement package creation
+- [x] Implement package creation
+- [ ] Add tests for package manager functionality
 
 ### Testing Framework
 
-- [ ] Implement basic test runner
-- [ ] Add essential assertions
-- [ ] Support simple test organization
+- [x] Implement basic test runner
+- [x] Add essential assertions
+- [x] Support simple test organization
+- [x] Create example tests for language features
 
 ### Documentation
 
-- [ ] Create basic language reference
-- [ ] Add installation and getting started guides
+- [x] Create basic language reference
+- [x] Add installation and getting started guides
 - [ ] Document core library functions
+- [ ] Add testing documentation
 
 ## BACKLOG
 
@@ -57,6 +62,7 @@ This document outlines the features and components that need to be implemented f
 - [ ] Implement optimization passes
 - [ ] Support cross-compilation for all target platforms
 - [ ] Add debug information generation
+- [ ] Improve test coverage for all compiler components
 
 ### Language Features
 
@@ -67,6 +73,7 @@ This document outlines the features and components that need to be implemented f
 - [ ] Add support for generators and iterators
 - [ ] Implement proper closures with lexical scoping
 - [ ] Add support for decorators/annotations
+- [ ] Add comprehensive tests for all language features
 
 ### Standard Library
 
@@ -77,6 +84,7 @@ This document outlines the features and components that need to be implemented f
 - [ ] Add cryptography functions
 - [ ] Implement collections (maps, sets, etc.)
 - [ ] Add math library functions
+- [ ] Create tests for all standard library modules
 
 ### Hardware Interfaces
 
@@ -89,6 +97,7 @@ This document outlines the features and components that need to be implemented f
 - [ ] Implement MIDI device support
 - [ ] Add gamepad/controller support
 - [ ] Implement system notifications
+- [ ] Create tests for hardware interface modules
 
 ### Package Manager
 
@@ -98,6 +107,7 @@ This document outlines the features and components that need to be implemented f
 - [ ] Add support for private repositories
 - [ ] Implement package updates and upgrades
 - [ ] Add package documentation generation
+- [ ] Create comprehensive tests for package manager
 
 ### WebAssembly Support
 
@@ -110,6 +120,7 @@ This document outlines the features and components that need to be implemented f
 - [ ] Add JavaScript interop layer
 - [ ] Implement browser API bindings
 - [ ] Add support for WASM modules
+- [ ] Create tests for WebAssembly functionality
 
 ### Testing Framework
 
@@ -121,6 +132,7 @@ This document outlines the features and components that need to be implemented f
 - [ ] Implement snapshot testing
 - [ ] Add support for test suites and organization
 - [ ] Implement test filtering and tagging
+- [ ] Create tests for the testing framework itself
 
 ### Development Tools
 
@@ -133,6 +145,7 @@ This document outlines the features and components that need to be implemented f
 - [ ] Implement project scaffolding
 - [ ] Add IDE integration plugins
 - [ ] Implement profiling tools
+- [ ] Create tests for development tools
 
 ### Documentation
 
@@ -145,6 +158,7 @@ This document outlines the features and components that need to be implemented f
 - [ ] Implement documentation search
 - [ ] Add internationalization support
 - [ ] Create video tutorials
+- [ ] Add testing documentation
 
 ### Infrastructure
 
@@ -157,3 +171,27 @@ This document outlines the features and components that need to be implemented f
 - [ ] Implement bug tracking
 - [ ] Create roadmap and milestone tracking
 - [ ] Set up security vulnerability reporting
+- [ ] Implement test automation for all components
+
+## Testing Guidelines
+
+All code in SmashLang must have corresponding unit tests:
+
+1. **Rust Components**: Use Rust's built-in testing framework for compiler components:
+   - Lexer tests in `src/lexer_test.rs`
+   - Parser tests in `src/parser_test.rs`
+   - Codegen tests in `src/codegen_test.rs`
+
+2. **SmashLang Packages**: Use SmashTest for testing SmashLang packages:
+   - Create test files in the `tests/` directory of each package
+   - Name test files with `.test.smash` extension
+   - Use the `assert` module for assertions
+
+3. **Test Coverage Requirements**:
+   - All new features must have corresponding tests
+   - All bug fixes must include a test that would have caught the bug
+   - Aim for at least 80% code coverage for all components
+
+4. **Running Tests**:
+   - Rust tests: `cargo test`
+   - SmashLang tests: `smashtest path/to/test/file.test.smash`

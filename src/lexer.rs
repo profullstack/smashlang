@@ -18,6 +18,20 @@ pub enum Token {
     Break,
     Continue,
     
+    // Control flow keywords
+    If,
+    Else,
+    While,
+    For,
+    Do,
+    Switch,
+    Case,
+    Default,
+    
+    // Iteration keywords
+    In,
+    Of,
+    
     // Literals
     Identifier(String),
     Number(i64),
@@ -127,85 +141,87 @@ pub fn tokenize(input: &str) -> Vec<Token> {
             '/' => {
                 chars.next(); // consume the '/'
                 
+                // Check for /= or // (comment) or /* (block comment)
                 if let Some(&next_ch) = chars.peek() {
                     match next_ch {
-                        '/' => {
-                            // Skip single-line comment
-                            chars.next(); // consume the second '/'
-                            while let Some(&c) = chars.peek() {
-                                if c == '\n' {
-                                    break;
-                                }
-                                chars.next();
-                            }
-                        },
                         '=' => {
-                            // Handle /= operator
                             tokens.push(Token::SlashEqual);
                             chars.next(); // consume the '='
                         },
-                        _ => {
-                            // Regex literal
-                            let mut regex = String::new();
-                            while let Some(&c) = chars.peek() {
-                                if c == '/' {
-                                    chars.next(); // Consume closing '/'
+                        '/' => {
+                            // Line comment, consume until end of line
+                            chars.next(); // consume the second '/'
+                            while let Some(&ch) = chars.peek() {
+                                if ch == '\n' {
                                     break;
                                 }
-                                regex.push(c);
                                 chars.next();
                             }
-                            tokens.push(Token::Regex(regex));
-                        }
+                        },
+                        '*' => {
+                            // Block comment, consume until */
+                            chars.next(); // consume the '*'
+                            let mut prev_char = ' ';
+                            
+                            while let Some(&ch) = chars.peek() {
+                                if prev_char == '*' && ch == '/' {
+                                    chars.next(); // consume the '/'
+                                    break;
+                                }
+                                prev_char = ch;
+                                chars.next();
+                            }
+                        },
+                        _ => tokens.push(Token::Slash),
                     }
                 } else {
                     tokens.push(Token::Slash);
                 }
             }
             '=' => {
+                chars.next(); // consume the '='
                 tokens.push(Token::Equal);
-                chars.next();
             }
             ':' => {
+                chars.next(); // consume the ':'
                 tokens.push(Token::Colon);
-                chars.next();
             }
             '(' => {
+                chars.next(); // consume the '('
                 tokens.push(Token::LParen);
-                chars.next();
             }
             ')' => {
+                chars.next(); // consume the ')'
                 tokens.push(Token::RParen);
-                chars.next();
             }
             '{' => {
+                chars.next(); // consume the '{'
                 tokens.push(Token::LBrace);
-                chars.next();
             }
             '}' => {
+                chars.next(); // consume the '}'
                 tokens.push(Token::RBrace);
-                chars.next();
             }
             '[' => {
+                chars.next(); // consume the '['
                 tokens.push(Token::LBracket);
-                chars.next();
             }
             ']' => {
+                chars.next(); // consume the ']'
                 tokens.push(Token::RBracket);
-                chars.next();
             }
             ',' => {
+                chars.next(); // consume the ','
                 tokens.push(Token::Comma);
-                chars.next();
             }
             ';' => {
+                chars.next(); // consume the ';'
                 tokens.push(Token::Semicolon);
-                chars.next();
             }
             '.' => {
                 chars.next(); // consume the first '.'
                 
-                // Check for ellipsis (...)
+                // Check for ... (spread operator)
                 if let Some(&next_ch) = chars.peek() {
                     if next_ch == '.' {
                         chars.next(); // consume the second '.'
@@ -233,80 +249,102 @@ pub fn tokenize(input: &str) -> Vec<Token> {
                     tokens.push(Token::Dot);
                 }
             }
-            '"' => {
-                chars.next();
-                let mut string = String::new();
-                while let Some(&c) = chars.peek() {
-                    if c == '"' {
-                        chars.next();
-                        break;
-                    }
-                    string.push(c);
-                    chars.next();
-                }
-                tokens.push(Token::String(string));
-            }
             '0'..='9' => {
-                let mut num = String::new();
+                let mut number = String::new();
                 let mut is_float = false;
                 
-                // Parse the integer part
-                while let Some(&digit) = chars.peek() {
-                    if digit.is_ascii_digit() {
-                        num.push(digit);
+                while let Some(&ch) = chars.peek() {
+                    if ch.is_digit(10) {
+                        number.push(ch);
                         chars.next();
+                    } else if ch == '.' {
+                        // Check if this is a decimal point
+                        if is_float {
+                            // Already have a decimal point, this must be the end of the number
+                            break;
+                        }
+                        
+                        // Look ahead to see if this is a spread operator
+                        let mut temp_chars = chars.clone();
+                        temp_chars.next(); // Skip the dot
+                        
+                        if let Some(next_ch) = temp_chars.next() {
+                            if next_ch == '.' {
+                                // This is likely the start of a spread operator, don't consume the dot
+                                // Just finish the number as an integer
+                                break;
+                            }
+                        }
+                        
+                        is_float = true;
+                        number.push(ch);
+                        chars.next();
+                        
+                        // Parse the fractional part
+                        while let Some(&digit) = chars.peek() {
+                            if digit.is_digit(10) {
+                                number.push(digit);
+                                chars.next();
+                            } else {
+                                break;
+                            }
+                        }
                     } else {
                         break;
                     }
                 }
                 
-                // Check for decimal point
-                if let Some(&ch) = chars.peek() {
-                    if ch == '.' {
-                        // Look ahead to see if this is a spread operator
-                        let mut temp_chars = chars.clone();
-                        temp_chars.next(); // Skip the first dot
+                if is_float {
+                    if let Ok(f) = number.parse::<f64>() {
+                        tokens.push(Token::Float(f));
+                    } else {
+                        println!("Failed to parse float: {}", number);
+                    }
+                } else {
+                    if let Ok(n) = number.parse::<i64>() {
+                        tokens.push(Token::Number(n));
+                    } else {
+                        println!("Failed to parse integer: {}", number);
+                    }
+                }
+            }
+            '"' => {
+                chars.next(); // consume the opening quote
+                let mut string = String::new();
+                
+                while let Some(&ch) = chars.peek() {
+                    if ch == '"' {
+                        chars.next(); // consume the closing quote
+                        break;
+                    } else if ch == '\\' {
+                        // Handle escape sequences
+                        chars.next(); // consume the backslash
                         
-                        if let Some(&next_ch) = temp_chars.peek() {
-                            if next_ch == '.' {
-                                // This is likely the start of a spread operator, don't consume the dot
-                                // Just finish the number as an integer
-                            } else if next_ch.is_ascii_digit() {
-                                // This is a decimal point in a float
-                                is_float = true;
-                                num.push('.');
-                                chars.next(); // Consume the dot
-                                
-                                // Parse the fractional part
-                                while let Some(&digit) = chars.peek() {
-                                    if digit.is_ascii_digit() {
-                                        num.push(digit);
-                                        chars.next();
-                                    } else {
-                                        break;
-                                    }
-                                }
+                        if let Some(&next_ch) = chars.peek() {
+                            match next_ch {
+                                'n' => string.push('\n'),
+                                't' => string.push('\t'),
+                                'r' => string.push('\r'),
+                                '\\' => string.push('\\'),
+                                '"' => string.push('"'),
+                                _ => string.push(next_ch),
                             }
-                        } else {
-                            // Just a single dot at the end, treat as a decimal point
-                            is_float = true;
-                            num.push('.');
-                            chars.next();
+                            chars.next(); // consume the escaped character
                         }
+                    } else {
+                        string.push(ch);
+                        chars.next();
                     }
                 }
                 
-                if is_float {
-                    tokens.push(Token::Float(num.parse().unwrap()));
-                } else {
-                    tokens.push(Token::Number(num.parse().unwrap()));
-                }
+                tokens.push(Token::String(string));
             }
             'a'..='z' | 'A'..='Z' | '_' => {
                 let mut ident = String::new();
-                while let Some(&c) = chars.peek() {
-                    if c.is_ascii_alphanumeric() || c == '_' {
-                        ident.push(c);
+                
+                while let Some(&ch) = chars.peek() {
+                    if ch.is_alphanumeric() || ch == '_' {
+                        ident.push(ch);
                         chars.next();
                     } else {
                         break;
@@ -325,6 +363,16 @@ pub fn tokenize(input: &str) -> Vec<Token> {
                     "new" => tokens.push(Token::New),
                     "break" => tokens.push(Token::Break),
                     "continue" => tokens.push(Token::Continue),
+                    "if" => tokens.push(Token::If),
+                    "else" => tokens.push(Token::Else),
+                    "while" => tokens.push(Token::While),
+                    "for" => tokens.push(Token::For),
+                    "do" => tokens.push(Token::Do),
+                    "switch" => tokens.push(Token::Switch),
+                    "case" => tokens.push(Token::Case),
+                    "default" => tokens.push(Token::Default),
+                    "in" => tokens.push(Token::In),
+                    "of" => tokens.push(Token::Of),
                     "true" => tokens.push(Token::Bool(true)),
                     "false" => tokens.push(Token::Bool(false)),
                     "null" => tokens.push(Token::Null),

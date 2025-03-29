@@ -4,8 +4,9 @@ use inkwell::OptimizationLevel;
 use inkwell::builder::Builder;
 use inkwell::values::{FunctionValue, BasicValueEnum, IntValue, FloatValue, PointerValue};
 use inkwell::types::BasicTypeEnum;
+use inkwell::IntPredicate;
 
-use crate::parser::AstNode;
+use crate::parser::{AstNode, SwitchCase};
 
 use std::collections::HashMap;
 
@@ -76,6 +77,493 @@ pub fn generate_llvm_ir<'ctx>(
     (module, target_machine)
 }
 
+// Helper function to generate code for a statement
+fn codegen_statement<'ctx>(
+    context: &'ctx Context,
+    module: &inkwell::module::Module<'ctx>,
+    builder: &Builder<'ctx>,
+    i64_type: &inkwell::types::IntType<'ctx>,
+    f64_type: &inkwell::types::FloatType<'ctx>,
+    function_map: &HashMap<String, FunctionValue<'ctx>>,
+    local_variables: &mut HashMap<String, PointerValue<'ctx>>,
+    loop_stack: &mut Vec<(inkwell::basic_block::BasicBlock, inkwell::basic_block::BasicBlock)>,
+    stmt: &AstNode,
+) {
+    match stmt {
+        AstNode::Block(statements) => {
+            for stmt in statements {
+                codegen_statement(context, module, builder, i64_type, f64_type, function_map, local_variables, loop_stack, stmt);
+                
+                // If we've already generated a terminator (like return, break, continue),
+                // don't generate code for the rest of the block
+                if builder.get_insert_block().unwrap().get_terminator().is_some() {
+                    break;
+                }
+            }
+        },
+        AstNode::Return(expr) => {
+            if let Some(ret_val) = gen_expr(context, builder, i64_type, f64_type, function_map, local_variables, expr) {
+                match ret_val {
+                    BasicValueEnum::IntValue(val) => {
+                        builder.build_return(Some(&val));
+                    },
+                    BasicValueEnum::FloatValue(val) => {
+                        // Convert float to int for now (simplified)
+                        let int_val = builder.build_float_to_signed_int(val, *i64_type, "float_to_int");
+                        builder.build_return(Some(&int_val));
+                    },
+                    _ => {
+                        // For other types, return a default value for now
+                        let default_val = i64_type.const_int(0, false);
+                        builder.build_return(Some(&default_val));
+                    }
+                }
+            }
+        },
+        AstNode::Break => {
+            // If we're in a loop, jump to the after_loop block
+            if let Some((_, after_loop)) = loop_stack.last() {
+                builder.build_unconditional_branch(*after_loop);
+            } else {
+                // Error: break outside of loop
+                // For now, just continue execution
+            }
+        },
+        AstNode::Continue => {
+            // If we're in a loop, jump to the loop_header block
+            if let Some((loop_header, _)) = loop_stack.last() {
+                builder.build_unconditional_branch(*loop_header);
+            } else {
+                // Error: continue outside of loop
+                // For now, just continue execution
+            }
+        },
+        AstNode::LetDecl { name, value } => {
+            if let Some(val) = gen_expr(context, builder, i64_type, f64_type, function_map, local_variables, value) {
+                // Allocate stack space for the variable
+                let alloca = builder.build_alloca(val.get_type(), name);
+                builder.build_store(alloca, val);
+                
+                // Add to our variables map
+                local_variables.insert(name.clone(), alloca);
+            }
+        },
+        AstNode::ConstDecl { name, value } => {
+            if let Some(val) = gen_expr(context, builder, i64_type, f64_type, function_map, local_variables, value) {
+                // Allocate stack space for the variable
+                let alloca = builder.build_alloca(val.get_type(), name);
+                builder.build_store(alloca, val);
+                
+                // Add to our variables map
+                local_variables.insert(name.clone(), alloca);
+            }
+        },
+        AstNode::If { condition, then_branch, else_branch } => {
+            // Get the current function
+            let function = builder.get_insert_block().unwrap().get_parent().unwrap();
+            
+            // Generate code for if statement
+            let cond_val = gen_expr(context, builder, i64_type, f64_type, function_map, local_variables, condition)
+                .expect("Failed to generate condition expression");
+            
+            // Convert condition to boolean (i1)
+            let cond_val = match cond_val {
+                BasicValueEnum::IntValue(val) => {
+                    // Compare with 0 to get a boolean value
+                    builder.build_int_compare(IntPredicate::NE, val, i64_type.const_int(0, false), "ifcond")
+                },
+                BasicValueEnum::FloatValue(val) => {
+                    // Convert float to int, then compare with 0
+                    let int_val = builder.build_float_to_signed_int(val, *i64_type, "float_to_int");
+                    builder.build_int_compare(IntPredicate::NE, int_val, i64_type.const_int(0, false), "ifcond")
+                },
+                _ => {
+                    // For other types, assume false
+                    context.bool_type().const_int(0, false)
+                }
+            };
+            
+            // Create basic blocks for then, else, and merge
+            let then_block = context.append_basic_block(function, "then");
+            let else_block = context.append_basic_block(function, "else");
+            let merge_block = context.append_basic_block(function, "ifcont");
+            
+            // Branch based on condition
+            builder.build_conditional_branch(cond_val, then_block, else_block);
+            
+            // Generate code for then branch
+            builder.position_at_end(then_block);
+            codegen_statement(context, module, builder, i64_type, f64_type, function_map, local_variables, loop_stack, then_branch);
+            
+            // If the then branch doesn't end with a terminator (like return), add a branch to the merge block
+            if !builder.get_insert_block().unwrap().get_terminator().is_some() {
+                builder.build_unconditional_branch(merge_block);
+            }
+            
+            // Generate code for else branch if it exists
+            builder.position_at_end(else_block);
+            if let Some(else_stmt) = else_branch {
+                codegen_statement(context, module, builder, i64_type, f64_type, function_map, local_variables, loop_stack, else_stmt);
+            }
+            
+            // If the else branch doesn't end with a terminator, add a branch to the merge block
+            if !builder.get_insert_block().unwrap().get_terminator().is_some() {
+                builder.build_unconditional_branch(merge_block);
+            }
+            
+            // Continue code generation from the merge block
+            builder.position_at_end(merge_block);
+        },
+        AstNode::While { condition, body } => {
+            // Get the current function
+            let function = builder.get_insert_block().unwrap().get_parent().unwrap();
+            
+            // Create basic blocks for loop header, loop body, and after loop
+            let loop_header = context.append_basic_block(function, "loop_header");
+            let loop_body = context.append_basic_block(function, "loop_body");
+            let after_loop = context.append_basic_block(function, "after_loop");
+            
+            // Push loop blocks onto the stack for break/continue
+            loop_stack.push((loop_header, after_loop));
+            
+            // Branch to loop header
+            builder.build_unconditional_branch(loop_header);
+            
+            // Generate code for loop header (condition check)
+            builder.position_at_end(loop_header);
+            let cond_val = gen_expr(context, builder, i64_type, f64_type, function_map, local_variables, condition)
+                .expect("Failed to generate condition expression");
+            
+            // Convert condition to boolean (i1)
+            let cond_val = match cond_val {
+                BasicValueEnum::IntValue(val) => {
+                    // Compare with 0 to get a boolean value
+                    builder.build_int_compare(IntPredicate::NE, val, i64_type.const_int(0, false), "loopcond")
+                },
+                BasicValueEnum::FloatValue(val) => {
+                    // Convert float to int, then compare with 0
+                    let int_val = builder.build_float_to_signed_int(val, *i64_type, "float_to_int");
+                    builder.build_int_compare(IntPredicate::NE, int_val, i64_type.const_int(0, false), "loopcond")
+                },
+                _ => {
+                    // For other types, assume false
+                    context.bool_type().const_int(0, false)
+                }
+            };
+            
+            // Branch based on condition
+            builder.build_conditional_branch(cond_val, loop_body, after_loop);
+            
+            // Generate code for loop body
+            builder.position_at_end(loop_body);
+            codegen_statement(context, module, builder, i64_type, f64_type, function_map, local_variables, loop_stack, body);
+            
+            // If the loop body doesn't end with a terminator, add a branch back to the loop header
+            if !builder.get_insert_block().unwrap().get_terminator().is_some() {
+                builder.build_unconditional_branch(loop_header);
+            }
+            
+            // Pop loop blocks from the stack
+            loop_stack.pop();
+            
+            // Continue code generation from after the loop
+            builder.position_at_end(after_loop);
+        },
+        AstNode::For { init, condition, update, body } => {
+            // Get the current function
+            let function = builder.get_insert_block().unwrap().get_parent().unwrap();
+            
+            // Create basic blocks for loop header, loop body, loop update, and after loop
+            let loop_header = context.append_basic_block(function, "for_header");
+            let loop_body = context.append_basic_block(function, "for_body");
+            let loop_update = context.append_basic_block(function, "for_update");
+            let after_loop = context.append_basic_block(function, "after_for");
+            
+            // Push loop blocks onto the stack for break/continue
+            // For 'continue' in a for loop, we want to jump to the update block
+            loop_stack.push((loop_update, after_loop));
+            
+            // Generate initialization code if it exists
+            if let Some(init_expr) = init {
+                codegen_statement(context, module, builder, i64_type, f64_type, function_map, local_variables, loop_stack, init_expr);
+            }
+            
+            // Branch to loop header
+            builder.build_unconditional_branch(loop_header);
+            
+            // Generate code for loop header (condition check)
+            builder.position_at_end(loop_header);
+            
+            // If there's no condition, use true (infinite loop)
+            let cond_val = if let Some(cond_expr) = condition {
+                let cond_val = gen_expr(context, builder, i64_type, f64_type, function_map, local_variables, cond_expr)
+                    .expect("Failed to generate condition expression");
+                
+                // Convert condition to boolean (i1)
+                match cond_val {
+                    BasicValueEnum::IntValue(val) => {
+                        // Compare with 0 to get a boolean value
+                        builder.build_int_compare(IntPredicate::NE, val, i64_type.const_int(0, false), "forcond")
+                    },
+                    BasicValueEnum::FloatValue(val) => {
+                        // Convert float to int, then compare with 0
+                        let int_val = builder.build_float_to_signed_int(val, *i64_type, "float_to_int");
+                        builder.build_int_compare(IntPredicate::NE, int_val, i64_type.const_int(0, false), "forcond")
+                    },
+                    _ => {
+                        // For other types, assume false
+                        context.bool_type().const_int(0, false)
+                    }
+                }
+            } else {
+                // No condition, use true (infinite loop)
+                context.bool_type().const_int(1, false)
+            };
+            
+            // Branch based on condition
+            builder.build_conditional_branch(cond_val, loop_body, after_loop);
+            
+            // Generate code for loop body
+            builder.position_at_end(loop_body);
+            codegen_statement(context, module, builder, i64_type, f64_type, function_map, local_variables, loop_stack, body);
+            
+            // If the loop body doesn't end with a terminator, add a branch to the update block
+            if !builder.get_insert_block().unwrap().get_terminator().is_some() {
+                builder.build_unconditional_branch(loop_update);
+            }
+            
+            // Generate code for loop update
+            builder.position_at_end(loop_update);
+            if let Some(update_expr) = update {
+                let _ = gen_expr(context, builder, i64_type, f64_type, function_map, local_variables, update_expr);
+            }
+            
+            // Branch back to loop header
+            builder.build_unconditional_branch(loop_header);
+            
+            // Pop loop blocks from the stack
+            loop_stack.pop();
+            
+            // Continue code generation from after the loop
+            builder.position_at_end(after_loop);
+        },
+        AstNode::ForIn { var_name, object, body } => {
+            // Get the current function
+            let function = builder.get_insert_block().unwrap().get_parent().unwrap();
+            
+            // Create basic blocks for loop setup, loop header, loop body, and after loop
+            let loop_setup = context.append_basic_block(function, "forin_setup");
+            let loop_header = context.append_basic_block(function, "forin_header");
+            let loop_body = context.append_basic_block(function, "forin_body");
+            let after_loop = context.append_basic_block(function, "after_forin");
+            
+            // Push loop blocks onto the stack for break/continue
+            loop_stack.push((loop_header, after_loop));
+            
+            // Branch to loop setup
+            builder.build_unconditional_branch(loop_setup);
+            
+            // Generate code for loop setup
+            builder.position_at_end(loop_setup);
+            
+            // Generate code for the object expression
+            let obj_val = gen_expr(context, builder, i64_type, f64_type, function_map, local_variables, object)
+                .expect("Failed to generate object expression");
+            
+            // Create a helper function to get object keys
+            // In a real implementation, this would be a runtime function that returns an array of keys
+            // For now, we'll create a simple array with a single element for demonstration
+            
+            // Allocate space for the keys array
+            let keys_array_type = i64_type.array_type(1);
+            let keys_array = builder.build_alloca(keys_array_type, "keys_array");
+            
+            // Store a dummy key (0) in the array
+            let zero = i64_type.const_int(0, false);
+            let key_ptr = unsafe {
+                builder.build_in_bounds_gep(keys_array, &[zero, zero], "key_ptr")
+            };
+            builder.build_store(key_ptr, zero);
+            
+            // Create an index variable to iterate through the keys
+            let index_ptr = builder.build_alloca(i64_type.as_basic_type_enum(), "index_ptr");
+            builder.build_store(index_ptr, zero);
+            
+            // Branch to loop header
+            builder.build_unconditional_branch(loop_header);
+            
+            // Generate code for loop header (condition check)
+            builder.position_at_end(loop_header);
+            
+            // Load the current index
+            let index = builder.build_load(index_ptr, "index");
+            
+            // Check if we've reached the end of the keys array
+            // In a real implementation, this would compare against the length of the keys array
+            let one = i64_type.const_int(1, false);
+            let cond_val = builder.build_int_compare(
+                IntPredicate::SLT,
+                index.into_int_value(),
+                one,
+                "forin_cond"
+            );
+            
+            // Branch based on condition
+            builder.build_conditional_branch(cond_val, loop_body, after_loop);
+            
+            // Generate code for loop body
+            builder.position_at_end(loop_body);
+            
+            // Load the current key
+            let key_ptr = unsafe {
+                builder.build_in_bounds_gep(keys_array, &[zero, index.into_int_value()], "key_ptr")
+            };
+            let key = builder.build_load(key_ptr, "key");
+            
+            // Allocate space for the loop variable
+            let var_ptr = builder.build_alloca(key.get_type(), var_name);
+            builder.build_store(var_ptr, key);
+            
+            // Add the loop variable to the local variables map
+            local_variables.insert(var_name.clone(), var_ptr);
+            
+            // Generate code for the loop body
+            codegen_statement(context, module, builder, i64_type, f64_type, function_map, local_variables, loop_stack, body);
+            
+            // Remove the loop variable from the local variables map
+            local_variables.remove(var_name);
+            
+            // Increment the index
+            let next_index = builder.build_int_add(
+                index.into_int_value(),
+                i64_type.const_int(1, false),
+                "next_index"
+            );
+            builder.build_store(index_ptr, next_index);
+            
+            // If the loop body doesn't end with a terminator, add a branch back to the loop header
+            if !builder.get_insert_block().unwrap().get_terminator().is_some() {
+                builder.build_unconditional_branch(loop_header);
+            }
+            
+            // Pop loop blocks from the stack
+            loop_stack.pop();
+            
+            // Continue code generation from after the loop
+            builder.position_at_end(after_loop);
+        },
+        AstNode::ForOf { var_name, iterable, body } => {
+            // Get the current function
+            let function = builder.get_insert_block().unwrap().get_parent().unwrap();
+            
+            // Create basic blocks for loop setup, loop header, loop body, and after loop
+            let loop_setup = context.append_basic_block(function, "forof_setup");
+            let loop_header = context.append_basic_block(function, "forof_header");
+            let loop_body = context.append_basic_block(function, "forof_body");
+            let after_loop = context.append_basic_block(function, "after_forof");
+            
+            // Push loop blocks onto the stack for break/continue
+            loop_stack.push((loop_header, after_loop));
+            
+            // Branch to loop setup
+            builder.build_unconditional_branch(loop_setup);
+            
+            // Generate code for loop setup
+            builder.position_at_end(loop_setup);
+            
+            // Generate code for the iterable expression
+            let iterable_val = gen_expr(context, builder, i64_type, f64_type, function_map, local_variables, iterable)
+                .expect("Failed to generate iterable expression");
+            
+            // In a real implementation, this would check if the value is iterable
+            // For now, we'll assume it's an array and create a simple array with a single element for demonstration
+            
+            // Allocate space for the array
+            let array_type = i64_type.array_type(1);
+            let array = builder.build_alloca(array_type, "array");
+            
+            // Store a dummy value (42) in the array
+            let zero = i64_type.const_int(0, false);
+            let value_ptr = unsafe {
+                builder.build_in_bounds_gep(array, &[zero, zero], "value_ptr")
+            };
+            let dummy_value = i64_type.const_int(42, false);
+            builder.build_store(value_ptr, dummy_value);
+            
+            // Create an index variable to iterate through the array
+            let index_ptr = builder.build_alloca(i64_type.as_basic_type_enum(), "index_ptr");
+            builder.build_store(index_ptr, zero);
+            
+            // Branch to loop header
+            builder.build_unconditional_branch(loop_header);
+            
+            // Generate code for loop header (condition check)
+            builder.position_at_end(loop_header);
+            
+            // Load the current index
+            let index = builder.build_load(index_ptr, "index");
+            
+            // Check if we've reached the end of the array
+            // In a real implementation, this would compare against the length of the array
+            let one = i64_type.const_int(1, false);
+            let cond_val = builder.build_int_compare(
+                IntPredicate::SLT,
+                index.into_int_value(),
+                one,
+                "forof_cond"
+            );
+            
+            // Branch based on condition
+            builder.build_conditional_branch(cond_val, loop_body, after_loop);
+            
+            // Generate code for loop body
+            builder.position_at_end(loop_body);
+            
+            // Load the current value
+            let value_ptr = unsafe {
+                builder.build_in_bounds_gep(array, &[zero, index.into_int_value()], "value_ptr")
+            };
+            let value = builder.build_load(value_ptr, "value");
+            
+            // Allocate space for the loop variable
+            let var_ptr = builder.build_alloca(value.get_type(), var_name);
+            builder.build_store(var_ptr, value);
+            
+            // Add the loop variable to the local variables map
+            local_variables.insert(var_name.clone(), var_ptr);
+            
+            // Generate code for the loop body
+            codegen_statement(context, module, builder, i64_type, f64_type, function_map, local_variables, loop_stack, body);
+            
+            // Remove the loop variable from the local variables map
+            local_variables.remove(var_name);
+            
+            // Increment the index
+            let next_index = builder.build_int_add(
+                index.into_int_value(),
+                i64_type.const_int(1, false),
+                "next_index"
+            );
+            builder.build_store(index_ptr, next_index);
+            
+            // If the loop body doesn't end with a terminator, add a branch back to the loop header
+            if !builder.get_insert_block().unwrap().get_terminator().is_some() {
+                builder.build_unconditional_branch(loop_header);
+            }
+            
+            // Pop loop blocks from the stack
+            loop_stack.pop();
+            
+            // Continue code generation from after the loop
+            builder.position_at_end(after_loop);
+        },
+        _ => {
+            // For other statements, just evaluate them for their side effects
+            let _ = gen_expr(context, builder, i64_type, f64_type, function_map, local_variables, stmt);
+        }
+    }
+}
+
 fn codegen_function<'ctx>(
     context: &'ctx Context,
     module: &inkwell::module::Module<'ctx>,
@@ -108,213 +596,20 @@ fn codegen_function<'ctx>(
     // Create a stack of loop blocks for handling break and continue
     let mut loop_stack: Vec<(inkwell::basic_block::BasicBlock, inkwell::basic_block::BasicBlock)> = Vec::new();
     
+    // Generate code for each statement in the function body
     for stmt in body {
-        match stmt {
-            AstNode::Return(expr) => {
-                if let Some(ret_val) = gen_expr(context, builder, i64_type, f64_type, function_map, &local_variables, expr) {
-                    match ret_val {
-                        BasicValueEnum::IntValue(val) => {
-                            builder.build_return(Some(&val));
-                        },
-                        BasicValueEnum::FloatValue(val) => {
-                            // Convert float to int for now (simplified)
-                            let int_val = builder.build_float_to_signed_int(val, *i64_type, "float_to_int");
-                            builder.build_return(Some(&int_val));
-                        },
-                        _ => {
-                            // For other types, return a default value for now
-                            let default_val = i64_type.const_int(0, false);
-                            builder.build_return(Some(&default_val));
-                        }
-                    }
-                }
-            }
-            AstNode::Break => {
-                // If we're in a loop, jump to the after_loop block
-                if let Some((_, after_loop)) = loop_stack.last() {
-                    builder.build_unconditional_branch(*after_loop);
-                } else {
-                    // Error: break outside of loop
-                    // For now, just continue execution
-                }
-            }
-            AstNode::Continue => {
-                // If we're in a loop, jump to the loop_header block
-                if let Some((loop_header, _)) = loop_stack.last() {
-                    builder.build_unconditional_branch(*loop_header);
-                } else {
-                    // Error: continue outside of loop
-                    // For now, just continue execution
-                }
-            }
-            AstNode::Try { body, catch_param, catch_body, finally_body } => {
-                // Create basic blocks for try, catch, finally, and continue
-                let try_block = context.append_basic_block(function, "try");
-                let catch_block = context.append_basic_block(function, "catch");
-                let finally_block = context.append_basic_block(function, "finally");
-                let continue_block = context.append_basic_block(function, "continue");
-                
-                // Set up exception handling mechanism
-                // In a real implementation, this would involve setting up landing pads
-                // and exception handling tables, but for simplicity, we'll just branch
-                
-                // Jump to try block
-                builder.build_unconditional_branch(try_block);
-                builder.position_at_end(try_block);
-                
-                // Generate code for try block
-                for try_stmt in body {
-                    match try_stmt {
-                        AstNode::Return(expr) => {
-                            if let Some(ret_val) = gen_expr(context, builder, i64_type, f64_type, function_map, &local_variables, expr) {
-                                // If there's a finally block, we need to execute it before returning
-                                if finally_body.is_some() {
-                                    builder.build_unconditional_branch(finally_block);
-                                    builder.position_at_end(finally_block);
-                                    // Generate finally code here...
-                                    match ret_val {
-                                        BasicValueEnum::IntValue(val) => {
-                                            builder.build_return(Some(&val));
-                                        },
-                                        _ => {
-                                            // For other types, return a default value for now
-                                            let default_val = i64_type.const_int(0, false);
-                                            builder.build_return(Some(&default_val));
-                                        }
-                                    }
-                                } else {
-                                    match ret_val {
-                                        BasicValueEnum::IntValue(val) => {
-                                            builder.build_return(Some(&val));
-                                        },
-                                        _ => {
-                                            // For other types, return a default value for now
-                                            let default_val = i64_type.const_int(0, false);
-                                            builder.build_return(Some(&default_val));
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                        AstNode::Throw(expr) => {
-                            // In a real implementation, this would throw an exception
-                            // For now, we'll just jump to the catch block
-                            builder.build_unconditional_branch(catch_block);
-                        }
-                        _ => {
-                            // Generate code for other statements in try block
-                            // This is a simplified implementation
-                        }
-                    }
-                }
-                
-                // At the end of try block, jump to finally if it exists, otherwise to continue
-                if finally_body.is_some() {
-                    builder.build_unconditional_branch(finally_block);
-                } else {
-                    builder.build_unconditional_branch(continue_block);
-                }
-                
-                // Generate catch block
-                builder.position_at_end(catch_block);
-                
-                // In a real implementation, we would extract the exception info here
-                // and make it available via the catch_param
-                
-                // Generate code for catch block
-                for catch_stmt in catch_body {
-                    match catch_stmt {
-                        AstNode::Return(expr) => {
-                            if let Some(ret_val) = gen_expr(context, builder, i64_type, f64_type, function_map, &local_variables, expr) {
-                                // If there's a finally block, we need to execute it before returning
-                                if finally_body.is_some() {
-                                    builder.build_unconditional_branch(finally_block);
-                                    builder.position_at_end(finally_block);
-                                    // Generate finally code here...
-                                    match ret_val {
-                                        BasicValueEnum::IntValue(val) => {
-                                            builder.build_return(Some(&val));
-                                        },
-                                        _ => {
-                                            // For other types, return a default value for now
-                                            let default_val = i64_type.const_int(0, false);
-                                            builder.build_return(Some(&default_val));
-                                        }
-                                    }
-                                } else {
-                                    match ret_val {
-                                        BasicValueEnum::IntValue(val) => {
-                                            builder.build_return(Some(&val));
-                                        },
-                                        _ => {
-                                            // For other types, return a default value for now
-                                            let default_val = i64_type.const_int(0, false);
-                                            builder.build_return(Some(&default_val));
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                        _ => {
-                            // Generate code for other statements in catch block
-                            // This is a simplified implementation
-                        }
-                    }
-                }
-                
-                // At the end of catch block, jump to finally if it exists, otherwise to continue
-                if finally_body.is_some() {
-                    builder.build_unconditional_branch(finally_block);
-                } else {
-                    builder.build_unconditional_branch(continue_block);
-                }
-                
-                // Generate finally block if it exists
-                if let Some(finally_stmts) = finally_body {
-                    builder.position_at_end(finally_block);
-                    
-                    for finally_stmt in finally_stmts {
-                        match finally_stmt {
-                            AstNode::Return(expr) => {
-                                if let Some(ret_val) = gen_expr(context, builder, i64_type, f64_type, function_map, &local_variables, expr) {
-                                    match ret_val {
-                                        BasicValueEnum::IntValue(val) => {
-                                            builder.build_return(Some(&val));
-                                        },
-                                        _ => {
-                                            // For other types, return a default value for now
-                                            let default_val = i64_type.const_int(0, false);
-                                            builder.build_return(Some(&default_val));
-                                        }
-                                    }
-                                }
-                            }
-                            _ => {
-                                // Generate code for other statements in finally block
-                                // This is a simplified implementation
-                            }
-                        }
-                    }
-                    
-                    // At the end of finally block, jump to continue
-                    builder.build_unconditional_branch(continue_block);
-                }
-                
-                // Continue with the rest of the function
-                builder.position_at_end(continue_block);
-            }
-            AstNode::Throw(expr) => {
-                // In a real implementation, this would throw an exception
-                // For now, we'll just generate a runtime error
-                if let Some(_) = gen_expr(context, builder, i64_type, f64_type, function_map, &local_variables, expr) {
-                    // In a real implementation, we would create an exception object and throw it
-                    // For now, we'll just return a special error value
-                    let error_val = i64_type.const_int(0xDEADBEEF, false); // Special error value
-                    builder.build_return(Some(&error_val));
-                }
-            }
-            _ => {}
+        codegen_statement(context, module, builder, i64_type, f64_type, function_map, &mut local_variables, &mut loop_stack, stmt);
+        
+        // If we've already generated a terminator (like return), don't generate code for the rest of the function
+        if builder.get_insert_block().unwrap().get_terminator().is_some() {
+            break;
         }
+    }
+    
+    // If the function doesn't end with a return statement, add a default return
+    if !builder.get_insert_block().unwrap().get_terminator().is_some() {
+        let default_val = i64_type.const_int(0, false);
+        builder.build_return(Some(&default_val));
     }
 }
 
@@ -348,142 +643,6 @@ fn gen_expr<'ctx>(
             } else {
                 println!("Variable not found: {}", name);
                 None
-            }
-        },
-        AstNode::BinaryOp { left, op, right } => {
-            let left_val = gen_expr(context, builder, i64_type, f64_type, function_map, variables, left)?;
-            let right_val = gen_expr(context, builder, i64_type, f64_type, function_map, variables, right)?;
-            
-            // Handle different types of operands
-            match (left_val, right_val) {
-                (BasicValueEnum::IntValue(left_int), BasicValueEnum::IntValue(right_int)) => {
-                    // Integer operations
-                    match op.as_str() {
-                        "+" => Some(builder.build_int_add(left_int, right_int, "addtmp").into()),
-                        "-" => Some(builder.build_int_sub(left_int, right_int, "subtmp").into()),
-                        "*" => Some(builder.build_int_mul(left_int, right_int, "multmp").into()),
-                        "/" => Some(builder.build_int_signed_div(left_int, right_int, "divtmp").into()),
-                        "%" => Some(builder.build_int_signed_rem(left_int, right_int, "modtmp").into()),
-                        "==" => {
-                            let cmp = builder.build_int_compare(inkwell::IntPredicate::EQ, left_int, right_int, "eqtmp");
-                            Some(builder.build_int_z_extend(cmp, *i64_type, "booltmp").into())
-                        },
-                        "!=" => {
-                            let cmp = builder.build_int_compare(inkwell::IntPredicate::NE, left_int, right_int, "netmp");
-                            Some(builder.build_int_z_extend(cmp, *i64_type, "booltmp").into())
-                        },
-                        "<" => {
-                            let cmp = builder.build_int_compare(inkwell::IntPredicate::SLT, left_int, right_int, "lttmp");
-                            Some(builder.build_int_z_extend(cmp, *i64_type, "booltmp").into())
-                        },
-                        "<=" => {
-                            let cmp = builder.build_int_compare(inkwell::IntPredicate::SLE, left_int, right_int, "letmp");
-                            Some(builder.build_int_z_extend(cmp, *i64_type, "booltmp").into())
-                        },
-                        ">" => {
-                            let cmp = builder.build_int_compare(inkwell::IntPredicate::SGT, left_int, right_int, "gttmp");
-                            Some(builder.build_int_z_extend(cmp, *i64_type, "booltmp").into())
-                        },
-                        ">=" => {
-                            let cmp = builder.build_int_compare(inkwell::IntPredicate::SGE, left_int, right_int, "getmp");
-                            Some(builder.build_int_z_extend(cmp, *i64_type, "booltmp").into())
-                        },
-                        _ => {
-                            println!("Unsupported binary operator: {}", op);
-                            None
-                        }
-                    }
-                },
-                (BasicValueEnum::FloatValue(left_float), BasicValueEnum::FloatValue(right_float)) => {
-                    // Float operations
-                    match op.as_str() {
-                        "+" => Some(builder.build_float_add(left_float, right_float, "addtmp").into()),
-                        "-" => Some(builder.build_float_sub(left_float, right_float, "subtmp").into()),
-                        "*" => Some(builder.build_float_mul(left_float, right_float, "multmp").into()),
-                        "/" => Some(builder.build_float_div(left_float, right_float, "divtmp").into()),
-                        "==" => {
-                            let cmp = builder.build_float_compare(inkwell::FloatPredicate::OEQ, left_float, right_float, "eqtmp");
-                            Some(builder.build_int_z_extend(cmp, *i64_type, "booltmp").into())
-                        },
-                        "!=" => {
-                            let cmp = builder.build_float_compare(inkwell::FloatPredicate::ONE, left_float, right_float, "netmp");
-                            Some(builder.build_int_z_extend(cmp, *i64_type, "booltmp").into())
-                        },
-                        "<" => {
-                            let cmp = builder.build_float_compare(inkwell::FloatPredicate::OLT, left_float, right_float, "lttmp");
-                            Some(builder.build_int_z_extend(cmp, *i64_type, "booltmp").into())
-                        },
-                        "<=" => {
-                            let cmp = builder.build_float_compare(inkwell::FloatPredicate::OLE, left_float, right_float, "letmp");
-                            Some(builder.build_int_z_extend(cmp, *i64_type, "booltmp").into())
-                        },
-                        ">" => {
-                            let cmp = builder.build_float_compare(inkwell::FloatPredicate::OGT, left_float, right_float, "gttmp");
-                            Some(builder.build_int_z_extend(cmp, *i64_type, "booltmp").into())
-                        },
-                        ">=" => {
-                            let cmp = builder.build_float_compare(inkwell::FloatPredicate::OGE, left_float, right_float, "getmp");
-                            Some(builder.build_int_z_extend(cmp, *i64_type, "booltmp").into())
-                        },
-                        _ => {
-                            println!("Unsupported binary operator: {}", op);
-                            None
-                        }
-                    }
-                },
-                _ => {
-                    println!("Unsupported operand types for binary operator: {}", op);
-                    None
-                }
-            }
-        },
-        AstNode::FunctionCall { name, args } => {
-            let function = match function_map.get(name) {
-                Some(f) => *f,
-                None => {
-                    println!("Function not found: {}", name);
-                    return None;
-                }
-            };
-            
-            let mut compiled_args = vec![];
-            
-            for arg in args {
-                let arg_val = gen_expr(context, builder, i64_type, f64_type, function_map, variables, arg)?;
-                compiled_args.push(arg_val);
-            }
-            
-            let call_site = builder.build_call(function, &compiled_args, "calltmp");
-            call_site.try_as_basic_value().left()
-        },
-        AstNode::ArrayLiteral(elements) => {
-            // For simplicity, we'll just return the first element for now
-            // In a real implementation, we would allocate an array and store all elements
-            if let Some(element) = elements.first() {
-                gen_expr(context, builder, i64_type, f64_type, function_map, variables, element)
-            } else {
-                // Empty array, return null pointer
-                Some(i64_type.const_int(0, false).into())
-            }
-        },
-        AstNode::Throw(expr) => {
-            // In a real implementation, this would create an exception object
-            // For now, we'll just generate a special error value
-            let error_val = i64_type.const_int(0xDEADBEEF, false); // Special error value
-            Some(error_val.into())
-        },
-        AstNode::NewExpr { constructor, args } => {
-            // Special handling for Error constructor
-            if constructor == "Error" {
-                // Create an error object - for now just use a special value
-                // In a real implementation, this would create a proper error object
-                let error_val = i64_type.const_int(0xDEADBEEF, false); // Special error value
-                Some(error_val.into())
-            } else {
-                // For other constructors, we would call the appropriate constructor function
-                // For now, just return a placeholder value
-                let placeholder = i64_type.const_int(0, false);
-                Some(placeholder.into())
             }
         },
         _ => None,
