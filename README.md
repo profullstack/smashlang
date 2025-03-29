@@ -445,19 +445,7 @@ smashtest ./smashlang_packages/my-package/tests
 
 ---
 
-## <span align="center">
-  <picture>
-    <source media="(prefers-color-scheme: dark)" srcset="🖤">
-    <source media="(prefers-color-scheme: light)" srcset="❤️">
-    <img src="🖤" alt="Heart" style="display: inline; margin: 0; width: 1.2em; vertical-align: middle;" />
-  </picture>
-  <picture>
-    <source media="(prefers-color-scheme: dark)" srcset="💪">
-    <source media="(prefers-color-scheme: light)" srcset="💪🏻">
-    <img src="💪" alt="Strong Arm" style="display: inline; margin: 0; width: 1.2em; vertical-align: middle;" />
-  </picture>
-  Logo
-</span>
+## <span class="dark-heart" style="--dark-content: '🖤'; --light-content: '❤️'"></span> <span class="dark-arm" style="--dark-content: '💪'; --light-content: '💪🏻'"></span> Logo
 
 The SmashLang logo represents resistance, speed, and clarity. The raised fist reflects a new era in programming — strong, expressive, and free. We are also inspired by Bernie Sanders and his relentless fight for the people.
 
