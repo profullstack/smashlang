@@ -1,5 +1,8 @@
 <p align="center">
-  <img src="assets/logo.svg" alt="SmashLang logo" width="400" />
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="assets/logo.dark.svg">
+    <img src="assets/logo.light.svg" alt="SmashLang logo" width="400" />
+  </picture>
 </p>
 
 # SmashLang
