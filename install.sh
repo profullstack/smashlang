@@ -280,9 +280,48 @@ EOF
   
   # Add to PATH if not already there
   if [[ ":$PATH:" != *":$LINUX_INSTALL_DIR:"* ]]; then
-    echo -e "${YELLOW}Adding SmashLang to PATH in ~/.bashrc...${NC}"
-    echo "export PATH=\"$LINUX_INSTALL_DIR:\$PATH\"" >> "$HOME/.bashrc"
-    echo -e "${YELLOW}Please run 'source ~/.bashrc' or start a new terminal to use SmashLang.${NC}"
+    # Detect current shell
+    CURRENT_SHELL=$(basename "$SHELL")
+    RC_FILE=""
+    
+    case "$CURRENT_SHELL" in
+      bash)
+        RC_FILE="$HOME/.bashrc"
+        ;;
+      zsh)
+        RC_FILE="$HOME/.zshrc"
+        ;;
+      fish)
+        RC_FILE="$HOME/.config/fish/config.fish"
+        FISH_PATH_EXPORT="set -gx PATH $LINUX_INSTALL_DIR \$PATH"
+        ;;
+      *)
+        # Default to bashrc if shell is unknown
+        RC_FILE="$HOME/.bashrc"
+        ;;
+    esac
+    
+    # Check if PATH entry already exists in the rc file
+    if [ -f "$RC_FILE" ]; then
+      if ! grep -q "$LINUX_INSTALL_DIR" "$RC_FILE"; then
+        echo -e "${YELLOW}Adding SmashLang to PATH in $RC_FILE...${NC}"
+        if [ "$CURRENT_SHELL" = "fish" ]; then
+          echo "$FISH_PATH_EXPORT" >> "$RC_FILE"
+        else
+          echo "export PATH=\"$LINUX_INSTALL_DIR:\$PATH\"" >> "$RC_FILE"
+        fi
+        echo -e "${YELLOW}Please run 'source $RC_FILE' or start a new terminal to use SmashLang.${NC}"
+      fi
+    else
+      echo -e "${YELLOW}Creating $RC_FILE and adding SmashLang to PATH...${NC}"
+      mkdir -p "$(dirname "$RC_FILE")"
+      if [ "$CURRENT_SHELL" = "fish" ]; then
+        echo "$FISH_PATH_EXPORT" > "$RC_FILE"
+      else
+        echo "export PATH=\"$LINUX_INSTALL_DIR:\$PATH\"" > "$RC_FILE"
+      fi
+      echo -e "${YELLOW}Please run 'source $RC_FILE' or start a new terminal to use SmashLang.${NC}"
+    fi
   fi
   
   echo -e "${GREEN}SmashLang has been successfully installed on Linux!${NC}"
@@ -850,8 +889,19 @@ display_help() {
 generate_package_assets() {
   local script_dir=$(get_script_dir)
   
-  # Generate logo.txt files
-  if [ -f "$script_dir/scripts/generate_package_logo.sh" ]; then
+  # Use pre-generated logo.txt and favicon.txt files
+  if [ -f "$script_dir/assets/logo.txt" ]; then
+    echo -e "${BLUE}Using pre-generated logo.txt file...${NC}"
+    
+    # Create package template directory if it doesn't exist
+    local template_dir="$script_dir/smashlang_packages/__package__template/assets"
+    mkdir -p "$template_dir"
+    
+    # Copy logo.txt to template directory
+    cp "$script_dir/assets/logo.txt" "$template_dir/logo.txt"
+    
+    echo -e "${GREEN}Package logo.txt file copied successfully.${NC}"
+  elif [ -f "$script_dir/scripts/generate_package_logo.sh" ]; then
     echo -e "${BLUE}Generating logo.txt files for packages...${NC}"
     
     # Make sure the script is executable
@@ -860,16 +910,24 @@ generate_package_assets() {
     # Update the package template logo.txt
     "$script_dir/scripts/generate_package_logo.sh" --template
     
-    # Generate logo.txt for all existing packages
-    "$script_dir/scripts/generate_package_logo.sh" --all
-    
     echo -e "${GREEN}Package logo.txt files generated successfully.${NC}"
   else
-    echo -e "${YELLOW}Warning: Package logo generator script not found. Skipping logo.txt generation.${NC}"
+    echo -e "${YELLOW}Warning: Neither pre-generated logo.txt nor generator script found.${NC}"
   fi
   
-  # Generate favicon.txt files
-  if [ -f "$script_dir/scripts/generate_favicon.sh" ]; then
+  # Use pre-generated favicon.txt file
+  if [ -f "$script_dir/assets/favicon.txt" ]; then
+    echo -e "${BLUE}Using pre-generated favicon.txt file...${NC}"
+    
+    # Create package template directory if it doesn't exist
+    local template_dir="$script_dir/smashlang_packages/__package__template/assets"
+    mkdir -p "$template_dir"
+    
+    # Copy favicon.txt to template directory
+    cp "$script_dir/assets/favicon.txt" "$template_dir/favicon.txt"
+    
+    echo -e "${GREEN}Package favicon.txt file copied successfully.${NC}"
+  elif [ -f "$script_dir/scripts/generate_favicon.sh" ]; then
     echo -e "${BLUE}Generating favicon.txt files for packages...${NC}"
     
     # Make sure the script is executable
@@ -878,12 +936,9 @@ generate_package_assets() {
     # Update the package template favicon.txt
     "$script_dir/scripts/generate_favicon.sh" --template
     
-    # Generate favicon.txt for all existing packages
-    "$script_dir/scripts/generate_favicon.sh" --all
-    
     echo -e "${GREEN}Package favicon.txt files generated successfully.${NC}"
   else
-    echo -e "${YELLOW}Warning: Package favicon generator script not found. Skipping favicon.txt generation.${NC}"
+    echo -e "${YELLOW}Warning: Neither pre-generated favicon.txt nor generator script found.${NC}"
   fi
 }
 
