@@ -200,6 +200,18 @@ impl Repl {
                 match result {
                     Ok(result) => {
                         println!("{}: {:?}", "Result".bright_green(), result);
+                        
+                        // For increment/decrement operations, show the current value of the variable
+                        if let Some(last_node) = ast.last() {
+                            if let AstNode::PostIncrement(expr) | AstNode::PreIncrement(expr) | 
+                                   AstNode::PostDecrement(expr) | AstNode::PreDecrement(expr) = last_node {
+                                if let AstNode::Identifier(name) = &**expr {
+                                    if let Some(current_value) = self.global_scope.get(name) {
+                                        println!("{}: {} = {:?}", "Current Value".bright_blue(), name.yellow(), current_value);
+                                    }
+                                }
+                            }
+                        }
                     },
                     Err(err) => {
                         println!("{}: {}", "Evaluation error".red(), err);
@@ -391,6 +403,43 @@ impl Repl {
                     }
                 } else {
                     Err("Left side of assignment must be a variable".to_string())
+                }
+            },
+            
+            // Handle function calls
+            AstNode::FunctionCall { name, args } => {
+                match name.as_str() {
+                    "print" => {
+                        // Evaluate all arguments
+                        let mut evaluated_args = Vec::new();
+                        for arg in args {
+                            let value = self.evaluate_ast_with_scope(arg, scope)?;
+                            evaluated_args.push(value);
+                        }
+                        
+                        // Print each argument
+                        for (i, arg) in evaluated_args.iter().enumerate() {
+                            if i > 0 {
+                                print!(" ");
+                            }
+                            match arg {
+                                Value::Number(n) => print!("{}", n),
+                                Value::Float(f) => print!("{}", f),
+                                Value::String(s) => print!("{}", s),
+                                Value::Boolean(b) => print!("{}", b),
+                                Value::Null => print!("null"),
+                            }
+                        }
+                        println!();
+                        
+                        // Return the last argument or null if no arguments
+                        if let Some(last) = evaluated_args.last() {
+                            Ok(last.clone())
+                        } else {
+                            Ok(Value::Null)
+                        }
+                    },
+                    _ => Err(format!("Function '{}' not implemented", name))
                 }
             },
             
