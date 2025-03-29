@@ -120,14 +120,23 @@ install_linux() {
     echo -e "${BLUE}Cloning SmashLang repository...${NC}"
     git clone --depth 1 "$REPO_URL" "$temp_dir"
     
-    # Copy binaries from the repository
+    # Copy binaries from the repository or build them
     echo -e "${BLUE}Installing SmashLang binaries...${NC}"
     if [ -f "$temp_dir/bin/smash" ]; then
       cp "$temp_dir/bin/smash" "$LINUX_INSTALL_DIR/"
       chmod +x "$LINUX_INSTALL_DIR/smash"
-    else
-      echo -e "${YELLOW}Warning: smash binary not found in repository, creating placeholder...${NC}"
-      cat > "$LINUX_INSTALL_DIR/smash" << 'EOF'
+    elif [ -f "$temp_dir/Cargo.toml" ]; then
+      echo -e "${BLUE}Building SmashLang from source...${NC}"
+      cd "$temp_dir"
+      if command -v cargo &> /dev/null; then
+        cargo build --release
+        if [ -f "$temp_dir/target/release/smash" ]; then
+          cp "$temp_dir/target/release/smash" "$LINUX_INSTALL_DIR/"
+          chmod +x "$LINUX_INSTALL_DIR/smash"
+          echo -e "${GREEN}Successfully built and installed SmashLang binary.${NC}"
+        else
+          echo -e "${YELLOW}Warning: Failed to build smash binary, creating placeholder...${NC}"
+          cat > "$LINUX_INSTALL_DIR/smash" << 'EOF'
 #!/bin/bash
 
 # Colors for output
@@ -189,8 +198,12 @@ EOF
     if [ -f "$temp_dir/bin/smashpkg" ]; then
       cp "$temp_dir/bin/smashpkg" "$LINUX_INSTALL_DIR/"
       chmod +x "$LINUX_INSTALL_DIR/smashpkg"
+    elif [ -f "$temp_dir/target/release/smashpkg" ]; then
+      cp "$temp_dir/target/release/smashpkg" "$LINUX_INSTALL_DIR/"
+      chmod +x "$LINUX_INSTALL_DIR/smashpkg"
+      echo -e "${GREEN}Successfully installed SmashLang package manager binary.${NC}"
     else
-      echo -e "${YELLOW}Warning: smashpkg binary not found in repository, creating placeholder...${NC}"
+      echo -e "${YELLOW}Warning: smashpkg binary not found, creating placeholder...${NC}"
       cat > "$LINUX_INSTALL_DIR/smashpkg" << 'EOF'
 #!/bin/bash
 
