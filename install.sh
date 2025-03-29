@@ -864,9 +864,11 @@ main() {
         ;;
     esac
     
-    # Generate package asset files after installation
-    if [ "$GENERATE_LOGOS" = true ] && [ "$USE_MASTER" = false ]; then
-      generate_package_assets
+    # Skip package assets generation for regular installation
+    # This is only needed when preparing packages for publishing
+    if [ "$GENERATE_LOGOS" = true ]; then
+      echo -e "${BLUE}Note: Package assets generation is only needed when publishing packages.${NC}"
+      echo -e "${BLUE}Run 'scripts/generate_package_logo.sh' and 'scripts/generate_favicon.sh' manually if needed.${NC}"
     fi
   else
     # Upgrade command
