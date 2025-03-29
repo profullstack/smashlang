@@ -1,0 +1,96 @@
+[package]
+name = "smashlang_hardware"
+version = "0.1.0"
+edition = "2021"
+authors = ["SmashLang Team"]
+description = "Native hardware interfaces for SmashLang"
+
+[lib]
+name = "smashlang_hardware"
+crate-type = ["cdylib", "rlib"]
+
+[dependencies]
+# Core dependencies
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+thiserror = "1.0"
+anyhow = "1.0"
+lazy_static = "1.4"
+async-trait = "0.1.68"
+futures = "0.3"
+log = "0.4"
+
+# FFI and bindings
+napi = { version = "2.12", optional = true }
+napi-derive = { version = "2.12", optional = true }
+
+# Camera dependencies
+nokhwa = { version = "0.10", features = ["input-native", "output-threaded"] }
+image = "0.24"
+
+# Audio dependencies
+cpal = "0.15"
+rodio = "0.17"
+speechy = "0.8"
+
+# Screen capture dependencies
+screenshot-rs = "0.2"
+scrap = "0.5"
+
+# Device management
+bluer = { version = "0.16", features = ["full"] }
+rusb = "0.9"
+midir = "0.9"
+gilrs = "0.10"
+
+# Cross-platform utilities
+uuid = { version = "1.3", features = ["v4"] }
+base64 = "0.21"
+
+[features]
+default = ["node"]
+node = ["napi", "napi-derive"]
+android-support = []
+ios-support = []
+core-graphics = []
+x11 = ["x11rb"]
+
+# Desktop platform-specific dependencies
+[target.'cfg(target_os = "linux")'.dependencies]
+libv4l = "0.3"
+alsa = "0.7"
+x11rb = { version = "0.11", optional = true }
+
+[target.'cfg(target_os = "windows")'.dependencies]
+winapi = { version = "0.3", features = ["winuser", "processthreadsapi", "psapi", "handleapi", "winreg", "winerror", "errhandlingapi", "wingdi", "dxgi", "d3d11"] }
+winreg = "0.11"
+
+[target.'cfg(target_os = "macos")'.dependencies]
+core-foundation = "0.9"
+core-graphics = { version = "0.22", optional = true }
+objc = "0.2"
+
+# Mobile platform-specific dependencies
+[target.'cfg(target_os = "android")'.dependencies]
+jni = "0.21"
+ndk = "0.7"
+ndk-sys = "0.4"
+ndk-context = "0.1"
+
+[target.'cfg(target_os = "ios")'.dependencies]
+objc = "0.2"
+objc-foundation = "0.1"
+core-foundation = "0.9"
+
+
+[target.'cfg(target_os = "windows")'.dependencies]
+windows = { version = "0.48", features = ["Win32_Media_MediaFoundation", "Win32_Media_Audio", "Win32_Graphics_Gdi", "Win32_Devices_HumanInterfaceDevice"] }
+
+[target.'cfg(target_os = "macos")'.dependencies]
+core-foundation = "0.9"
+core-graphics = "0.22"
+avfoundation = "0.5"
+core-media = "0.3"
+
+[build-dependencies]
+napi-build = { version = "2.0", optional = true }

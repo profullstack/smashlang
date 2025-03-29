@@ -1,0 +1,429 @@
+// SmashLang Hardware Interfaces Demo
+// This example demonstrates how to use the hardware package to access camera, microphone,
+// screen recording, and various devices.
+
+import { camera, microphone, screen, devices } from "hardware";
+
+// Main function to demonstrate hardware capabilities
+async function main() {
+  console.log("SmashLang Hardware Interfaces Demo");
+  console.log("====================================\n");
+  
+  // Check hardware availability
+  await checkAvailability();
+  
+  // Camera demo
+  await cameraDemo();
+  
+  // Microphone demo
+  await microphoneDemo();
+  
+  // Screen recording demo
+  await screenDemo();
+  
+  // Device management demo
+  await devicesDemo();
+  
+  console.log("\nHardware demo completed!");
+}
+
+// Check hardware availability
+async function checkAvailability() {
+  console.log("Checking hardware availability...");
+  
+  const cameraAvailable = await camera.isAvailable();
+  console.log(`Camera available: ${cameraAvailable}`);
+  
+  const microphoneAvailable = await microphone.isAvailable();
+  console.log(`Microphone available: ${microphoneAvailable}`);
+  
+  const screenAvailable = await screen.isAvailable();
+  console.log(`Screen recording available: ${screenAvailable}`);
+  
+  console.log("\n");
+}
+
+// Camera demo
+async function cameraDemo() {
+  console.log("Camera Demo");
+  console.log("-----------");
+  
+  try {
+    // Request camera permission
+    const permission = await camera.requestPermission();
+    if (!permission) {
+      console.log("Camera permission denied");
+      return;
+    }
+    
+    // List available cameras
+    const cameras = await camera.getDevices();
+    console.log(`Found ${cameras.length} camera(s):`);
+    cameras.forEach((device, index) => {
+      console.log(`  ${index + 1}. ${device.label} (${device.id})`);
+    });
+    
+    if (cameras.length === 0) {
+      console.log("No cameras available");
+      return;
+    }
+    
+    // Start camera stream
+    const options = {
+      width: 1280,
+      height: 720,
+      frameRate: 30,
+      facingMode: "user"
+    };
+    
+    console.log("Starting camera stream...");
+    const stream = await camera.start(options);
+    console.log(`Camera stream started: ${stream.width}x${stream.height} @ ${stream.frameRate}fps`);
+    
+    // Take a photo
+    console.log("Taking a photo...");
+    const photoOptions = {
+      format: "jpeg",
+      quality: 0.9
+    };
+    
+    const photo = await camera.takePhoto(photoOptions);
+    console.log(`Photo taken: ${photo.width}x${photo.height} ${photo.format}`);
+    
+    // Save the photo
+    const photoPath = "./camera_photo.jpg";
+    await camera.savePhoto(photo, photoPath);
+    console.log(`Photo saved to: ${photoPath}`);
+    
+    // Start video recording
+    console.log("Starting video recording...");
+    const recordingOptions = {
+      format: "mp4",
+      quality: 0.8,
+      includeAudio: true
+    };
+    
+    await camera.startRecording(recordingOptions);
+    
+    // Record for 5 seconds
+    await sleep(5000);
+    
+    // Stop recording
+    const videoPath = "./camera_video.mp4";
+    const recording = await camera.stopRecording(videoPath);
+    console.log(`Video recorded: ${recording.duration.toFixed(2)}s, saved to: ${videoPath}`);
+    
+    // Apply a filter
+    console.log("Applying sepia filter...");
+    await camera.applyFilter("sepia");
+    
+    // Take another photo with the filter
+    const filteredPhoto = await camera.takePhoto(photoOptions);
+    const filteredPhotoPath = "./camera_photo_filtered.jpg";
+    await camera.savePhoto(filteredPhoto, filteredPhotoPath);
+    console.log(`Filtered photo saved to: ${filteredPhotoPath}`);
+    
+    // Remove filters
+    await camera.removeFilters();
+    
+    // Stop the camera
+    await camera.stop();
+    console.log("Camera stopped");
+  } catch (error) {
+    console.error(`Camera demo error: ${error.message}`);
+  }
+  
+  console.log("\n");
+}
+
+// Microphone demo
+async function microphoneDemo() {
+  console.log("Microphone Demo");
+  console.log("---------------");
+  
+  try {
+    // Request microphone permission
+    const permission = await microphone.requestPermission();
+    if (!permission) {
+      console.log("Microphone permission denied");
+      return;
+    }
+    
+    // List available microphones
+    const mics = await microphone.getDevices();
+    console.log(`Found ${mics.length} microphone(s):`);
+    mics.forEach((device, index) => {
+      console.log(`  ${index + 1}. ${device.label} (${device.id})`);
+    });
+    
+    if (mics.length === 0) {
+      console.log("No microphones available");
+      return;
+    }
+    
+    // Start microphone stream
+    const options = {
+      sampleRate: 44100,
+      channels: 1,
+      echoCancellation: true,
+      noiseSuppression: true,
+      autoGainControl: true
+    };
+    
+    console.log("Starting microphone stream...");
+    const stream = await microphone.start(options);
+    console.log(`Microphone stream started: ${stream.sampleRate}Hz, ${stream.channels} channel(s)`);
+    
+    // Monitor audio level for a few seconds
+    console.log("Monitoring audio level for 3 seconds...");
+    for (let i = 0; i < 3; i++) {
+      const level = await microphone.getAudioLevel();
+      console.log(`Audio level: ${(level * 100).toFixed(1)}%`);
+      await sleep(1000);
+    }
+    
+    // Start recording
+    console.log("Starting audio recording...");
+    const recordingOptions = {
+      format: "wav",
+      quality: 0.9
+    };
+    
+    await microphone.startRecording(recordingOptions);
+    
+    // Record for 5 seconds
+    console.log("Recording for 5 seconds...");
+    await sleep(5000);
+    
+    // Stop recording
+    const audioPath = "./microphone_recording.wav";
+    const recording = await microphone.stopRecording(audioPath);
+    console.log(`Audio recorded: ${recording.duration.toFixed(2)}s, saved to: ${audioPath}`);
+    
+    // Speech recognition
+    console.log("Performing speech recognition...");
+    const speechOptions = {
+      language: "en-US",
+      continuous: false
+    };
+    
+    const result = await microphone.recognizeSpeech(speechOptions);
+    console.log(`Speech recognized: "${result.transcript}" (confidence: ${(result.confidence * 100).toFixed(1)}%)`);
+    
+    // Stop the microphone
+    await microphone.stop();
+    console.log("Microphone stopped");
+  } catch (error) {
+    console.error(`Microphone demo error: ${error.message}`);
+  }
+  
+  console.log("\n");
+}
+
+// Screen recording demo
+async function screenDemo() {
+  console.log("Screen Recording Demo");
+  console.log("---------------------");
+  
+  try {
+    // Request screen recording permission
+    const permission = await screen.requestPermission();
+    if (!permission) {
+      console.log("Screen recording permission denied");
+      return;
+    }
+    
+    // List available screen sources
+    const sources = await screen.getSources();
+    console.log(`Found ${sources.length} screen source(s):`);
+    sources.forEach((source, index) => {
+      console.log(`  ${index + 1}. ${source.name} (${source.sourceType})`);
+    });
+    
+    // Take a screenshot
+    console.log("Taking a screenshot...");
+    const screenshotOptions = {
+      format: "png",
+      quality: 1.0,
+      captureMouseCursor: true
+    };
+    
+    const screenshot = await screen.takeScreenshot(screenshotOptions);
+    console.log(`Screenshot taken: ${screenshot.width}x${screenshot.height} ${screenshot.format}`);
+    
+    // Save the screenshot
+    const screenshotPath = "./screen_screenshot.png";
+    await screen.saveScreenshot(screenshot, screenshotPath);
+    console.log(`Screenshot saved to: ${screenshotPath}`);
+    
+    // Start screen recording
+    console.log("Starting screen recording...");
+    const recordingOptions = {
+      width: 1920,
+      height: 1080,
+      frameRate: 30,
+      captureMouseCursor: true,
+      captureClicks: true,
+      captureAudio: false,
+      format: "mp4",
+      quality: 0.8
+    };
+    
+    const recorder = await screen.startRecording(recordingOptions);
+    console.log(`Screen recording started: ${recorder.width}x${recorder.height} @ ${recorder.frameRate}fps`);
+    
+    // Record for 5 seconds
+    console.log("Recording for 5 seconds...");
+    await sleep(2000);
+    
+    // Add a marker
+    await screen.addMarker("Demo marker");
+    console.log("Added marker at 2 seconds");
+    
+    await sleep(1000);
+    
+    // Pause recording
+    await screen.pauseRecording();
+    console.log("Recording paused");
+    
+    await sleep(1000);
+    
+    // Resume recording
+    await screen.resumeRecording();
+    console.log("Recording resumed");
+    
+    await sleep(2000);
+    
+    // Stop recording
+    const screenVideoPath = "./screen_recording.mp4";
+    const recording = await screen.stopRecording(screenVideoPath);
+    console.log(`Screen recording saved: ${recording.duration.toFixed(2)}s, saved to: ${screenVideoPath}`);
+  } catch (error) {
+    console.error(`Screen demo error: ${error.message}`);
+  }
+  
+  console.log("\n");
+}
+
+// Device management demo
+async function devicesDemo() {
+  console.log("Device Management Demo");
+  console.log("----------------------");
+  
+  try {
+    // List all connected devices
+    const allDevices = await devices.getDevices();
+    console.log(`Found ${allDevices.length} connected device(s):`);
+    allDevices.forEach((device, index) => {
+      console.log(`  ${index + 1}. ${device.name} (${device.deviceType})`);
+    });
+    
+    // Bluetooth demo
+    console.log("\nBluetooth Demo:");
+    if (await devices.bluetooth.isAvailable()) {
+      console.log("Bluetooth is available");
+      
+      // Scan for Bluetooth devices
+      console.log("Scanning for Bluetooth devices...");
+      const scanOptions = {
+        duration: 5,
+        includePaired: true,
+        includeUnpaired: true
+      };
+      
+      const bluetoothDevices = await devices.bluetooth.scan(scanOptions);
+      console.log(`Found ${bluetoothDevices.length} Bluetooth device(s):`);
+      bluetoothDevices.forEach((device, index) => {
+        console.log(`  ${index + 1}. ${device.name} (${device.address}), paired: ${device.paired}`);
+      });
+    } else {
+      console.log("Bluetooth is not available");
+    }
+    
+    // USB demo
+    console.log("\nUSB Demo:");
+    if (await devices.usb.isAvailable()) {
+      console.log("USB is available");
+      
+      // List USB devices
+      const usbDevices = await devices.usb.getDevices();
+      console.log(`Found ${usbDevices.length} USB device(s):`);
+      usbDevices.forEach((device, index) => {
+        console.log(`  ${index + 1}. ${device.name} (${device.vendorId.toString(16)}:${device.productId.toString(16)})`);
+      });
+    } else {
+      console.log("USB is not available");
+    }
+    
+    // MIDI demo
+    console.log("\nMIDI Demo:");
+    if (await devices.midi.isAvailable()) {
+      console.log("MIDI is available");
+      
+      // List MIDI inputs
+      const midiInputs = await devices.midi.getInputs();
+      console.log(`Found ${midiInputs.length} MIDI input device(s):`);
+      midiInputs.forEach((device, index) => {
+        console.log(`  ${index + 1}. ${device.name}`);
+      });
+      
+      // List MIDI outputs
+      const midiOutputs = await devices.midi.getOutputs();
+      console.log(`Found ${midiOutputs.length} MIDI output device(s):`);
+      midiOutputs.forEach((device, index) => {
+        console.log(`  ${index + 1}. ${device.name}`);
+      });
+    } else {
+      console.log("MIDI is not available");
+    }
+    
+    // Gamepad demo
+    console.log("\nGamepad Demo:");
+    if (await devices.gamepad.isAvailable()) {
+      console.log("Gamepad is available");
+      
+      // List gamepads
+      const gamepads = await devices.gamepad.getDevices();
+      console.log(`Found ${gamepads.length} gamepad(s):`);
+      gamepads.forEach((device, index) => {
+        console.log(`  ${index + 1}. ${device.name} (${device.buttons} buttons, ${device.axes} axes)`);
+      });
+      
+      if (gamepads.length > 0) {
+        // Get gamepad state
+        const gamepadId = gamepads[0].id;
+        console.log(`Getting state for gamepad: ${gamepads[0].name}`);
+        
+        await devices.gamepad.open(gamepadId);
+        const state = await devices.gamepad.getState(gamepadId);
+        
+        console.log(`Gamepad state: ${state.buttons.filter(b => b).length} buttons pressed, axes: [${state.axes.map(a => a.toFixed(2)).join(', ')}]`);
+        
+        // Apply force feedback if supported
+        if (gamepads[0].hasForceFeedback) {
+          console.log("Applying rumble effect...");
+          const effect = devices.gamepad.createRumbleEffect(0.5, 0.3, 1000);
+          await devices.gamepad.applyForceFeedback(gamepadId, effect);
+          await sleep(1000);
+          await devices.gamepad.stopForceFeedback(gamepadId);
+        }
+        
+        await devices.gamepad.close(gamepadId);
+      }
+    } else {
+      console.log("Gamepad is not available");
+    }
+  } catch (error) {
+    console.error(`Devices demo error: ${error.message}`);
+  }
+}
+
+// Helper function to sleep for a specified duration
+async function sleep(ms) {
+  return new Promise(resolve => setTimeout(resolve, ms));
+}
+
+// Run the main function
+main().catch(error => {
+  console.error(`Error in hardware demo: ${error.message}`);
+});
