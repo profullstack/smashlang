@@ -1,6 +1,6 @@
 # Destructuring and Spread Operator in SmashLang
 
-SmashLang supports modern JavaScript-like features such as destructuring assignments and the spread operator, making it easier to work with arrays and objects.
+SmashLang supports modern JavaScript-like features such as destructuring assignments and the spread operator, making it easier to work with arrays and objects. These features help you write more concise and readable code.
 
 ## Destructuring Assignment
 

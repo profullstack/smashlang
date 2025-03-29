@@ -16,6 +16,10 @@ pub enum AstNode {
     LetDecl { name: String, value: Box<AstNode> },
     ConstDecl { name: String, value: Box<AstNode> },
     
+    // Destructuring
+    ArrayDestructuring { targets: Vec<DestructuringTarget>, value: Box<AstNode> },
+    ObjectDestructuring { targets: Vec<DestructuringTarget>, value: Box<AstNode> },
+    
     // Operators
     BinaryOp {
         left: Box<AstNode>,
@@ -50,6 +54,7 @@ pub enum AstNode {
     // Data structures
     ArrayLiteral(Vec<AstNode>),
     ObjectLiteral(HashMap<String, AstNode>),
+    SpreadElement(Box<AstNode>),
     
     // Control flow
     Block(Vec<AstNode>),  // Block-level scope { ... }
@@ -81,6 +86,40 @@ impl fmt::Display for ParseError {
 }
 
 pub type ParseResult<T> = Result<T, ParseError>;
+
+#[derive(Debug)]
+pub struct DestructuringTarget {
+    pub name: String,
+    pub alias: Option<String>,
+    pub default_value: Option<Box<AstNode>>,
+    pub is_rest: bool,
+}
+
+impl DestructuringTarget {
+    pub fn new(name: String) -> Self {
+        DestructuringTarget {
+            name,
+            alias: None,
+            default_value: None,
+            is_rest: false,
+        }
+    }
+    
+    pub fn with_alias(mut self, alias: String) -> Self {
+        self.alias = Some(alias);
+        self
+    }
+    
+    pub fn with_default(mut self, default_value: AstNode) -> Self {
+        self.default_value = Some(Box::new(default_value));
+        self
+    }
+    
+    pub fn as_rest(mut self) -> Self {
+        self.is_rest = true;
+        self
+    }
+}
 
 pub struct Parser {
     tokens: Vec<Token>,
@@ -204,6 +243,14 @@ impl Parser {
     fn parse_let(&mut self) -> ParseResult<Option<AstNode>> {
         self.advance(); // consume let
         
+        // Check if this is a destructuring pattern
+        if let Some(Token::LBracket) = self.peek() {
+            return self.parse_array_destructuring();
+        } else if let Some(Token::LBrace) = self.peek() {
+            return self.parse_object_destructuring();
+        }
+        
+        // Regular variable declaration
         // Clone the token to avoid borrowing issues
         let name_token = self.advance().cloned();
         if let Some(Token::Identifier(name)) = name_token {
@@ -219,8 +266,173 @@ impl Parser {
                 value: Box::new(expr),
             }))
         } else {
-            Err(ParseError::new("Expected identifier after let", self.pos))
+            Err(ParseError::new("Expected identifier, array or object pattern after let", self.pos))
         }
+    }
+    
+    fn parse_array_destructuring(&mut self) -> ParseResult<Option<AstNode>> {
+        // Skip '['
+        self.advance();
+        
+        let mut targets = Vec::new();
+        
+        // Parse the destructuring pattern
+        while let Some(token) = self.peek() {
+            if *token == Token::RBracket {
+                break;
+            }
+            
+            // Check for rest element
+            if let Some(Token::Ellipsis) = self.peek() {
+                self.advance();
+                
+                if let Some(Token::Identifier(name)) = self.peek() {
+                    let name = name.clone();
+                    self.advance();
+                    
+                    targets.push(DestructuringTarget::new(name).as_rest());
+                } else {
+                    return Err(ParseError::new("Expected identifier after spread operator", self.pos));
+                }
+            } else if let Some(Token::Identifier(name)) = self.peek() {
+                let name = name.clone();
+                self.advance();
+                
+                // Check for default value
+                let target = if let Some(Token::Equal) = self.peek() {
+                    self.advance();
+                    let default_value = self.parse_expr()?;
+                    DestructuringTarget::new(name).with_default(default_value)
+                } else {
+                    DestructuringTarget::new(name)
+                };
+                
+                targets.push(target);
+            } else if let Some(Token::Comma) = self.peek() {
+                // Skip empty slots
+                targets.push(DestructuringTarget::new(String::new()));
+            } else {
+                return Err(ParseError::new("Expected identifier or spread in array destructuring", self.pos));
+            }
+            
+            // Expect comma between elements, except for the last one
+            if let Some(Token::Comma) = self.peek() {
+                self.advance();
+            } else if let Some(Token::RBracket) = self.peek() {
+                // End of pattern
+                break;
+            } else {
+                return Err(ParseError::new("Expected comma or closing bracket in array destructuring", self.pos));
+            }
+        }
+        
+        // Skip ']'
+        self.expect(&Token::RBracket)?;
+        
+        // Expect '='
+        self.expect(&Token::Equal)?;
+        
+        // Parse the value expression
+        let value = self.parse_expr()?;
+        
+        // Expect semicolon
+        self.expect(&Token::Semicolon)?;
+        
+        Ok(Some(AstNode::ArrayDestructuring {
+            targets,
+            value: Box::new(value),
+        }))
+    }
+    
+    fn parse_object_destructuring(&mut self) -> ParseResult<Option<AstNode>> {
+        // Skip '{'
+        self.advance();
+        
+        let mut targets = Vec::new();
+        
+        // Parse the destructuring pattern
+        while let Some(token) = self.peek() {
+            if *token == Token::RBrace {
+                break;
+            }
+            
+            // Check for rest element
+            if let Some(Token::Ellipsis) = self.peek() {
+                self.advance();
+                
+                if let Some(Token::Identifier(name)) = self.peek() {
+                    let name = name.clone();
+                    self.advance();
+                    
+                    targets.push(DestructuringTarget::new(name).as_rest());
+                } else {
+                    return Err(ParseError::new("Expected identifier after spread operator", self.pos));
+                }
+            } else if let Some(Token::Identifier(prop)) = self.peek() {
+                let prop = prop.clone();
+                self.advance();
+                
+                // Check for property renaming
+                let target = if let Some(Token::Colon) = self.peek() {
+                    self.advance();
+                    
+                    if let Some(Token::Identifier(name)) = self.peek() {
+                        let name = name.clone();
+                        self.advance();
+                        
+                        // Check for default value
+                        if let Some(Token::Equal) = self.peek() {
+                            self.advance();
+                            let default_value = self.parse_expr()?;
+                            DestructuringTarget::new(prop).with_alias(name).with_default(default_value)
+                        } else {
+                            DestructuringTarget::new(prop).with_alias(name)
+                        }
+                    } else {
+                        return Err(ParseError::new("Expected identifier after colon in object destructuring", self.pos));
+                    }
+                } else if let Some(Token::Equal) = self.peek() {
+                    // Default value without renaming
+                    self.advance();
+                    let default_value = self.parse_expr()?;
+                    DestructuringTarget::new(prop).with_default(default_value)
+                } else {
+                    // Simple property extraction
+                    DestructuringTarget::new(prop)
+                };
+                
+                targets.push(target);
+            } else {
+                return Err(ParseError::new("Expected property name or spread in object destructuring", self.pos));
+            }
+            
+            // Expect comma between properties, except for the last one
+            if let Some(Token::Comma) = self.peek() {
+                self.advance();
+            } else if let Some(Token::RBrace) = self.peek() {
+                // End of pattern
+                break;
+            } else {
+                return Err(ParseError::new("Expected comma or closing brace in object destructuring", self.pos));
+            }
+        }
+        
+        // Skip '}'
+        self.expect(&Token::RBrace)?;
+        
+        // Expect '='
+        self.expect(&Token::Equal)?;
+        
+        // Parse the value expression
+        let value = self.parse_expr()?;
+        
+        // Expect semicolon
+        self.expect(&Token::Semicolon)?;
+        
+        Ok(Some(AstNode::ObjectDestructuring {
+            targets,
+            value: Box::new(value),
+        }))
     }
 
     fn parse_function(&mut self) -> ParseResult<Option<AstNode>> {
@@ -507,8 +719,15 @@ impl Parser {
                         self.advance(); // consume ]
                     } else {
                         loop {
-                            let element = self.parse_expr()?;
-                            elements.push(element);
+                            // Check for spread operator
+                            if let Some(Token::Ellipsis) = self.peek() {
+                                self.advance(); // consume ...
+                                let spread_expr = self.parse_expr()?;
+                                elements.push(AstNode::SpreadElement(Box::new(spread_expr)));
+                            } else {
+                                let element = self.parse_expr()?;
+                                elements.push(element);
+                            }
                             
                             if let Some(Token::Comma) = self.peek() {
                                 self.advance(); // consume ,
@@ -530,14 +749,35 @@ impl Parser {
                         self.advance(); // consume }
                     } else {
                         loop {
-                            let key_token = self.advance().cloned();
-                            if let Some(Token::Identifier(key)) = key_token {
-                                self.expect(&Token::Colon)?;
+                            // Check for spread operator
+                            if let Some(Token::Ellipsis) = self.peek() {
+                                self.advance(); // consume ...
                                 
-                                let value = self.parse_expr()?;
-                                properties.insert(key, value);
+                                // Parse the expression being spread
+                                let spread_expr = self.parse_expr()?;
+                                
+                                // Add a special marker in the properties map to indicate a spread
+                                // In a real implementation, you would need a more sophisticated approach
+                                // to handle spread operators in objects, as they can appear anywhere in the object
+                                let spread_key = format!("__spread_{}", properties.len());
+                                properties.insert(spread_key, AstNode::SpreadElement(Box::new(spread_expr)));
                             } else {
-                                return Err(ParseError::new("Expected property name", self.pos));
+                                let key_token = self.advance().cloned();
+                                if let Some(Token::Identifier(key)) = key_token {
+                                    // Check if this is a shorthand property (no colon)
+                                    if let Some(Token::Colon) = self.peek() {
+                                        self.advance(); // consume :
+                                        
+                                        let value = self.parse_expr()?;
+                                        properties.insert(key.clone(), value);
+                                    } else {
+                                        // Shorthand property syntax: { foo, bar }
+                                        // Equivalent to { foo: foo, bar: bar }
+                                        properties.insert(key.clone(), AstNode::Identifier(key));
+                                    }
+                                } else {
+                                    return Err(ParseError::new("Expected property name or spread operator", self.pos));
+                                }
                             }
                             
                             let has_more_props = if let Some(Token::Comma) = self.peek() {

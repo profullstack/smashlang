@@ -43,6 +43,10 @@ pub enum Token {
     RBracket,  // ]
     Comma,     // ,
     Semicolon, // ;
+    
+    // Special operators
+    Dot,       // .
+    Ellipsis,  // ... (spread operator)
 }
 
 pub fn tokenize(input: &str) -> Vec<Token> {
@@ -187,6 +191,37 @@ pub fn tokenize(input: &str) -> Vec<Token> {
                 tokens.push(Token::Semicolon);
                 chars.next();
             }
+            '.' => {
+                chars.next(); // consume the first '.'
+                
+                // Check for ellipsis (...)
+                if let Some(&next_ch) = chars.peek() {
+                    if next_ch == '.' {
+                        chars.next(); // consume the second '.'
+                        
+                        if let Some(&third_ch) = chars.peek() {
+                            if third_ch == '.' {
+                                chars.next(); // consume the third '.'
+                                tokens.push(Token::Ellipsis);
+                            } else {
+                                // This is not a valid token in our language
+                                // For now, just push one dot
+                                tokens.push(Token::Dot);
+                                // Put back the second dot
+                                tokens.push(Token::Dot);
+                            }
+                        } else {
+                            // End of input after two dots
+                            tokens.push(Token::Dot);
+                            tokens.push(Token::Dot);
+                        }
+                    } else {
+                        tokens.push(Token::Dot);
+                    }
+                } else {
+                    tokens.push(Token::Dot);
+                }
+            }
             '"' => {
                 chars.next();
                 let mut string = String::new();
@@ -203,18 +238,53 @@ pub fn tokenize(input: &str) -> Vec<Token> {
             '0'..='9' => {
                 let mut num = String::new();
                 let mut is_float = false;
+                
+                // Parse the integer part
                 while let Some(&digit) = chars.peek() {
-                    if digit == '.' {
-                        is_float = true;
-                        num.push('.');
-                        chars.next();
-                    } else if digit.is_ascii_digit() {
+                    if digit.is_ascii_digit() {
                         num.push(digit);
                         chars.next();
                     } else {
                         break;
                     }
                 }
+                
+                // Check for decimal point
+                if let Some(&ch) = chars.peek() {
+                    if ch == '.' {
+                        // Look ahead to see if this is a spread operator
+                        let mut temp_chars = chars.clone();
+                        temp_chars.next(); // Skip the first dot
+                        
+                        if let Some(&next_ch) = temp_chars.peek() {
+                            if next_ch == '.' {
+                                // This is likely the start of a spread operator, don't consume the dot
+                                // Just finish the number as an integer
+                            } else if next_ch.is_ascii_digit() {
+                                // This is a decimal point in a float
+                                is_float = true;
+                                num.push('.');
+                                chars.next(); // Consume the dot
+                                
+                                // Parse the fractional part
+                                while let Some(&digit) = chars.peek() {
+                                    if digit.is_ascii_digit() {
+                                        num.push(digit);
+                                        chars.next();
+                                    } else {
+                                        break;
+                                    }
+                                }
+                            }
+                        } else {
+                            // Just a single dot at the end, treat as a decimal point
+                            is_float = true;
+                            num.push('.');
+                            chars.next();
+                        }
+                    }
+                }
+                
                 if is_float {
                     tokens.push(Token::Float(num.parse().unwrap()));
                 } else {

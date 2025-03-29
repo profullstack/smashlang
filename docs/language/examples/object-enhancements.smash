@@ -1,0 +1,102 @@
+// SmashLang Object Enhancements Example
+
+// Shorthand Property Names
+print("\n=== Shorthand Property Names ===\n");
+
+// Traditional object creation
+let firstName = "Alice";
+let lastName = "Johnson";
+let age = 32;
+
+// Using traditional property assignments
+let user1 = { firstName: firstName, lastName: lastName, age: age };
+print("Traditional syntax:");
+print(user1);
+
+// Using shorthand property names
+let user2 = { firstName, lastName, age };
+print("\nShorthand syntax:");
+print(user2);
+
+// Mixing shorthand and traditional properties
+let user3 = { firstName, lastName, age, occupation: "Developer" };
+print("\nMixed syntax:");
+print(user3);
+
+// Using shorthand in function returns
+fn createUser(name, email) {
+  let active = true;
+  let createdAt = new Date();
+  
+  // Return object with shorthand properties
+  return { name, email, active, createdAt };
+}
+
+print("\nFunction return with shorthand:");
+print(createUser("Bob", "bob@example.com"));
+
+// Spread Operator for Objects
+print("\n=== Spread Operator for Objects ===\n");
+
+// Copying objects
+let defaults = { theme: "dark", fontSize: 12, showSidebar: true };
+let copy = { ...defaults };
+
+print("Original object:");
+print(defaults);
+
+print("\nCopied object (before modification):");
+print(copy);
+
+// Modify the copy
+copy.theme = "light";
+print("\nCopied object (after modification):");
+print(copy);
+print("\nOriginal object (unchanged):");
+print(defaults);
+
+// Merging objects
+let userPrefs = { theme: "light", fontSize: 14 };
+let merged = { ...defaults, ...userPrefs };
+
+print("\nMerged objects (userPrefs overrides defaults):");
+print(merged);
+
+// Adding new properties with spread
+let baseUser = { name: "Charlie", role: "Editor" };
+let userWithDetails = { ...baseUser, id: 42, active: true };
+
+print("\nAdding properties with spread:");
+print(userWithDetails);
+
+// Combining multiple objects
+let person = { name: "Dave" };
+let job = { title: "Designer" };
+let location = { city: "San Francisco" };
+
+let employee = { ...person, ...job, ...location };
+print("\nCombining multiple objects:");
+print(employee);
+
+// Combining Shorthand Properties and Spread
+print("\n=== Combining Shorthand Properties and Spread ===\n");
+
+let id = generateId();
+let name = "Eve";
+let role = "Admin";
+let basePermissions = { canRead: true, canWrite: true, canDelete: true };
+
+let adminUser = {
+  id,  // shorthand property
+  name,  // shorthand property
+  role,  // shorthand property
+  ...basePermissions  // spread operator
+};
+
+print("Combined shorthand and spread:");
+print(adminUser);
+
+// Helper function to generate an ID
+fn generateId() {
+  return Math.floor(Math.random() * 1000);
+}

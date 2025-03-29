@@ -15,6 +15,8 @@ Welcome to the official SmashLang documentation! This guide provides comprehensi
 - [Types and Type System](./language/types.md)
 - [Functions and Closures](./language/functions.md)
 - [Control Flow](./language/control-flow.md)
+- [Object Enhancements](./language/object-enhancements.md)
+- [Destructuring and Spread Operator](./language/destructuring.md)
 - [Error Handling](./language/error-handling.md)
 - [Pattern Matching](./language/pattern-matching.md)
 - [Modules and Imports](./language/modules.md)
