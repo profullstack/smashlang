@@ -193,6 +193,8 @@ else
 fi
 EOF
       chmod +x "$LINUX_INSTALL_DIR/smash"
+        fi
+      fi
     fi
     
     if [ -f "$temp_dir/bin/smashpkg" ]; then
