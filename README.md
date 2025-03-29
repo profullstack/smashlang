@@ -445,7 +445,7 @@ smashtest ./smashlang_packages/my-package/tests
 
 ---
 
-## <span class="dark-heart" style="--dark-content: '🖤'; --light-content: '❤️'"></span> <span class="dark-arm" style="--dark-content: '💪'; --light-content: '💪🏻'"></span> Logo
+## ❤️ 💪 Logo
 
 The SmashLang logo represents resistance, speed, and clarity. The raised fist reflects a new era in programming — strong, expressive, and free. We are also inspired by Bernie Sanders and his relentless fight for the people.
 
