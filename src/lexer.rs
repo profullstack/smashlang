@@ -1,10 +1,13 @@
 #[derive(Debug, Clone, PartialEq)]
 pub enum Token {
+    // Keywords
     Const,
     Let,
     Fn,
     Return,
     Import,
+    
+    // Literals
     Identifier(String),
     Number(i64),
     Float(f64),
@@ -12,20 +15,34 @@ pub enum Token {
     Regex(String),
     Bool(bool),
     Null,
-    Plus,
-    Minus,
-    Star,
-    Slash,
-    Equal,
-    Colon,
-    LParen,
-    RParen,
-    LBrace,
-    RBrace,
-    LBracket,
-    RBracket,
-    Comma,
-    Semicolon,
+    
+    // Basic operators
+    Plus,      // +
+    Minus,     // -
+    Star,      // *
+    Slash,     // /
+    Equal,     // =
+    
+    // Increment/Decrement operators
+    Increment, // ++
+    Decrement, // --
+    
+    // Compound assignment operators
+    PlusEqual,  // +=
+    MinusEqual, // -=
+    StarEqual,  // *=
+    SlashEqual, // /=
+    
+    // Delimiters
+    Colon,     // :
+    LParen,    // (
+    RParen,    // )
+    LBrace,    // {
+    RBrace,    // }
+    LBracket,  // [
+    RBracket,  // ]
+    Comma,     // ,
+    Semicolon, // ;
 }
 
 pub fn tokenize(input: &str) -> Vec<Token> {
@@ -38,41 +55,96 @@ pub fn tokenize(input: &str) -> Vec<Token> {
                 chars.next();
             }
             '+' => {
-                tokens.push(Token::Plus);
-                chars.next();
+                chars.next(); // consume the first '+'
+                
+                // Check for ++ or +=
+                if let Some(&next_ch) = chars.peek() {
+                    match next_ch {
+                        '+' => {
+                            tokens.push(Token::Increment);
+                            chars.next(); // consume the second '+'
+                        },
+                        '=' => {
+                            tokens.push(Token::PlusEqual);
+                            chars.next(); // consume the '='
+                        },
+                        _ => tokens.push(Token::Plus),
+                    }
+                } else {
+                    tokens.push(Token::Plus);
+                }
             }
             '-' => {
-                tokens.push(Token::Minus);
-                chars.next();
+                chars.next(); // consume the first '-'
+                
+                // Check for -- or -=
+                if let Some(&next_ch) = chars.peek() {
+                    match next_ch {
+                        '-' => {
+                            tokens.push(Token::Decrement);
+                            chars.next(); // consume the second '-'
+                        },
+                        '=' => {
+                            tokens.push(Token::MinusEqual);
+                            chars.next(); // consume the '='
+                        },
+                        _ => tokens.push(Token::Minus),
+                    }
+                } else {
+                    tokens.push(Token::Minus);
+                }
             }
             '*' => {
-                tokens.push(Token::Star);
-                chars.next();
+                chars.next(); // consume the '*'
+                
+                // Check for *=
+                if let Some(&next_ch) = chars.peek() {
+                    if next_ch == '=' {
+                        tokens.push(Token::StarEqual);
+                        chars.next(); // consume the '='
+                    } else {
+                        tokens.push(Token::Star);
+                    }
+                } else {
+                    tokens.push(Token::Star);
+                }
             }
             '/' => {
-                chars.next();
+                chars.next(); // consume the '/'
+                
                 if let Some(&next_ch) = chars.peek() {
-                    if next_ch == '/' {
-                        // Skip single-line comment
-                        while let Some(&c) = chars.peek() {
-                            if c == '\n' {
-                                break;
+                    match next_ch {
+                        '/' => {
+                            // Skip single-line comment
+                            chars.next(); // consume the second '/'
+                            while let Some(&c) = chars.peek() {
+                                if c == '\n' {
+                                    break;
+                                }
+                                chars.next();
                             }
-                            chars.next();
-                        }
-                    } else {
-                        // Regex literal
-                        let mut regex = String::new();
-                        while let Some(&c) = chars.peek() {
-                            if c == '/' {
-                                chars.next(); // Consume closing '/'
-                                break;
+                        },
+                        '=' => {
+                            // Handle /= operator
+                            tokens.push(Token::SlashEqual);
+                            chars.next(); // consume the '='
+                        },
+                        _ => {
+                            // Regex literal
+                            let mut regex = String::new();
+                            while let Some(&c) = chars.peek() {
+                                if c == '/' {
+                                    chars.next(); // Consume closing '/'
+                                    break;
+                                }
+                                regex.push(c);
+                                chars.next();
                             }
-                            regex.push(c);
-                            chars.next();
+                            tokens.push(Token::Regex(regex));
                         }
-                        tokens.push(Token::Regex(regex));
                     }
+                } else {
+                    tokens.push(Token::Slash);
                 }
             }
             '=' => {
