@@ -331,13 +331,41 @@ smashlang_packages/
 
 This approach keeps the codebase self-contained and ensures that even with a million packages, the download size remains manageable.
 
+### Creating Packages
+
+SmashLang provides a convenient way to create new packages with the proper structure:
+
+```bash
+# Create a simple package
+smashpkg create my-package
+
+# Create a package in a category
+smashpkg create utils/array-utils
+```
+
+This will create a new package in the `./smashlang_packages` directory with the following structure:
+
+```
+smashlang_packages/my-package/
+├── package.json         # Package metadata
+├── README.md            # Documentation
+├── .gitignore           # Git ignore rules
+├── src/
+│   └── index.smash      # Main package code
+├── examples/
+│   └── example.smash    # Usage examples
+└── tests/
+    └── index.test.smash # Test cases
+```
+
 ### Contributing Packages
 
 To contribute a new package:
 
-1. Create a new formula file in the appropriate directory under `smashlang_packages/`
-2. Test your formula locally using `smashpkg test <formula>`
-3. Submit a pull request
+1. Create a new package using `smashpkg create <name>`
+2. Develop and test your package locally
+3. Test your formula using `smashpkg test <formula>`
+4. Submit a pull request
 
 See the [smashlang_packages/README.md](./smashlang_packages/README.md) for more details.
 
