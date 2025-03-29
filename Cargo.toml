@@ -8,6 +8,7 @@ inkwell = { version = "0.2.0", features = ["llvm15-0"], optional = true }
 anyhow = "1.0"
 rustyline = "11.0.0"  # For improved REPL input handling
 colored = "2.0.0"    # For colored terminal output
+chrono = "0.4"      # For date and time functionality
 
 [features]
 default = []
@@ -20,3 +21,7 @@ path = "src/lib.rs"
 [[bin]]
 name = "smash"
 path = "src/main.rs"
+
+[[bin]]
+name = "smashpkg"
+path = "src/smashpkg.rs"
