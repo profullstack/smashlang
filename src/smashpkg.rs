@@ -2,7 +2,7 @@ use colored::*;
 use std::env;
 use std::path::Path;
 use std::fs;
-use std::io;
+// Removed unused import: use std::io;
 use chrono::Local;
 
 fn main() {
