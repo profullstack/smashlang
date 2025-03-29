@@ -8,11 +8,39 @@ use inkwell::types::BasicTypeEnum;
 use crate::parser::AstNode;
 
 use std::collections::HashMap;
+use std::fmt;
+use std::error::Error;
+
+// Define a CodegenError type for code generation errors
+#[derive(Debug)]
+pub enum CodegenError {
+    UnsupportedFeature(String),
+    UndefinedVariable(String),
+    UndefinedFunction(String),
+    TypeMismatch(String),
+    InvalidOperation(String),
+    LLVMError(String),
+}
+
+impl fmt::Display for CodegenError {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        match self {
+            CodegenError::UnsupportedFeature(feature) => write!(f, "Unsupported feature: {}", feature),
+            CodegenError::UndefinedVariable(name) => write!(f, "Undefined variable: {}", name),
+            CodegenError::UndefinedFunction(name) => write!(f, "Undefined function: {}", name),
+            CodegenError::TypeMismatch(msg) => write!(f, "Type mismatch: {}", msg),
+            CodegenError::InvalidOperation(msg) => write!(f, "Invalid operation: {}", msg),
+            CodegenError::LLVMError(msg) => write!(f, "LLVM error: {}", msg),
+        }
+    }
+}
+
+impl Error for CodegenError {}
 
 pub fn generate_llvm_ir<'ctx>(
     ast: &[AstNode],
     target: Option<&str>,
-) -> (inkwell::module::Module<'ctx>, TargetMachine) {
+) -> Result<(inkwell::module::Module<'ctx>, TargetMachine), CodegenError> {
     Target::initialize_all(&InitializationConfig::default());
     let context = Context::create();
     let module = context.create_module("smashlang");
@@ -31,7 +59,9 @@ pub fn generate_llvm_ir<'ctx>(
         None => TargetMachine::get_default_triple().as_str().to_str().unwrap(),
     });
 
-    let target = Target::from_triple(&target_triple).unwrap();
+    let target = Target::from_triple(&target_triple)
+        .map_err(|e| CodegenError::LLVMError(format!("Failed to get target from triple: {}", e)))?;
+    
     let target_machine = target
         .create_target_machine(
             &target_triple,
@@ -41,7 +71,7 @@ pub fn generate_llvm_ir<'ctx>(
             RelocMode::Default,
             CodeModel::Default,
         )
-        .unwrap();
+        .map_err(|e| CodegenError::LLVMError(format!("Failed to create target machine: {}", e)))?;
 
     let mut function_map = HashMap::new();
     let mut variables = HashMap::new();
@@ -62,10 +92,10 @@ pub fn generate_llvm_ir<'ctx>(
     for node in ast {
         match node {
             AstNode::Function { name, params, body } => {
-                codegen_function(&context, &module, &builder, &i64_type, &f64_type, &function_map, name, params, body);
+                codegen_function(&context, &module, &builder, &i64_type, &f64_type, &function_map, name, params, body)?;
             }
             AstNode::LetDecl { name, value } => {
-                if let Some(val) = gen_expr(&context, &builder, &i64_type, &f64_type, &function_map, &variables, value) {
+                if let Some(val) = gen_expr(&context, &builder, &i64_type, &f64_type, &function_map, &variables, value)? {
                     println!("Generated let {} = {:?}", name, val.print_to_string());
                 }
             }
@@ -73,7 +103,7 @@ pub fn generate_llvm_ir<'ctx>(
         }
     }
 
-    (module, target_machine)
+    Ok((module, target_machine))
 }
 
 fn codegen_function<'ctx>(
@@ -86,8 +116,12 @@ fn codegen_function<'ctx>(
     name: &str,
     params: &[String],
     body: &[AstNode],
-) {
-    let function = *function_map.get(name).unwrap();
+) -> Result<(), CodegenError> {
+    let function = match function_map.get(name) {
+        Some(f) => *f,
+        None => return Err(CodegenError::UndefinedFunction(name.to_string())),
+    };
+    
     let entry = context.append_basic_block(function, "entry");
     builder.position_at_end(entry);
 
@@ -111,7 +145,7 @@ fn codegen_function<'ctx>(
     for stmt in body {
         match stmt {
             AstNode::Return(expr) => {
-                if let Some(ret_val) = gen_expr(context, builder, i64_type, f64_type, function_map, &local_variables, expr) {
+                if let Some(ret_val) = gen_expr(context, builder, i64_type, f64_type, function_map, &local_variables, expr)? {
                     match ret_val {
                         BasicValueEnum::IntValue(val) => {
                             builder.build_return(Some(&val));
@@ -134,8 +168,7 @@ fn codegen_function<'ctx>(
                 if let Some((_, after_loop)) = loop_stack.last() {
                     builder.build_unconditional_branch(*after_loop);
                 } else {
-                    // Error: break outside of loop
-                    // For now, just continue execution
+                    return Err(CodegenError::InvalidOperation("Break statement outside of loop".to_string()));
                 }
             }
             AstNode::Continue => {
@@ -143,8 +176,7 @@ fn codegen_function<'ctx>(
                 if let Some((loop_header, _)) = loop_stack.last() {
                     builder.build_unconditional_branch(*loop_header);
                 } else {
-                    // Error: continue outside of loop
-                    // For now, just continue execution
+                    return Err(CodegenError::InvalidOperation("Continue statement outside of loop".to_string()));
                 }
             }
             AstNode::Try { body, catch_param, catch_body, finally_body } => {
@@ -166,7 +198,7 @@ fn codegen_function<'ctx>(
                 for try_stmt in body {
                     match try_stmt {
                         AstNode::Return(expr) => {
-                            if let Some(ret_val) = gen_expr(context, builder, i64_type, f64_type, function_map, &local_variables, expr) {
+                            if let Some(ret_val) = gen_expr(context, builder, i64_type, f64_type, function_map, &local_variables, expr)? {
                                 // If there's a finally block, we need to execute it before returning
                                 if finally_body.is_some() {
                                     builder.build_unconditional_branch(finally_block);
@@ -225,7 +257,7 @@ fn codegen_function<'ctx>(
                 for catch_stmt in catch_body {
                     match catch_stmt {
                         AstNode::Return(expr) => {
-                            if let Some(ret_val) = gen_expr(context, builder, i64_type, f64_type, function_map, &local_variables, expr) {
+                            if let Some(ret_val) = gen_expr(context, builder, i64_type, f64_type, function_map, &local_variables, expr)? {
                                 // If there's a finally block, we need to execute it before returning
                                 if finally_body.is_some() {
                                     builder.build_unconditional_branch(finally_block);
@@ -276,7 +308,7 @@ fn codegen_function<'ctx>(
                     for finally_stmt in finally_stmts {
                         match finally_stmt {
                             AstNode::Return(expr) => {
-                                if let Some(ret_val) = gen_expr(context, builder, i64_type, f64_type, function_map, &local_variables, expr) {
+                                if let Some(ret_val) = gen_expr(context, builder, i64_type, f64_type, function_map, &local_variables, expr)? {
                                     match ret_val {
                                         BasicValueEnum::IntValue(val) => {
                                             builder.build_return(Some(&val));
@@ -306,7 +338,7 @@ fn codegen_function<'ctx>(
             AstNode::Throw(expr) => {
                 // In a real implementation, this would throw an exception
                 // For now, we'll just generate a runtime error
-                if let Some(_) = gen_expr(context, builder, i64_type, f64_type, function_map, &local_variables, expr) {
+                if let Some(_) = gen_expr(context, builder, i64_type, f64_type, function_map, &local_variables, expr)? {
                     // In a real implementation, we would create an exception object and throw it
                     // For now, we'll just return a special error value
                     let error_val = i64_type.const_int(0xDEADBEEF, false); // Special error value
@@ -316,6 +348,14 @@ fn codegen_function<'ctx>(
             _ => {}
         }
     }
+
+    // If we reach the end of the function without a return, add a default return
+    if !builder.get_insert_block().unwrap().get_terminator().is_some() {
+        let default_val = i64_type.const_int(0, false);
+        builder.build_return(Some(&default_val));
+    }
+
+    Ok(())
 }
 
 fn gen_expr<'ctx>(
@@ -326,135 +366,165 @@ fn gen_expr<'ctx>(
     function_map: &HashMap<String, FunctionValue<'ctx>>,
     variables: &HashMap<String, PointerValue<'ctx>>,
     expr: &AstNode,
-) -> Option<BasicValueEnum<'ctx>> {
+) -> Result<Option<BasicValueEnum<'ctx>>, CodegenError> {
     match expr {
-        AstNode::Number(n) => Some(i64_type.const_int(*n as u64, true).into()),
-        AstNode::Float(f) => Some(f64_type.const_float(*f).into()),
+        AstNode::Number(n) => Ok(Some(i64_type.const_int(*n as u64, true).into())),
+        AstNode::Float(f) => Ok(Some(f64_type.const_float(*f).into())),
         AstNode::String(s) => {
             // Create a global string constant
             let string_val = builder.build_global_string_ptr(s, "string_literal");
-            Some(string_val.as_pointer_value().into())
+            Ok(Some(string_val.as_pointer_value().into()))
         },
         AstNode::Boolean(b) => {
             let bool_val = if *b { 1 } else { 0 };
-            Some(i64_type.const_int(bool_val, false).into())
+            Ok(Some(i64_type.const_int(bool_val, false).into()))
         },
-        AstNode::Null => Some(i64_type.const_int(0, false).into()),
+        AstNode::Null => Ok(Some(i64_type.const_int(0, false).into())),
         AstNode::Identifier(name) => {
             // Load the value of the variable
             if let Some(ptr) = variables.get(name) {
                 let loaded = builder.build_load(*ptr, name);
-                Some(loaded)
+                Ok(Some(loaded))
             } else {
-                println!("Variable not found: {}", name);
-                None
+                Err(CodegenError::UndefinedVariable(name.clone()))
             }
         },
         AstNode::BinaryOp { left, op, right } => {
-            let left_val = gen_expr(context, builder, i64_type, f64_type, function_map, variables, left)?;
-            let right_val = gen_expr(context, builder, i64_type, f64_type, function_map, variables, right)?;
+            let left_val = gen_expr(context, builder, i64_type, f64_type, function_map, variables, left)?
+                .ok_or_else(|| CodegenError::InvalidOperation("Left operand of binary operation is invalid".to_string()))?;
+            
+            let right_val = gen_expr(context, builder, i64_type, f64_type, function_map, variables, right)?
+                .ok_or_else(|| CodegenError::InvalidOperation("Right operand of binary operation is invalid".to_string()))?;
             
             // Handle different types of operands
             match (left_val, right_val) {
                 (BasicValueEnum::IntValue(left_int), BasicValueEnum::IntValue(right_int)) => {
                     // Integer operations
                     match op.as_str() {
-                        "+" => Some(builder.build_int_add(left_int, right_int, "addtmp").into()),
-                        "-" => Some(builder.build_int_sub(left_int, right_int, "subtmp").into()),
-                        "*" => Some(builder.build_int_mul(left_int, right_int, "multmp").into()),
-                        "/" => Some(builder.build_int_signed_div(left_int, right_int, "divtmp").into()),
-                        "%" => Some(builder.build_int_signed_rem(left_int, right_int, "modtmp").into()),
+                        "+" => Ok(Some(builder.build_int_add(left_int, right_int, "addtmp").into())),
+                        "-" => Ok(Some(builder.build_int_sub(left_int, right_int, "subtmp").into())),
+                        "*" => Ok(Some(builder.build_int_mul(left_int, right_int, "multmp").into())),
+                        "/" => {
+                            // Check for division by zero
+                            let is_zero = builder.build_int_compare(
+                                inkwell::IntPredicate::EQ,
+                                right_int,
+                                i64_type.const_int(0, false),
+                                "is_zero"
+                            );
+                            
+                            // Create basic blocks for division and division by zero
+                            let current_block = builder.get_insert_block().unwrap();
+                            let function = current_block.get_parent().unwrap();
+                            let div_block = context.append_basic_block(function, "div");
+                            let div_by_zero_block = context.append_basic_block(function, "div_by_zero");
+                            let continue_block = context.append_basic_block(function, "continue");
+                            
+                            // Branch based on whether the divisor is zero
+                            builder.build_conditional_branch(is_zero, div_by_zero_block, div_block);
+                            
+                            // Division by zero block
+                            builder.position_at_end(div_by_zero_block);
+                            let error_val = i64_type.const_int(0xDEADBEEF, false); // Special error value
+                            builder.build_store(variables.get("__error").unwrap_or(&variables.get("__result").unwrap_or(&variables.get("result").unwrap_or(&variables.get("_").unwrap_or(&variables.get("tmp").unwrap_or(&variables.get("__tmp").unwrap_or(&variables.get("__div_result").unwrap())))))), error_val);
+                            builder.build_unconditional_branch(continue_block);
+                            
+                            // Normal division block
+                            builder.position_at_end(div_block);
+                            let div_result = builder.build_int_signed_div(left_int, right_int, "divtmp");
+                            builder.build_unconditional_branch(continue_block);
+                            
+                            // Continue block
+                            builder.position_at_end(continue_block);
+                            let phi = builder.build_phi(i64_type, "div_result");
+                            phi.add_incoming(&[
+                                (&error_val, div_by_zero_block),
+                                (&div_result, div_block)
+                            ]);
+                            
+                            Ok(Some(phi.as_basic_value()))
+                        },
+                        "%" => Ok(Some(builder.build_int_signed_rem(left_int, right_int, "modtmp").into())),
                         "==" => {
                             let cmp = builder.build_int_compare(inkwell::IntPredicate::EQ, left_int, right_int, "eqtmp");
-                            Some(builder.build_int_z_extend(cmp, *i64_type, "booltmp").into())
+                            Ok(Some(builder.build_int_z_extend(cmp, *i64_type, "booltmp").into()))
                         },
                         "!=" => {
                             let cmp = builder.build_int_compare(inkwell::IntPredicate::NE, left_int, right_int, "netmp");
-                            Some(builder.build_int_z_extend(cmp, *i64_type, "booltmp").into())
+                            Ok(Some(builder.build_int_z_extend(cmp, *i64_type, "booltmp").into()))
                         },
                         "<" => {
                             let cmp = builder.build_int_compare(inkwell::IntPredicate::SLT, left_int, right_int, "lttmp");
-                            Some(builder.build_int_z_extend(cmp, *i64_type, "booltmp").into())
+                            Ok(Some(builder.build_int_z_extend(cmp, *i64_type, "booltmp").into()))
                         },
                         "<=" => {
                             let cmp = builder.build_int_compare(inkwell::IntPredicate::SLE, left_int, right_int, "letmp");
-                            Some(builder.build_int_z_extend(cmp, *i64_type, "booltmp").into())
+                            Ok(Some(builder.build_int_z_extend(cmp, *i64_type, "booltmp").into()))
                         },
                         ">" => {
                             let cmp = builder.build_int_compare(inkwell::IntPredicate::SGT, left_int, right_int, "gttmp");
-                            Some(builder.build_int_z_extend(cmp, *i64_type, "booltmp").into())
+                            Ok(Some(builder.build_int_z_extend(cmp, *i64_type, "booltmp").into()))
                         },
                         ">=" => {
                             let cmp = builder.build_int_compare(inkwell::IntPredicate::SGE, left_int, right_int, "getmp");
-                            Some(builder.build_int_z_extend(cmp, *i64_type, "booltmp").into())
+                            Ok(Some(builder.build_int_z_extend(cmp, *i64_type, "booltmp").into()))
                         },
-                        _ => {
-                            println!("Unsupported binary operator: {}", op);
-                            None
-                        }
+                        _ => Err(CodegenError::UnsupportedFeature(format!("Binary operator: {}", op))),
                     }
                 },
                 (BasicValueEnum::FloatValue(left_float), BasicValueEnum::FloatValue(right_float)) => {
                     // Float operations
                     match op.as_str() {
-                        "+" => Some(builder.build_float_add(left_float, right_float, "addtmp").into()),
-                        "-" => Some(builder.build_float_sub(left_float, right_float, "subtmp").into()),
-                        "*" => Some(builder.build_float_mul(left_float, right_float, "multmp").into()),
-                        "/" => Some(builder.build_float_div(left_float, right_float, "divtmp").into()),
+                        "+" => Ok(Some(builder.build_float_add(left_float, right_float, "addtmp").into())),
+                        "-" => Ok(Some(builder.build_float_sub(left_float, right_float, "subtmp").into())),
+                        "*" => Ok(Some(builder.build_float_mul(left_float, right_float, "multmp").into())),
+                        "/" => Ok(Some(builder.build_float_div(left_float, right_float, "divtmp").into())),
                         "==" => {
                             let cmp = builder.build_float_compare(inkwell::FloatPredicate::OEQ, left_float, right_float, "eqtmp");
-                            Some(builder.build_int_z_extend(cmp, *i64_type, "booltmp").into())
+                            Ok(Some(builder.build_int_z_extend(cmp, *i64_type, "booltmp").into()))
                         },
                         "!=" => {
                             let cmp = builder.build_float_compare(inkwell::FloatPredicate::ONE, left_float, right_float, "netmp");
-                            Some(builder.build_int_z_extend(cmp, *i64_type, "booltmp").into())
+                            Ok(Some(builder.build_int_z_extend(cmp, *i64_type, "booltmp").into()))
                         },
                         "<" => {
                             let cmp = builder.build_float_compare(inkwell::FloatPredicate::OLT, left_float, right_float, "lttmp");
-                            Some(builder.build_int_z_extend(cmp, *i64_type, "booltmp").into())
+                            Ok(Some(builder.build_int_z_extend(cmp, *i64_type, "booltmp").into()))
                         },
                         "<=" => {
                             let cmp = builder.build_float_compare(inkwell::FloatPredicate::OLE, left_float, right_float, "letmp");
-                            Some(builder.build_int_z_extend(cmp, *i64_type, "booltmp").into())
+                            Ok(Some(builder.build_int_z_extend(cmp, *i64_type, "booltmp").into()))
                         },
                         ">" => {
                             let cmp = builder.build_float_compare(inkwell::FloatPredicate::OGT, left_float, right_float, "gttmp");
-                            Some(builder.build_int_z_extend(cmp, *i64_type, "booltmp").into())
+                            Ok(Some(builder.build_int_z_extend(cmp, *i64_type, "booltmp").into()))
                         },
                         ">=" => {
                             let cmp = builder.build_float_compare(inkwell::FloatPredicate::OGE, left_float, right_float, "getmp");
-                            Some(builder.build_int_z_extend(cmp, *i64_type, "booltmp").into())
+                            Ok(Some(builder.build_int_z_extend(cmp, *i64_type, "booltmp").into()))
                         },
-                        _ => {
-                            println!("Unsupported binary operator: {}", op);
-                            None
-                        }
+                        _ => Err(CodegenError::UnsupportedFeature(format!("Binary operator: {}", op))),
                     }
                 },
-                _ => {
-                    println!("Unsupported operand types for binary operator: {}", op);
-                    None
-                }
+                _ => Err(CodegenError::TypeMismatch(format!("Incompatible types for binary operator: {}", op))),
             }
         },
         AstNode::FunctionCall { name, args } => {
             let function = match function_map.get(name) {
                 Some(f) => *f,
-                None => {
-                    println!("Function not found: {}", name);
-                    return None;
-                }
+                None => return Err(CodegenError::UndefinedFunction(name.clone())),
             };
             
             let mut compiled_args = vec![];
             
             for arg in args {
-                let arg_val = gen_expr(context, builder, i64_type, f64_type, function_map, variables, arg)?;
+                let arg_val = gen_expr(context, builder, i64_type, f64_type, function_map, variables, arg)?
+                    .ok_or_else(|| CodegenError::InvalidOperation("Invalid function argument".to_string()))?;
                 compiled_args.push(arg_val);
             }
             
             let call_site = builder.build_call(function, &compiled_args, "calltmp");
-            call_site.try_as_basic_value().left()
+            Ok(call_site.try_as_basic_value().left())
         },
         AstNode::ArrayLiteral(elements) => {
             // For simplicity, we'll just return the first element for now
@@ -463,14 +533,14 @@ fn gen_expr<'ctx>(
                 gen_expr(context, builder, i64_type, f64_type, function_map, variables, element)
             } else {
                 // Empty array, return null pointer
-                Some(i64_type.const_int(0, false).into())
+                Ok(Some(i64_type.const_int(0, false).into()))
             }
         },
         AstNode::Throw(expr) => {
             // In a real implementation, this would create an exception object
             // For now, we'll just generate a special error value
             let error_val = i64_type.const_int(0xDEADBEEF, false); // Special error value
-            Some(error_val.into())
+            Ok(Some(error_val.into()))
         },
         AstNode::NewExpr { constructor, args } => {
             // Special handling for Error constructor
@@ -478,14 +548,14 @@ fn gen_expr<'ctx>(
                 // Create an error object - for now just use a special value
                 // In a real implementation, this would create a proper error object
                 let error_val = i64_type.const_int(0xDEADBEEF, false); // Special error value
-                Some(error_val.into())
+                Ok(Some(error_val.into()))
             } else {
                 // For other constructors, we would call the appropriate constructor function
                 // For now, just return a placeholder value
                 let placeholder = i64_type.const_int(0, false);
-                Some(placeholder.into())
+                Ok(Some(placeholder.into()))
             }
         },
-        _ => None,
+        _ => Err(CodegenError::UnsupportedFeature(format!("AST node: {:?}", expr))),
     }
 }

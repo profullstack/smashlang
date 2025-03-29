@@ -7,7 +7,7 @@ This document outlines the features and components that need to be implemented f
 ### Core Compiler
 
 - [x] Complete basic LLVM IR code generation for essential AST node types
-- [ ] Implement simple error handling
+- [x] Implement simple error handling
 - [ ] Add support for basic binary operations
 - [ ] Support compilation for at least one target platform (Linux)
 - [ ] Implement basic memory management
