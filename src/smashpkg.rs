@@ -337,11 +337,31 @@ console.log(example());
     // Create test file
     let test_path = tests_dir.join("index.test.smash");
     let test_content = format!(r#"import {{ example }} from '{}';
+import {{ test, describe, expect, beforeEach, afterEach }} from 'std/testing';
 
 test('example function returns correct greeting', () => {{
   expect(example()).toBe('Hello from SmashLang package!');
 }});
-"#, package_name);
+
+describe('Package: {}', () => {{
+  beforeEach(() => {{
+    // Setup code for each test
+  }});
+
+  afterEach(() => {{
+    // Cleanup code for each test
+  }});
+
+  test('can be imported correctly', () => {{
+    expect(typeof example).toBe('function');
+  }});
+
+  test('returns a string', () => {{
+    const result = example();
+    expect(typeof result).toBe('string');
+  }});
+}});
+"#, package_name, package_name);
     
     match fs::write(&test_path, test_content) {
         Ok(_) => println!("  {} Created tests/index.test.smash", "✓".green()),

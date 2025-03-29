@@ -371,12 +371,69 @@ See the [smashlang_packages/README.md](./smashlang_packages/README.md) for more 
 
 ---
 
+## 🧪 Testing Framework
+
+SmashLang includes a built-in testing framework inspired by Jest and Mocha, making it easy to write and run tests for your code.
+
+### Writing Tests
+
+```javascript
+// Import the testing framework
+import { test, describe, expect, beforeEach, afterEach } from 'std/testing';
+
+// Simple test
+test('addition works correctly', () => {
+  expect(2 + 2).toBe(4);
+});
+
+// Grouped tests with setup and teardown
+describe('String operations', () => {
+  let testString;
+  
+  beforeEach(() => {
+    testString = 'SmashLang';
+  });
+  
+  test('string length is correct', () => {
+    expect(testString.length).toBe(9);
+  });
+  
+  test('string includes method works', () => {
+    expect(testString.includes('Smash')).toBeTrue();
+  });
+});
+```
+
+### Running Tests
+
+Use the `smashtest` command to run your tests:
+
+```bash
+# Run all tests in a directory
+smashtest ./tests
+
+# Run a specific test file
+smashtest ./tests/unit.test.smash
+
+# Run tests with a specific tag
+smashtest ./tests --tag=unit
+```
+
+### Testing Packages
+
+When you create a package with `smashpkg create`, it automatically includes test files that work with the testing framework.
+
+```bash
+smashtest ./smashlang_packages/my-package/tests
+```
+
 ## 🔧 Tooling
 
 - `smashc` — CLI compiler
 - `smash repl` — interactive shell
 - `smash-lang-server` — LSP integration
 - `smashpkg` — package manager
+- `smashtest` — test runner
 
 ---
 
