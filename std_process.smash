@@ -1,0 +1,97 @@
+// std_process.smash - Process-related functionality for SmashLang
+// This extends the std module with process-like functionality
+
+// System environment variables
+export const env = {
+  // Core environment variables that should be available
+  HOME: __native_get_env("HOME"),
+  USER: __native_get_env("USER"),
+  PATH: __native_get_env("PATH"),
+  TEMP: __native_get_env("TEMP") || __native_get_env("TMP"),
+  SHELL: __native_get_env("SHELL"),
+  LANG: __native_get_env("LANG"),
+  
+  // Helper method to get any environment variable
+  get: function(name) {
+    return __native_get_env(name);
+  },
+  
+  // Helper method to set an environment variable
+  set: function(name, value) {
+    return __native_set_env(name, value);
+  }
+};
+
+// Command line arguments
+// This will be populated by the runtime with the actual command line arguments
+export const argv = __native_get_argv();
+
+// Current working directory operations
+export fn cwd() {
+  return __native_get_cwd();
+}
+
+export fn chdir(directory) {
+  return __native_set_cwd(directory);
+}
+
+// Platform information
+export const platform = __native_get_platform(); // 'linux', 'darwin', 'win32', etc.
+export const arch = __native_get_arch();         // 'x64', 'arm64', etc.
+
+// Process control
+export fn exit(code = 0) {
+  return __native_exit(code);
+}
+
+// Process information
+export const pid = __native_get_pid();
+export const ppid = __native_get_ppid();
+
+// Memory usage
+export fn memoryUsage() {
+  return __native_memory_usage();
+}
+
+// CPU usage
+export fn cpuUsage() {
+  return __native_cpu_usage();
+}
+
+// High-resolution time measurement
+export fn hrtime() {
+  return __native_hrtime();
+}
+
+// Event handling for process events
+const eventHandlers = {
+  exit: [],
+  uncaughtException: [],
+  unhandledRejection: []
+};
+
+export fn on(event, handler) {
+  if (eventHandlers[event]) {
+    eventHandlers[event].push(handler);
+  }
+  return this; // For chaining
+}
+
+export fn removeListener(event, handler) {
+  if (eventHandlers[event]) {
+    const index = eventHandlers[event].indexOf(handler);
+    if (index !== -1) {
+      eventHandlers[event].splice(index, 1);
+    }
+  }
+  return this; // For chaining
+}
+
+// These functions would be called by the runtime when events occur
+export fn __triggerEvent(event, ...args) {
+  if (eventHandlers[event]) {
+    for (const handler of eventHandlers[event]) {
+      handler(...args);
+    }
+  }
+}

@@ -52,9 +52,9 @@ fn checkDependencies() {
     print("\nInstallation instructions:");
     
     // Detect OS for installation instructions
-    const isLinux = process.platform === 'linux';
-    const isMac = process.platform === 'darwin';
-    const isWindows = process.platform === 'win32';
+    const isLinux = std.platform === 'linux';
+    const isMac = std.platform === 'darwin';
+    const isWindows = std.platform === 'win32';
     
     if (isLinux) {
       // Try to detect Linux distribution

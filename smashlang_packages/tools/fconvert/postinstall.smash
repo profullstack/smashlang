@@ -20,7 +20,7 @@ fn commandExists(command) {
 fn setupConfig() {
   try {
     // Create config directory in user's home
-    const configDir = path.join(process.env.HOME, ".config", "fconvert");
+    const configDir = path.join(std.env.HOME, ".config", "fconvert");
     const configFile = path.join(configDir, "config.json");
     
     // Create directory if it doesn't exist

@@ -1,0 +1,96 @@
+// process_example.smash - Example of using process functionality in SmashLang
+
+import "std";
+
+/**
+ * Display system information using std process functionality
+ */
+fn showSystemInfo() {
+  print("\n=== System Information ===");
+  print(`Platform: ${std.platform}`);
+  print(`Architecture: ${std.arch}`);
+  print(`Process ID: ${std.pid}`);
+  print(`Parent Process ID: ${std.ppid}`);
+  
+  // Display environment variables
+  print("\n=== Environment Variables ===");
+  print(`HOME: ${std.env.HOME}`);
+  print(`USER: ${std.env.USER}`);
+  print(`PATH: ${std.env.PATH ? std.env.PATH.substring(0, 50) + '...' : 'Not available'}`);
+  print(`SHELL: ${std.env.SHELL}`);
+  
+  // Display current working directory
+  print("\n=== Working Directory ===");
+  print(`Current directory: ${std.cwd()}`);
+  
+  // Display memory usage
+  print("\n=== Memory Usage ===");
+  const memory = std.memoryUsage();
+  print(`RSS: ${formatBytes(memory.rss)}`);
+  print(`Heap Total: ${formatBytes(memory.heapTotal)}`);
+  print(`Heap Used: ${formatBytes(memory.heapUsed)}`);
+  print(`External: ${formatBytes(memory.external)}`);
+  
+  // Display command line arguments
+  print("\n=== Command Line Arguments ===");
+  print("Arguments passed to this script:");
+  for (let i = 2; i < std.argv.length; i++) {
+    print(`  [${i-2}]: ${std.argv[i]}`);
+  }
+}
+
+/**
+ * Format bytes to a human-readable string
+ * @param {number} bytes - Number of bytes
+ * @returns {string} - Formatted string
+ */
+fn formatBytes(bytes) {
+  if (bytes === 0) return '0 Bytes';
+  
+  const k = 1024;
+  const sizes = ['Bytes', 'KB', 'MB', 'GB', 'TB'];
+  const i = Math.floor(Math.log(bytes) / Math.log(k));
+  
+  return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+}
+
+/**
+ * Demonstrate event handling
+ */
+fn setupEventHandlers() {
+  // Set up exit handler
+  std.on('exit', (code) => {
+    print(`\nProcess is exiting with code: ${code}`);
+  });
+  
+  // Set up uncaught exception handler
+  std.on('uncaughtException', (error) => {
+    print(`\nUncaught exception: ${error}`);
+  });
+}
+
+/**
+ * Main function
+ */
+fn main() {
+  print("SmashLang Process Example");
+  print("==========================");
+  
+  // Set up event handlers
+  setupEventHandlers();
+  
+  // Show system information
+  showSystemInfo();
+  
+  // Check if we should exit
+  if (std.argv.includes('--exit')) {
+    const exitCode = parseInt(std.argv[std.argv.indexOf('--exit') + 1] || '0');
+    print(`\nExiting with code ${exitCode}...`);
+    std.exit(exitCode);
+  }
+  
+  print("\nExample completed!");
+}
+
+// Run the main function
+main();

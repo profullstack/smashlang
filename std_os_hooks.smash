@@ -1,0 +1,94 @@
+// std_os_hooks.smash - OS hooks and system-level functionality for SmashLang
+
+/**
+ * OS hooks module for SmashLang
+ * Provides access to system-level hooks, signals, and events
+ */
+
+// Signal handling
+export const signals = {
+  // Get all available signals
+  getAvailable: function() {
+    return __native_get_signals();
+  },
+  
+  // Register a handler for a specific signal
+  register: function(signal, handler) {
+    return __native_register_signal(signal, handler);
+  },
+  
+  // Send a signal to another process
+  send: function(pid, signal) {
+    return __native_send_signal(pid, signal);
+  }
+};
+
+// Clipboard operations
+export const clipboard = {
+  // Check if clipboard functionality is available
+  isAvailable: function() {
+    return __native_has_clipboard();
+  },
+  
+  // Read text from clipboard
+  read: function() {
+    return __native_clipboard_read();
+  },
+  
+  // Write text to clipboard
+  write: function(text) {
+    return __native_clipboard_write(text);
+  }
+};
+
+// Keyboard hooks
+export const keyboard = {
+  // Check if keyboard hook functionality is available
+  isAvailable: function() {
+    return __native_has_keyboard_hooks();
+  },
+  
+  // Register a handler for keyboard events
+  register: function(handler) {
+    return __native_register_keyboard(handler);
+  }
+};
+
+// Mouse hooks
+export const mouse = {
+  // Check if mouse hook functionality is available
+  isAvailable: function() {
+    return __native_has_mouse_hooks();
+  },
+  
+  // Register a handler for mouse events
+  register: function(handler) {
+    return __native_register_mouse(handler);
+  }
+};
+
+// System notifications
+export const notifications = {
+  // Check if notification functionality is available
+  isAvailable: function() {
+    return __native_has_notifications();
+  },
+  
+  // Send a system notification
+  send: function(title, message, options = {}) {
+    return __native_send_notification(title, message, options);
+  }
+};
+
+// File system watchers
+export const fileWatcher = {
+  // Watch a file or directory for changes
+  watch: function(path, handler) {
+    return __native_watch_path(path, handler);
+  },
+  
+  // Stop watching a file or directory
+  unwatch: function(path) {
+    return __native_unwatch_path(path);
+  }
+};

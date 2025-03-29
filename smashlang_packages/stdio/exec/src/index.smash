@@ -29,7 +29,7 @@ export fn exec(command, options = {}) {
     // Set default options
     const defaultOptions = {
       cwd: std.cwd(),
-      env: process.env,
+      env: std.env,
       encoding: 'utf8',
       shell: true
     };
@@ -92,7 +92,7 @@ export fn execSync(command, options = {}) {
   // Set default options
   const defaultOptions = {
     cwd: std.cwd(),
-    env: process.env,
+    env: std.env,
     encoding: 'utf8',
     shell: true
   };

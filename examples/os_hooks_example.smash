@@ -1,0 +1,245 @@
+// os_hooks_example.smash - Example of using OS hooks in SmashLang
+
+import "std";
+import "std_os_hooks" as os;
+
+/**
+ * Demonstrate signal handling
+ */
+fn demonstrateSignals() {
+  print("\n=== Signal Handling ===");
+  
+  // Get available signals
+  const availableSignals = os.signals.getAvailable();
+  print(`Available signals: ${availableSignals.slice(0, 5).join(', ')}... (${availableSignals.length} total)`);
+  
+  // Register a handler for SIGINT (Ctrl+C)
+  os.signals.register('SIGINT', (signal) => {
+    print(`\nReceived ${signal} signal! Press Ctrl+C again to exit.`);
+    
+    // Register a one-time handler for the next SIGINT
+    os.signals.register('SIGINT', (signal) => {
+      print(`\nReceived second ${signal} signal. Exiting...`);
+      std.exit(0);
+    });
+    
+    // Prevent the default behavior (which would terminate the process)
+    return true;
+  });
+  
+  print("Press Ctrl+C to test signal handling...");
+}
+
+/**
+ * Demonstrate clipboard operations
+ */
+fn demonstrateClipboard() {
+  print("\n=== Clipboard Operations ===");
+  
+  if (!os.clipboard.isAvailable()) {
+    print("Clipboard functionality is not available on this system.");
+    return;
+  }
+  
+  // Write to clipboard
+  const text = "Hello from SmashLang!";
+  os.clipboard.write(text);
+  print(`Text written to clipboard: "${text}"`);
+  
+  // Read from clipboard
+  const clipboardContent = os.clipboard.read();
+  print(`Text read from clipboard: "${clipboardContent}"`);
+}
+
+/**
+ * Demonstrate keyboard hooks
+ */
+fn demonstrateKeyboardHooks() {
+  print("\n=== Keyboard Hooks ===");
+  
+  if (!os.keyboard.isAvailable()) {
+    print("Keyboard hook functionality is not available on this system.");
+    return;
+  }
+  
+  // Register keyboard event handler
+  os.keyboard.register((eventType, event) => {
+    if (eventType === 'keydown') {
+      print(`Key pressed: ${event.key} (keyCode: ${event.keyCode})`);
+      
+      // Exit on Escape key
+      if (event.key === 'Escape') {
+        print("Escape key pressed. Exiting keyboard hook demo...");
+        return false; // Stop listening
+      }
+    }
+    return true; // Continue listening
+  });
+  
+  print("Press keys to see events (press Escape to exit this demo)...");
+}
+
+/**
+ * Demonstrate mouse hooks
+ */
+fn demonstrateMouseHooks() {
+  print("\n=== Mouse Hooks ===");
+  
+  if (!os.mouse.isAvailable()) {
+    print("Mouse hook functionality is not available on this system.");
+    return;
+  }
+  
+  // Register mouse event handler
+  os.mouse.register((eventType, event) => {
+    if (eventType === 'click') {
+      print(`Mouse clicked at position (${event.x}, ${event.y}) with button ${event.button}`);
+    } else if (eventType === 'move') {
+      // Only log every 100 pixels to avoid flooding the console
+      if (event.x % 100 === 0 || event.y % 100 === 0) {
+        print(`Mouse moved to position (${event.x}, ${event.y})`);
+      }
+    }
+    return true; // Continue listening
+  });
+  
+  print("Move and click the mouse to see events...");
+  print("This demo will run for 10 seconds.");
+  
+  // Stop after 10 seconds
+  setTimeout(() => {
+    print("Mouse hook demo completed.");
+  }, 10000);
+}
+
+/**
+ * Demonstrate system notifications
+ */
+fn demonstrateNotifications() {
+  print("\n=== System Notifications ===");
+  
+  if (!os.notifications.isAvailable()) {
+    print("System notification functionality is not available on this system.");
+    return;
+  }
+  
+  // Send a notification
+  os.notifications.send(
+    "SmashLang Notification", 
+    "This is a test notification from SmashLang!",
+    { 
+      icon: "info",
+      sound: true
+    }
+  );
+  
+  print("Notification sent! Check your system notifications.");
+}
+
+/**
+ * Demonstrate file system watchers
+ */
+fn demonstrateFileWatchers() {
+  print("\n=== File System Watchers ===");
+  
+  // Create a temporary file to watch
+  const fs = require('fs');
+  const path = require('path');
+  const tempDir = std.env.TEMP || '/tmp';
+  const watchFile = path.join(tempDir, 'smash-watch-test.txt');
+  
+  // Write initial content
+  fs.writeFileSync(watchFile, 'Initial content');
+  print(`Created temporary file: ${watchFile}`);
+  
+  // Watch the file for changes
+  os.fileWatcher.watch(watchFile, (eventType, filename) => {
+    print(`File event: ${eventType} on ${filename || 'unknown'}`);
+    
+    // Read the current content
+    try {
+      const content = fs.readFileSync(watchFile, 'utf8');
+      print(`Current file content: ${content}`);
+    } catch (error) {
+      print(`Error reading file: ${error.message}`);
+    }
+  });
+  
+  print("Watching file for changes...");
+  
+  // Modify the file a few times
+  setTimeout(() => {
+    fs.writeFileSync(watchFile, 'Modified content #1');
+    print("File modified (1).");
+  }, 1000);
+  
+  setTimeout(() => {
+    fs.appendFileSync(watchFile, '\nAppended content');
+    print("File modified (2).");
+  }, 2000);
+  
+  setTimeout(() => {
+    fs.writeFileSync(watchFile, 'Final content');
+    print("File modified (3).");
+  }, 3000);
+  
+  // Clean up after 5 seconds
+  setTimeout(() => {
+    os.fileWatcher.unwatch(watchFile);
+    fs.unlinkSync(watchFile);
+    print(`Stopped watching and deleted file: ${watchFile}`);
+    print("File watcher demo completed.");
+  }, 5000);
+}
+
+/**
+ * Main function
+ */
+fn main() {
+  print("SmashLang OS Hooks Example");
+  print("==========================");
+  
+  // Parse command line arguments
+  const args = std.argv.slice(2);
+  
+  // If specific demos are requested, run only those
+  if (args.length > 0) {
+    for (const arg of args) {
+      switch (arg) {
+        case "signals":
+          demonstrateSignals();
+          break;
+        case "clipboard":
+          demonstrateClipboard();
+          break;
+        case "keyboard":
+          demonstrateKeyboardHooks();
+          break;
+        case "mouse":
+          demonstrateMouseHooks();
+          break;
+        case "notifications":
+          demonstrateNotifications();
+          break;
+        case "filewatcher":
+          demonstrateFileWatchers();
+          break;
+        default:
+          print(`Unknown demo: ${arg}`);
+      }
+    }
+  } else {
+    // Run all demos
+    demonstrateSignals();
+    demonstrateClipboard();
+    demonstrateKeyboardHooks();
+    demonstrateMouseHooks();
+    demonstrateNotifications();
+    demonstrateFileWatchers();
+  }
+  
+  print("\nExample completed! Some demos may still be running...");
+}
+
+// Run the main function
+main();

@@ -10,7 +10,7 @@ print("Running post-installation script...");
 async fn configurePackage() {
   try {
     // Create a default configuration file if it doesn't exist
-    const configDir = path.join(process.env.HOME, ".config", "package_name");
+    const configDir = path.join(std.env.HOME, ".config", "package_name");
     const configFile = path.join(configDir, "config.json");
     
     // Create config directory if it doesn't exist
@@ -76,5 +76,5 @@ async fn main() {
 // Execute the main function
 main().catch(error => {
   console.error("Post-installation failed:", error);
-  process.exit(1);
+  std.exit(1);
 });

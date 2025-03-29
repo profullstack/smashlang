@@ -348,10 +348,10 @@ export class Converter {
 }
 
 // Command line interface
-if (process.argv.length > 2 && process.argv[1].endsWith("fconvert")) {
+if (std.argv.length > 2 && std.argv[1].endsWith("fconvert")) {
   // Check dependencies first
   checkDependencies();
-  const args = process.argv.slice(2);
+  const args = std.argv.slice(2);
   
   // Handle --help flag
   if (args.includes("-h") || args.includes("--help")) {
@@ -365,7 +365,7 @@ if (process.argv.length > 2 && process.argv[1].endsWith("fconvert")) {
     print("  -b, --batch          Process multiple files (glob pattern)");
     print("  -o, --output-dir     Specify output directory for batch processing");
     print("  --list-formats       Show all supported formats");
-    process.exit(0);
+    std.exit(0);
   }
   
   // Handle --list-formats flag
@@ -376,7 +376,7 @@ if (process.argv.length > 2 && process.argv[1].endsWith("fconvert")) {
     print("Audio formats:", FORMATS.audio.join(", "));
     print("Video formats:", FORMATS.video.join(", "));
     print("Data formats:", FORMATS.data.join(", "));
-    process.exit(0);
+    std.exit(0);
   }
   
   // Parse options
@@ -415,7 +415,7 @@ if (process.argv.length > 2 && process.argv[1].endsWith("fconvert")) {
   // Validate input and output files
   if (!inputFile || !outputFile) {
     console.error("Error: Both input and output files must be specified");
-    process.exit(1);
+    std.exit(1);
   }
   
   // Perform conversion
@@ -424,6 +424,6 @@ if (process.argv.length > 2 && process.argv[1].endsWith("fconvert")) {
     print(`Successfully converted ${inputFile} to ${outputFile}`);
   } catch (error) {
     console.error(`Error: ${error.message}`);
-    process.exit(1);
+    std.exit(1);
   }
 }

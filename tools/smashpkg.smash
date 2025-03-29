@@ -318,12 +318,12 @@ fn checkNativeDependencies(dependencies) {
     
     // Determine the package name for the current platform
     let pkgName = null;
-    if (process.platform === "linux") {
+    if (std.platform === "linux") {
       // Simplified detection for Linux distributions
       pkgName = dep.debian || dep.fedora || dep.arch;
-    } else if (process.platform === "darwin") {
+    } else if (std.platform === "darwin") {
       pkgName = dep.macos;
-    } else if (process.platform === "win32") {
+    } else if (std.platform === "win32") {
       pkgName = dep.windows;
     }
     
@@ -334,4 +334,4 @@ fn checkNativeDependencies(dependencies) {
 }
 
 // Run the main function with command-line arguments
-main(process.argv.slice(2));
+main(std.argv.slice(2));

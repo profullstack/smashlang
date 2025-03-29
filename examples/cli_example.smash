@@ -1,0 +1,212 @@
+// cli_example.smash - Example of building a CLI application with SmashLang
+
+import "std";
+
+/**
+ * Parse command line arguments into a structured object
+ * Supports flags like --flag, --key=value, and positional arguments
+ * @param {string[]} args - Command line arguments to parse
+ * @returns {object} Parsed arguments object
+ */
+fn parseArgs(args) {
+  const result = {
+    flags: {},     // For flags like --verbose or --help
+    options: {},   // For options like --file=output.txt or --count 10
+    positional: [] // For positional arguments
+  };
+  
+  let i = 0;
+  while (i < args.length) {
+    const arg = args[i];
+    
+    // Handle flags and options (--flag or --key=value)
+    if (arg.startsWith('--')) {
+      const equalPos = arg.indexOf('=');
+      
+      if (equalPos > 0) {
+        // Handle --key=value
+        const key = arg.substring(2, equalPos);
+        const value = arg.substring(equalPos + 1);
+        result.options[key] = value;
+      } else {
+        // Handle --flag
+        const flag = arg.substring(2);
+        
+        // Check if next arg is a value (not a flag)
+        if (i + 1 < args.length && !args[i + 1].startsWith('-')) {
+          result.options[flag] = args[i + 1];
+          i++; // Skip the next argument since we've used it as a value
+        } else {
+          result.flags[flag] = true;
+        }
+      }
+    }
+    // Handle short flags (-f or -abc for multiple flags)
+    else if (arg.startsWith('-') && arg.length > 1 && !arg.includes('=')) {
+      const flags = arg.substring(1).split('');
+      
+      for (const flag of flags) {
+        result.flags[flag] = true;
+      }
+    }
+    // Handle positional arguments
+    else {
+      result.positional.push(arg);
+    }
+    
+    i++;
+  }
+  
+  return result;
+}
+
+/**
+ * Display help information for the CLI application
+ */
+fn showHelp() {
+  print(`
+  SmashLang CLI Example
+  ====================
+  
+  Usage: smash cli_example.smash [options] [command] [arguments]
+  
+  Commands:
+    greet <name>         Greet someone by name
+    count <n>            Count from 1 to n
+    convert <file>       Convert a file (example)
+  
+  Options:
+    --help, -h           Show this help message
+    --verbose, -v        Enable verbose output
+    --output=<file>      Specify output file
+    --format <type>      Specify output format (text, json, etc.)
+    --color, -c          Enable colored output
+  
+  Examples:
+    smash cli_example.smash greet John --color
+    smash cli_example.smash count 10 --verbose
+    smash cli_example.smash convert data.txt --output=data.json --format json
+  `);
+}
+
+/**
+ * Greet command implementation
+ */
+fn commandGreet(name, options) {
+  const useColor = options.flags.color || options.flags.c;
+  const message = `Hello, ${name}!`;
+  
+  if (useColor) {
+    // Use ANSI color codes for colored output
+    print(`\x1b[32m${message}\x1b[0m`);
+  } else {
+    print(message);
+  }
+  
+  if (options.flags.verbose || options.flags.v) {
+    print(`Greeting completed at: ${new Date().toISOString()}`);
+  }
+}
+
+/**
+ * Count command implementation
+ */
+fn commandCount(n, options) {
+  const count = parseInt(n);
+  const useColor = options.flags.color || options.flags.c;
+  const verbose = options.flags.verbose || options.flags.v;
+  
+  if (isNaN(count) || count < 1) {
+    print("Error: Please provide a valid positive number for counting");
+    return;
+  }
+  
+  print(`Counting from 1 to ${count}:`);
+  
+  for (let i = 1; i <= count; i++) {
+    if (useColor) {
+      // Alternate colors for better visibility
+      const colorCode = i % 2 === 0 ? "\x1b[36m" : "\x1b[33m";
+      print(`${colorCode}${i}\x1b[0m`);
+    } else {
+      print(i);
+    }
+    
+    if (verbose && i % 10 === 0) {
+      print(`Reached ${i} at ${new Date().toISOString()}`);
+    }
+  }
+  
+  print("Counting complete!");
+}
+
+/**
+ * Convert command implementation (example)
+ */
+fn commandConvert(file, options) {
+  const outputFile = options.options.output || file + ".out";
+  const format = options.options.format || "text";
+  const verbose = options.flags.verbose || options.flags.v;
+  
+  if (verbose) {
+    print(`Converting ${file} to ${format} format`);
+    print(`Output will be saved to ${outputFile}`);
+  }
+  
+  // Simulate file conversion
+  print(`Converting file: ${file}`);
+  print(`Format: ${format}`);
+  print(`Output: ${outputFile}`);
+  print("Conversion complete!");
+}
+
+/**
+ * Main function to handle CLI commands
+ */
+fn main() {
+  // Get command line arguments (skip the first two: 'smash' and the script name)
+  const args = std.argv.slice(2);
+  const parsedArgs = parseArgs(args);
+  
+  if (args.length === 0 || parsedArgs.flags.help || parsedArgs.flags.h) {
+    showHelp();
+    return;
+  }
+  
+  // Get the command (first positional argument)
+  const command = parsedArgs.positional[0];
+  
+  // Execute the appropriate command
+  switch (command) {
+    case "greet":
+      if (parsedArgs.positional.length < 2) {
+        print("Error: 'greet' command requires a name");
+        return;
+      }
+      commandGreet(parsedArgs.positional[1], parsedArgs);
+      break;
+      
+    case "count":
+      if (parsedArgs.positional.length < 2) {
+        print("Error: 'count' command requires a number");
+        return;
+      }
+      commandCount(parsedArgs.positional[1], parsedArgs);
+      break;
+      
+    case "convert":
+      if (parsedArgs.positional.length < 2) {
+        print("Error: 'convert' command requires a file");
+        return;
+      }
+      commandConvert(parsedArgs.positional[1], parsedArgs);
+      break;
+      
+    default:
+      print(`Unknown command: ${command}`);
+      print("Use --help or -h to see available commands");
+  }
+}
+
+// Run the main function
+main();

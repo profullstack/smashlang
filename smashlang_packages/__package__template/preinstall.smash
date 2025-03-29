@@ -46,5 +46,5 @@ async fn main() {
 // Execute the main function
 main().catch(error => {
   console.error("Pre-installation failed:", error);
-  process.exit(1);
+  std.exit(1);
 });
