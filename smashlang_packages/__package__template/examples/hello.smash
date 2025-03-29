@@ -1,0 +1,27 @@
+/**
+ * Hello World Example
+ * 
+ * This is a simple example demonstrating how to use this package.
+ */
+
+// Import the package
+import { greet } from '../src/index.smash';
+
+// Simple hello world
+console.log(greet());
+
+// Greeting with a custom name
+console.log(greet('SmashLang'));
+
+// You can also use the package in your own functions
+function sayHello(name) {
+  console.log(`${greet(name)} Welcome to SmashLang!`);
+}
+
+// Call the function
+sayHello('Developer');
+
+// Output:
+// Hello, World!
+// Hello, SmashLang!
+// Hello, Developer! Welcome to SmashLang!

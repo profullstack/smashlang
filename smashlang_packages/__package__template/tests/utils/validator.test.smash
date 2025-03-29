@@ -1,0 +1,104 @@
+/**
+ * Tests for validator utility functions
+ */
+
+import { test, describe, expect } from 'std/testing';
+import { validator } from '../../src/utils/validator.smash';
+
+describe('Validator Utils', () => {
+  describe('isEmail', () => {
+    test('validates correct email addresses', () => {
+      expect(validator.isEmail('user@example.com')).toBeTrue();
+      expect(validator.isEmail('name.surname@domain.co.uk')).toBeTrue();
+      expect(validator.isEmail('user+tag@example.com')).toBeTrue();
+    });
+    
+    test('rejects invalid email addresses', () => {
+      expect(validator.isEmail('invalid-email')).toBeFalse();
+      expect(validator.isEmail('user@')).toBeFalse();
+      expect(validator.isEmail('@domain.com')).toBeFalse();
+    });
+    
+    test('handles empty or non-string inputs', () => {
+      expect(validator.isEmail('')).toBeFalse();
+      expect(validator.isEmail(null)).toBeFalse();
+      expect(validator.isEmail(undefined)).toBeFalse();
+    });
+  });
+  
+  describe('isUrl', () => {
+    test('validates correct URLs', () => {
+      expect(validator.isUrl('https://smashlang.com')).toBeTrue();
+      expect(validator.isUrl('http://example.com/path?query=value')).toBeTrue();
+      expect(validator.isUrl('https://subdomain.example.co.uk/path')).toBeTrue();
+    });
+    
+    test('rejects invalid URLs', () => {
+      expect(validator.isUrl('not-a-url')).toBeFalse();
+      expect(validator.isUrl('http:/example.com')).toBeFalse();
+      expect(validator.isUrl('www.example.com')).toBeFalse(); // Missing protocol
+    });
+    
+    test('handles empty or non-string inputs', () => {
+      expect(validator.isUrl('')).toBeFalse();
+      expect(validator.isUrl(null)).toBeFalse();
+      expect(validator.isUrl(undefined)).toBeFalse();
+    });
+  });
+  
+  describe('isNumber', () => {
+    test('validates numbers correctly', () => {
+      expect(validator.isNumber(123)).toBeTrue();
+      expect(validator.isNumber(0)).toBeTrue();
+      expect(validator.isNumber(-45.67)).toBeTrue();
+    });
+    
+    test('rejects non-numbers', () => {
+      expect(validator.isNumber('123')).toBeFalse();
+      expect(validator.isNumber(null)).toBeFalse();
+      expect(validator.isNumber(undefined)).toBeFalse();
+      expect(validator.isNumber({})).toBeFalse();
+    });
+    
+    test('rejects NaN', () => {
+      expect(validator.isNumber(NaN)).toBeFalse();
+    });
+  });
+  
+  describe('isEmpty', () => {
+    test('identifies empty strings', () => {
+      expect(validator.isEmpty('')).toBeTrue();
+      expect(validator.isEmpty('   ')).toBeTrue();
+      expect(validator.isEmpty('\n\t')).toBeTrue();
+    });
+    
+    test('identifies non-empty strings', () => {
+      expect(validator.isEmpty('hello')).toBeFalse();
+      expect(validator.isEmpty(' hello ')).toBeFalse();
+    });
+    
+    test('handles null and undefined', () => {
+      expect(validator.isEmpty(null)).toBeTrue();
+      expect(validator.isEmpty(undefined)).toBeTrue();
+    });
+  });
+  
+  describe('isStrongPassword', () => {
+    test('validates strong passwords', () => {
+      expect(validator.isStrongPassword('Passw0rd')).toBeTrue();
+      expect(validator.isStrongPassword('StrongP@ss123')).toBeTrue();
+    });
+    
+    test('rejects weak passwords', () => {
+      expect(validator.isStrongPassword('password')).toBeFalse(); // No uppercase or numbers
+      expect(validator.isStrongPassword('PASSWORD')).toBeFalse(); // No lowercase
+      expect(validator.isStrongPassword('Pass1')).toBeFalse(); // Too short
+    });
+    
+    test('handles empty or non-string inputs', () => {
+      expect(validator.isStrongPassword('')).toBeFalse();
+      expect(validator.isStrongPassword(null)).toBeFalse();
+      expect(validator.isStrongPassword(undefined)).toBeFalse();
+    });
+  });
+});

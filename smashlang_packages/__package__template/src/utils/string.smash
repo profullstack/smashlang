@@ -1,0 +1,48 @@
+/**
+ * String utility functions
+ */
+
+export const stringUtils = {
+  /**
+   * Capitalizes the first letter of a string
+   * @param {string} str - The string to capitalize
+   * @returns {string} The capitalized string
+   */
+  capitalize(str) {
+    if (!str || typeof str !== 'string' || str.length === 0) return str;
+    return str.charAt(0).toUpperCase() + str.slice(1);
+  },
+  
+  /**
+   * Reverses a string
+   * @param {string} str - The string to reverse
+   * @returns {string} The reversed string
+   */
+  reverse(str) {
+    if (!str || typeof str !== 'string') return str;
+    return str.split('').reverse().join('');
+  },
+  
+  /**
+   * Truncates a string to a specified length
+   * @param {string} str - The string to truncate
+   * @param {number} maxLength - Maximum length
+   * @param {string} suffix - Suffix to add if truncated (default: '...')
+   * @returns {string} The truncated string
+   */
+  truncate(str, maxLength, suffix = '...') {
+    if (!str || typeof str !== 'string' || str.length <= maxLength) return str;
+    return str.substring(0, maxLength) + suffix;
+  },
+  
+  /**
+   * Counts the occurrences of a substring in a string
+   * @param {string} str - The string to search in
+   * @param {string} substring - The substring to search for
+   * @returns {number} The number of occurrences
+   */
+  countOccurrences(str, substring) {
+    if (!str || !substring) return 0;
+    return (str.match(new RegExp(substring, 'g')) || []).length;
+  }
+};

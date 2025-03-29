@@ -1,0 +1,61 @@
+/**
+ * Validation utility functions
+ */
+
+export const validator = {
+  /**
+   * Validates an email address
+   * @param {string} email - The email address to validate
+   * @returns {boolean} True if the email is valid, false otherwise
+   */
+  isEmail(email) {
+    if (!email || typeof email !== 'string') return false;
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    return emailRegex.test(email);
+  },
+  
+  /**
+   * Validates a URL
+   * @param {string} url - The URL to validate
+   * @returns {boolean} True if the URL is valid, false otherwise
+   */
+  isUrl(url) {
+    if (!url || typeof url !== 'string') return false;
+    try {
+      new URL(url);
+      return true;
+    } catch (e) {
+      return false;
+    }
+  },
+  
+  /**
+   * Checks if a value is a number
+   * @param {*} value - The value to check
+   * @returns {boolean} True if the value is a number, false otherwise
+   */
+  isNumber(value) {
+    return typeof value === 'number' && !isNaN(value);
+  },
+  
+  /**
+   * Checks if a string is empty or only contains whitespace
+   * @param {string} str - The string to check
+   * @returns {boolean} True if the string is empty or only whitespace, false otherwise
+   */
+  isEmpty(str) {
+    return !str || (typeof str === 'string' && str.trim().length === 0);
+  },
+  
+  /**
+   * Validates a password strength
+   * @param {string} password - The password to validate
+   * @returns {boolean} True if the password is strong enough, false otherwise
+   */
+  isStrongPassword(password) {
+    if (!password || typeof password !== 'string') return false;
+    // At least 8 characters, 1 uppercase, 1 lowercase, 1 number
+    const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d).{8,}$/;
+    return passwordRegex.test(password);
+  }
+};

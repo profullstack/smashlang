@@ -1,0 +1,72 @@
+/**
+ * SmashLang Package Template
+ * 
+ * This file serves as the main entry point for the package.
+ * It exports all public functions, classes, and variables.
+ */
+
+// Import internal modules
+import { stringUtils } from './utils/string.smash';
+import { mathUtils } from './utils/math.smash';
+import { validator } from './utils/validator.smash';
+
+/**
+ * Example function that returns a greeting message
+ * @param {string} name - The name to greet (optional)
+ * @returns {string} A greeting message
+ */
+export function greet(name = 'World') {
+  return `Hello, ${stringUtils.capitalize(name)}!`;
+}
+
+/**
+ * Calculates the sum of an array of numbers
+ * @param {number[]} numbers - Array of numbers to sum
+ * @returns {number} The sum of all numbers
+ */
+export function sum(numbers) {
+  return mathUtils.sum(numbers);
+}
+
+/**
+ * Validates an email address
+ * @param {string} email - The email address to validate
+ * @returns {boolean} True if the email is valid, false otherwise
+ */
+export function isValidEmail(email) {
+  return validator.isEmail(email);
+}
+
+/**
+ * Creates a counter object with increment, decrement, and reset methods
+ * @param {number} initialValue - The initial value for the counter
+ * @returns {Object} A counter object
+ */
+export function createCounter(initialValue = 0) {
+  let count = initialValue;
+  
+  return {
+    increment: () => ++count,
+    decrement: () => --count,
+    reset: () => {
+      count = initialValue;
+      return count;
+    },
+    getValue: () => count
+  };
+}
+
+/**
+ * Asynchronous function that simulates fetching data
+ * @param {number} delay - Delay in milliseconds
+ * @param {*} data - Data to return after the delay
+ * @returns {Promise} A promise that resolves with the provided data
+ */
+export async function fetchData(delay = 100, data = { success: true }) {
+  return new Promise((resolve) => {
+    setTimeout(() => resolve(data), delay);
+  });
+}
+
+// Export utility modules for convenience
+export { stringUtils, mathUtils, validator };

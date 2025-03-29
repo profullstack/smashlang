@@ -1,0 +1,113 @@
+/**
+ * Main test file for the package
+ */
+
+// Import the testing framework
+import { test, describe, expect, beforeEach, afterEach } from 'std/testing';
+
+// Import the functions to test
+import { greet, sum, isValidEmail, createCounter, fetchData, stringUtils, mathUtils, validator } from '../src/index.smash';
+
+// Basic tests for the main functions
+test('greet function returns correct greeting', () => {
+  expect(greet()).toBe('Hello, World!');
+  expect(greet('SmashLang')).toBe('Hello, SmashLang!');
+});
+
+test('sum function calculates correctly', () => {
+  expect(sum([1, 2, 3, 4])).toBe(10);
+  expect(sum([])).toBe(0);
+  expect(sum([5])).toBe(5);
+});
+
+test('isValidEmail function validates emails correctly', () => {
+  expect(isValidEmail('user@example.com')).toBeTrue();
+  expect(isValidEmail('invalid-email')).toBeFalse();
+  expect(isValidEmail('')).toBeFalse();
+});
+
+// Test group for the counter functionality
+describe('Counter', () => {
+  let counter;
+  
+  // Setup before each test
+  beforeEach(() => {
+    counter = createCounter(5);
+  });
+  
+  // Cleanup after each test
+  afterEach(() => {
+    counter = null;
+  });
+  
+  test('initializes with the correct value', () => {
+    expect(counter.getValue()).toBe(5);
+  });
+  
+  test('increments correctly', () => {
+    counter.increment();
+    expect(counter.getValue()).toBe(6);
+    counter.increment();
+    expect(counter.getValue()).toBe(7);
+  });
+  
+  test('decrements correctly', () => {
+    counter.decrement();
+    expect(counter.getValue()).toBe(4);
+  });
+  
+  test('resets to initial value', () => {
+    counter.increment();
+    counter.increment();
+    expect(counter.getValue()).toBe(7);
+    counter.reset();
+    expect(counter.getValue()).toBe(5);
+  });
+});
+
+// Async test example
+test('fetchData returns data after delay', async () => {
+  const testData = { message: 'Hello' };
+  const result = await fetchData(10, testData);
+  expect(result).toBe(testData);
+});
+
+// Testing exported utility modules
+describe('Utility Modules', () => {
+  describe('stringUtils', () => {
+    test('capitalize works correctly', () => {
+      expect(stringUtils.capitalize('hello')).toBe('Hello');
+      expect(stringUtils.capitalize('')).toBe('');
+    });
+    
+    test('reverse works correctly', () => {
+      expect(stringUtils.reverse('hello')).toBe('olleh');
+      expect(stringUtils.reverse('')).toBe('');
+    });
+  });
+  
+  describe('mathUtils', () => {
+    test('average calculates correctly', () => {
+      expect(mathUtils.average([10, 20, 30])).toBe(20);
+      expect(mathUtils.average([])).toBe(0);
+    });
+    
+    test('min and max work correctly', () => {
+      const numbers = [5, 2, 8, 1, 9];
+      expect(mathUtils.min(numbers)).toBe(1);
+      expect(mathUtils.max(numbers)).toBe(9);
+    });
+  });
+  
+  describe('validator', () => {
+    test('isUrl validates URLs correctly', () => {
+      expect(validator.isUrl('https://smashlang.com')).toBeTrue();
+      expect(validator.isUrl('not-a-url')).toBeFalse();
+    });
+    
+    test('isStrongPassword validates passwords correctly', () => {
+      expect(validator.isStrongPassword('Abc12345')).toBeTrue();
+      expect(validator.isStrongPassword('weak')).toBeFalse();
+    });
+  });
+});

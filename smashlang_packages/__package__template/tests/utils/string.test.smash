@@ -1,0 +1,73 @@
+/**
+ * Tests for string utility functions
+ */
+
+import { test, describe, expect } from 'std/testing';
+import { stringUtils } from '../../src/utils/string.smash';
+
+describe('String Utils', () => {
+  describe('capitalize', () => {
+    test('capitalizes the first letter', () => {
+      expect(stringUtils.capitalize('hello')).toBe('Hello');
+      expect(stringUtils.capitalize('world')).toBe('World');
+    });
+    
+    test('handles empty strings', () => {
+      expect(stringUtils.capitalize('')).toBe('');
+    });
+    
+    test('handles already capitalized strings', () => {
+      expect(stringUtils.capitalize('Hello')).toBe('Hello');
+    });
+    
+    test('handles non-string inputs', () => {
+      expect(stringUtils.capitalize(null)).toBe(null);
+      expect(stringUtils.capitalize(undefined)).toBe(undefined);
+    });
+  });
+  
+  describe('reverse', () => {
+    test('reverses strings correctly', () => {
+      expect(stringUtils.reverse('hello')).toBe('olleh');
+      expect(stringUtils.reverse('SmashLang')).toBe('gnaLhsamS');
+    });
+    
+    test('handles palindromes', () => {
+      expect(stringUtils.reverse('level')).toBe('level');
+    });
+    
+    test('handles empty strings', () => {
+      expect(stringUtils.reverse('')).toBe('');
+    });
+  });
+  
+  describe('truncate', () => {
+    test('truncates strings longer than maxLength', () => {
+      expect(stringUtils.truncate('Hello, World!', 5)).toBe('Hello...');
+    });
+    
+    test('does not truncate strings shorter than maxLength', () => {
+      expect(stringUtils.truncate('Hello', 10)).toBe('Hello');
+    });
+    
+    test('uses custom suffix when provided', () => {
+      expect(stringUtils.truncate('Hello, World!', 5, ' [more]')).toBe('Hello [more]');
+    });
+  });
+  
+  describe('countOccurrences', () => {
+    test('counts occurrences correctly', () => {
+      expect(stringUtils.countOccurrences('hello hello hello', 'hello')).toBe(3);
+      expect(stringUtils.countOccurrences('banana', 'na')).toBe(2);
+    });
+    
+    test('returns 0 when substring not found', () => {
+      expect(stringUtils.countOccurrences('hello', 'world')).toBe(0);
+    });
+    
+    test('handles empty strings', () => {
+      expect(stringUtils.countOccurrences('', 'hello')).toBe(0);
+      expect(stringUtils.countOccurrences('hello', '')).toBe(0);
+    });
+  });
+});

@@ -95,6 +95,63 @@ See the [examples directory](./examples) for more detailed examples:
 
 - [Basic Example](./examples/basic.smash): Description of what this example demonstrates
 - [Advanced Example](./examples/advanced.smash): Description of what this example demonstrates
+- [Testing Example](./examples/testing.smash): Demonstrates how to use the testing framework
+
+## Testing
+
+This package includes comprehensive tests using SmashLang's built-in testing framework.
+
+### Running Tests
+
+```bash
+# Run all tests for this package
+smashtest ./tests
+
+# Run a specific test file
+smashtest ./tests/utils/string.test.smash
+
+# Run tests with a specific tag
+smashtest ./tests --tag=unit
+```
+
+### Test Structure
+
+Tests are organized in the following structure:
+
+```
+tests/
+├── index.test.smash       # Main test file for the package
+└── utils/                 # Tests for utility modules
+    ├── string.test.smash  # Tests for string utilities
+    ├── math.test.smash    # Tests for math utilities
+    └── validator.test.smash # Tests for validation utilities
+```
+
+### Writing Tests
+
+Tests use the SmashLang testing framework with a syntax inspired by Jest and Mocha:
+
+```javascript
+import { test, describe, expect, beforeEach, afterEach } from 'std/testing';
+
+// Simple test
+test('addition works correctly', () => {
+  expect(2 + 2).toBe(4);
+});
+
+// Grouped tests with setup and teardown
+describe('Feature group', () => {
+  let testData;
+  
+  beforeEach(() => {
+    testData = setupTestData();
+  });
+  
+  test('feature works as expected', () => {
+    expect(testData.process()).toBeTrue();
+  });
+});
+```
 
 ## Contributing
 

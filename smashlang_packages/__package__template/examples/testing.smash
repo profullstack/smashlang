@@ -1,0 +1,43 @@
+/**
+ * Example demonstrating how to use the testing framework
+ */
+
+// This file shows how to run tests for your package
+// You can run this example with: smash examples/testing.smash
+
+console.log('Running tests for the package...');
+
+// Import the testing framework
+import { test, describe, expect, run_tests } from 'std/testing';
+
+// Define some simple tests
+test('Simple addition test', () => {
+  console.log('Testing addition...');
+  expect(2 + 2).toBe(4);
+});
+
+describe('String operations', () => {
+  test('String concatenation works', () => {
+    expect('Hello ' + 'World').toBe('Hello World');
+  });
+  
+  test('String length is calculated correctly', () => {
+    expect('SmashLang'.length).toBe(9);
+  });
+});
+
+// Run the tests
+console.log('\nRunning tests with the testing framework:');
+const results = run_tests();
+
+// Display results
+console.log(`\nTest Results:\n  Total: ${results.passed + results.failed + results.skipped}\n  Passed: ${results.passed}\n  Failed: ${results.failed}\n  Skipped: ${results.skipped}`);
+
+console.log('\nTo run all tests for this package, use:');
+console.log('  smashtest ./tests');
+
+console.log('\nTo run a specific test file, use:');
+console.log('  smashtest ./tests/utils/string.test.smash');
+
+console.log('\nTo run tests with a specific tag, use:');
+console.log('  smashtest ./tests --tag=unit');

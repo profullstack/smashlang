@@ -1,0 +1,57 @@
+/**
+ * Math utility functions
+ */
+
+export const mathUtils = {
+  /**
+   * Calculates the sum of an array of numbers
+   * @param {number[]} numbers - Array of numbers to sum
+   * @returns {number} The sum of all numbers
+   */
+  sum(numbers) {
+    if (!Array.isArray(numbers)) return 0;
+    return numbers.reduce((total, num) => total + (typeof num === 'number' ? num : 0), 0);
+  },
+  
+  /**
+   * Calculates the average of an array of numbers
+   * @param {number[]} numbers - Array of numbers
+   * @returns {number} The average value
+   */
+  average(numbers) {
+    if (!Array.isArray(numbers) || numbers.length === 0) return 0;
+    return this.sum(numbers) / numbers.length;
+  },
+  
+  /**
+   * Finds the minimum value in an array of numbers
+   * @param {number[]} numbers - Array of numbers
+   * @returns {number} The minimum value
+   */
+  min(numbers) {
+    if (!Array.isArray(numbers) || numbers.length === 0) return 0;
+    return Math.min(...numbers.filter(n => typeof n === 'number'));
+  },
+  
+  /**
+   * Finds the maximum value in an array of numbers
+   * @param {number[]} numbers - Array of numbers
+   * @returns {number} The maximum value
+   */
+  max(numbers) {
+    if (!Array.isArray(numbers) || numbers.length === 0) return 0;
+    return Math.max(...numbers.filter(n => typeof n === 'number'));
+  },
+  
+  /**
+   * Generates a random integer between min and max (inclusive)
+   * @param {number} min - Minimum value
+   * @param {number} max - Maximum value
+   * @returns {number} A random integer
+   */
+  randomInt(min, max) {
+    min = Math.ceil(min);
+    max = Math.floor(max);
+    return Math.floor(Math.random() * (max - min + 1)) + min;
+  }
+};

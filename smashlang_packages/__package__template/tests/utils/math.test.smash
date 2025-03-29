@@ -1,0 +1,89 @@
+/**
+ * Tests for math utility functions
+ */
+
+import { test, describe, expect } from 'std/testing';
+import { mathUtils } from '../../src/utils/math.smash';
+
+describe('Math Utils', () => {
+  describe('sum', () => {
+    test('calculates sum of numbers correctly', () => {
+      expect(mathUtils.sum([1, 2, 3, 4, 5])).toBe(15);
+      expect(mathUtils.sum([10, -5, 3])).toBe(8);
+    });
+    
+    test('returns 0 for empty arrays', () => {
+      expect(mathUtils.sum([])).toBe(0);
+    });
+    
+    test('handles non-number values in array', () => {
+      expect(mathUtils.sum([1, '2', 3, null, 5])).toBe(9);
+    });
+    
+    test('handles non-array inputs', () => {
+      expect(mathUtils.sum(null)).toBe(0);
+      expect(mathUtils.sum(123)).toBe(0);
+    });
+  });
+  
+  describe('average', () => {
+    test('calculates average correctly', () => {
+      expect(mathUtils.average([10, 20, 30])).toBe(20);
+      expect(mathUtils.average([2, 4, 6, 8])).toBe(5);
+    });
+    
+    test('returns 0 for empty arrays', () => {
+      expect(mathUtils.average([])).toBe(0);
+    });
+    
+    test('works with negative numbers', () => {
+      expect(mathUtils.average([-10, 0, 10])).toBe(0);
+    });
+  });
+  
+  describe('min', () => {
+    test('finds minimum value correctly', () => {
+      expect(mathUtils.min([5, 3, 9, 1, 7])).toBe(1);
+      expect(mathUtils.min([100, 200, 50, 300])).toBe(50);
+    });
+    
+    test('works with negative numbers', () => {
+      expect(mathUtils.min([5, -10, 3, 0])).toBe(-10);
+    });
+    
+    test('returns 0 for empty arrays', () => {
+      expect(mathUtils.min([])).toBe(0);
+    });
+  });
+  
+  describe('max', () => {
+    test('finds maximum value correctly', () => {
+      expect(mathUtils.max([5, 3, 9, 1, 7])).toBe(9);
+      expect(mathUtils.max([100, 200, 50, 300])).toBe(300);
+    });
+    
+    test('works with negative numbers', () => {
+      expect(mathUtils.max([-5, -10, -3, -1])).toBe(-1);
+    });
+    
+    test('returns 0 for empty arrays', () => {
+      expect(mathUtils.max([])).toBe(0);
+    });
+  });
+  
+  describe('randomInt', () => {
+    test('generates number within range', () => {
+      // Test multiple times to ensure it stays in range
+      for (let i = 0; i < 100; i++) {
+        const result = mathUtils.randomInt(1, 10);
+        expect(result >= 1).toBeTrue();
+        expect(result <= 10).toBeTrue();
+        expect(Number.isInteger(result)).toBeTrue();
+      }
+    });
+    
+    test('handles min equal to max', () => {
+      expect(mathUtils.randomInt(5, 5)).toBe(5);
+    });
+  });
+});
