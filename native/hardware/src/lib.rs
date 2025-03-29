@@ -17,6 +17,7 @@ use napi_derive::napi;
 mod camera;
 mod microphone;
 mod screen;
+mod input;
 mod devices;
 mod error;
 mod utils;
@@ -28,6 +29,7 @@ pub type Result<T> = std::result::Result<T, HardwareError>;
 pub use camera::Camera;
 pub use microphone::Microphone;
 pub use screen::Screen;
+pub use input::Input;
 pub use devices::{bluetooth, usb, midi, gamepad};
 
 #[cfg(feature = "node")]
@@ -351,6 +353,97 @@ mod node_bindings {
         pub async fn screen_add_marker(recorder_id: String, label: String) -> napi::Result<bool> {
             match Screen::add_marker(&recorder_id, &label).await {
                 Ok(_) => Ok(true),
+                Err(e) => Err(napi::Error::from_reason(e.to_string()))
+            }
+        }
+        
+        #[napi]
+        pub fn screen_get_display_server() -> String {
+            #[cfg(target_os = "linux")]
+            {
+                match platform::linux::get_display_server_type() {
+                    platform::linux::DisplayServer::X11 => String::from("x11"),
+                    platform::linux::DisplayServer::Wayland => String::from("wayland"),
+                    _ => String::from("unknown")
+                }
+            }
+            #[cfg(not(target_os = "linux"))]
+            {
+                String::from("unknown")
+            }
+        }
+    }
+    
+    // Input device bindings
+    pub mod input {
+        use super::*;
+        use crate::input::*;
+        
+        #[napi]
+        pub fn input_is_available(device_type: String) -> bool {
+            Input::is_available(&device_type)
+        }
+        
+        #[napi]
+        pub async fn input_register_events(device_types: String) -> napi::Result<String> {
+            let device_types: Vec<String> = match serde_json::from_str(&device_types) {
+                Ok(types) => types,
+                Err(e) => return Err(napi::Error::from_reason(format!("Invalid device types: {}", e)))
+            };
+            
+            match Input::register_events(device_types).await {
+                Ok(id) => Ok(id),
+                Err(e) => Err(napi::Error::from_reason(e.to_string()))
+            }
+        }
+        
+        #[napi]
+        pub fn input_unregister_events(registration_id: String) -> napi::Result<bool> {
+            match Input::unregister_events(&registration_id) {
+                Ok(_) => Ok(true),
+                Err(e) => Err(napi::Error::from_reason(e.to_string()))
+            }
+        }
+        
+        #[napi]
+        pub async fn input_simulate_input(event: String) -> napi::Result<bool> {
+            let event: InputEvent = match serde_json::from_str(&event) {
+                Ok(evt) => evt,
+                Err(e) => return Err(napi::Error::from_reason(format!("Invalid input event: {}", e)))
+            };
+            
+            match Input::simulate_input(event).await {
+                Ok(_) => Ok(true),
+                Err(e) => Err(napi::Error::from_reason(e.to_string()))
+            }
+        }
+        
+        #[napi]
+        pub fn input_get_keyboard_state() -> napi::Result<String> {
+            match Input::get_keyboard_state() {
+                Ok(state) => Ok(serde_json::to_string(&state).unwrap_or_default()),
+                Err(e) => Err(napi::Error::from_reason(e.to_string()))
+            }
+        }
+        
+        #[napi]
+        pub fn input_get_mouse_position() -> napi::Result<String> {
+            match Input::get_mouse_position() {
+                Ok(position) => {
+                    let pos_obj = serde_json::json!({
+                        "x": position.0,
+                        "y": position.1
+                    });
+                    Ok(serde_json::to_string(&pos_obj).unwrap_or_default())
+                },
+                Err(e) => Err(napi::Error::from_reason(e.to_string()))
+            }
+        }
+        
+        #[napi]
+        pub fn input_get_touch_points() -> napi::Result<String> {
+            match Input::get_touch_points() {
+                Ok(points) => Ok(serde_json::to_string(&points).unwrap_or_default()),
                 Err(e) => Err(napi::Error::from_reason(e.to_string()))
             }
         }

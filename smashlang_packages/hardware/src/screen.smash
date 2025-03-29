@@ -8,6 +8,35 @@ import "std";
  */
 
 /**
+ * Display server type (Linux-specific)
+ * @enum {string}
+ */
+export const DisplayServer = {
+  UNKNOWN: 'unknown',
+  X11: 'x11',
+  WAYLAND: 'wayland'
+};
+
+/**
+ * Get the current display server type (Linux-specific)
+ * @returns {string} Display server type ('x11', 'wayland', or 'unknown')
+ */
+export function getDisplayServer() {
+  // Only relevant on Linux
+  if (std.platform.os !== 'linux') {
+    return DisplayServer.UNKNOWN;
+  }
+  
+  try {
+    // Call native function to detect display server
+    return __native_screen_get_display_server();
+  } catch (error) {
+    print(`Error detecting display server: ${error}`);
+    return DisplayServer.UNKNOWN;
+  }
+}
+
+/**
  * Screen source information
  * @typedef {Object} ScreenSource
  * @property {string} id - Unique identifier for the screen source

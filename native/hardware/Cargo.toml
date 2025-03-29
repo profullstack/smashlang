@@ -48,18 +48,21 @@ uuid = { version = "1.3", features = ["v4"] }
 base64 = "0.21"
 
 [features]
-default = ["node"]
+default = ["node", "x11", "wayland"]
 node = ["napi", "napi-derive"]
 android-support = []
 ios-support = []
 core-graphics = []
 x11 = ["x11rb"]
+wayland = ["wayland-client", "wayland-protocols"]
 
 # Desktop platform-specific dependencies
 [target.'cfg(target_os = "linux")'.dependencies]
 libv4l = "0.3"
 alsa = "0.7"
 x11rb = { version = "0.11", optional = true }
+wayland-client = { version = "0.30", optional = true }
+wayland-protocols = { version = "0.30", features = ["unstable", "client"], optional = true }
 
 [target.'cfg(target_os = "windows")'.dependencies]
 winapi = { version = "0.3", features = ["winuser", "processthreadsapi", "psapi", "handleapi", "winreg", "winerror", "errhandlingapi", "wingdi", "dxgi", "d3d11"] }

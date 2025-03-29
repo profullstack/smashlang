@@ -1,0 +1,566 @@
+// hardware/src/input.smash - Input device interface for SmashLang
+
+import "std";
+
+/**
+ * Input module for keyboard, mouse, and touch input
+ * @module input
+ */
+
+/**
+ * Key code information
+ * @typedef {Object} KeyCode
+ * @property {string} code - Platform-independent key code
+ * @property {string} key - Key name (e.g., "a", "enter", "shift")
+ * @property {string} location - Key location (e.g., "standard", "left", "right")
+ */
+
+/**
+ * Mouse button information
+ * @typedef {Object} MouseButton
+ * @property {number} button - Button index
+ * @property {string} name - Button name (e.g., "left", "right", "middle")
+ */
+
+/**
+ * Touch point information
+ * @typedef {Object} TouchPoint
+ * @property {number} id - Touch identifier
+ * @property {number} x - X coordinate
+ * @property {number} y - Y coordinate
+ * @property {number} [force] - Touch force (0.0 to 1.0, if available)
+ * @property {number} [radius] - Touch radius (if available)
+ */
+
+/**
+ * Input event information
+ * @typedef {Object} InputEvent
+ * @property {string} type - Event type ("keydown", "keyup", "mousemove", etc.)
+ * @property {KeyCode} [key] - Key information for keyboard events
+ * @property {MouseButton} [button] - Button information for mouse events
+ * @property {number} [x] - X coordinate for mouse/touch events
+ * @property {number} [y] - Y coordinate for mouse/touch events
+ * @property {number} [deltaX] - X delta for wheel events
+ * @property {number} [deltaY] - Y delta for wheel events
+ * @property {TouchPoint[]} [touches] - Touch points for touch events
+ * @property {Object} modifiers - Modifier keys state (shift, ctrl, alt, meta)
+ * @property {number} timestamp - Event timestamp in milliseconds
+ */
+
+/**
+ * Input device types
+ * @enum {string}
+ */
+export const InputDeviceType = {
+  KEYBOARD: 'keyboard',
+  MOUSE: 'mouse',
+  TOUCH: 'touch'
+};
+
+/**
+ * Key codes for common keys
+ * @enum {string}
+ */
+export const KeyCode = {
+  // Alphabetic keys
+  A: 'KeyA',
+  B: 'KeyB',
+  C: 'KeyC',
+  // ... (other alphabetic keys)
+  Z: 'KeyZ',
+  
+  // Numeric keys
+  DIGIT0: 'Digit0',
+  DIGIT1: 'Digit1',
+  // ... (other digit keys)
+  DIGIT9: 'Digit9',
+  
+  // Function keys
+  F1: 'F1',
+  F2: 'F2',
+  // ... (other function keys)
+  F12: 'F12',
+  
+  // Navigation keys
+  ARROW_UP: 'ArrowUp',
+  ARROW_DOWN: 'ArrowDown',
+  ARROW_LEFT: 'ArrowLeft',
+  ARROW_RIGHT: 'ArrowRight',
+  HOME: 'Home',
+  END: 'End',
+  PAGE_UP: 'PageUp',
+  PAGE_DOWN: 'PageDown',
+  
+  // Editing keys
+  BACKSPACE: 'Backspace',
+  DELETE: 'Delete',
+  INSERT: 'Insert',
+  ENTER: 'Enter',
+  TAB: 'Tab',
+  ESCAPE: 'Escape',
+  SPACE: 'Space',
+  
+  // Modifier keys
+  SHIFT_LEFT: 'ShiftLeft',
+  SHIFT_RIGHT: 'ShiftRight',
+  CONTROL_LEFT: 'ControlLeft',
+  CONTROL_RIGHT: 'ControlRight',
+  ALT_LEFT: 'AltLeft',
+  ALT_RIGHT: 'AltRight',
+  META_LEFT: 'MetaLeft',
+  META_RIGHT: 'MetaRight'
+};
+
+/**
+ * Mouse button codes
+ * @enum {number}
+ */
+export const MouseButton = {
+  LEFT: 0,
+  MIDDLE: 1,
+  RIGHT: 2,
+  BACK: 3,
+  FORWARD: 4
+};
+
+/**
+ * Check if a specific input device type is available
+ * @param {string} deviceType - Type of input device to check
+ * @returns {Promise<boolean>} Promise resolving to true if the device is available
+ */
+export async function isAvailable(deviceType) {
+  try {
+    return await __native_input_is_available(deviceType);
+  } catch (error) {
+    print(`Error checking input device availability: ${error}`);
+    return false;
+  }
+}
+
+/**
+ * Register for input events
+ * @param {string[]} deviceTypes - Array of device types to register for
+ * @returns {Promise<string>} Promise resolving to a registration ID
+ */
+export async function registerEvents(deviceTypes) {
+  try {
+    return await __native_input_register_events(JSON.stringify(deviceTypes));
+  } catch (error) {
+    throw new Error(`Failed to register for input events: ${error}`);
+  }
+}
+
+/**
+ * Unregister from input events
+ * @param {string} registrationId - Registration ID from registerEvents
+ * @returns {Promise<boolean>} Promise resolving to true if successful
+ */
+export async function unregisterEvents(registrationId) {
+  try {
+    return await __native_input_unregister_events(registrationId);
+  } catch (error) {
+    throw new Error(`Failed to unregister from input events: ${error}`);
+  }
+}
+
+/**
+ * Simulate an input event
+ * @param {InputEvent} event - Event to simulate
+ * @returns {Promise<boolean>} Promise resolving to true if successful
+ */
+export async function simulateInput(event) {
+  try {
+    return await __native_input_simulate_input(JSON.stringify(event));
+  } catch (error) {
+    throw new Error(`Failed to simulate input event: ${error}`);
+  }
+}
+
+/**
+ * Get current keyboard state
+ * @returns {Promise<Object>} Promise resolving to an object mapping key codes to boolean states
+ */
+export async function getKeyboardState() {
+  try {
+    const stateJson = await __native_input_get_keyboard_state();
+    return JSON.parse(stateJson);
+  } catch (error) {
+    throw new Error(`Failed to get keyboard state: ${error}`);
+  }
+}
+
+/**
+ * Get current mouse position
+ * @returns {Promise<{x: number, y: number}>} Promise resolving to the current mouse coordinates
+ */
+export async function getMousePosition() {
+  try {
+    const positionJson = await __native_input_get_mouse_position();
+    return JSON.parse(positionJson);
+  } catch (error) {
+    throw new Error(`Failed to get mouse position: ${error}`);
+  }
+}
+
+/**
+ * Get current touch points
+ * @returns {Promise<TouchPoint[]>} Promise resolving to an array of active touch points
+ */
+export async function getTouchPoints() {
+  try {
+    const pointsJson = await __native_input_get_touch_points();
+    return JSON.parse(pointsJson);
+  } catch (error) {
+    throw new Error(`Failed to get touch points: ${error}`);
+  }
+}
+
+/**
+ * Helper class for keyboard input
+ */
+export class Keyboard {
+  /**
+   * Check if keyboard is available
+   * @returns {Promise<boolean>} Promise resolving to true if available
+   */
+  static async isAvailable() {
+    return isAvailable(InputDeviceType.KEYBOARD);
+  }
+  
+  /**
+   * Simulate a key press (down and up)
+   * @param {string} keyCode - Key code to press
+   * @param {Object} [options] - Options for the key press
+   * @param {Object} [options.modifiers] - Modifier keys to hold during the press
+   * @param {number} [options.duration=100] - Duration to hold the key in milliseconds
+   * @returns {Promise<boolean>} Promise resolving to true if successful
+   */
+  static async press(keyCode, options = {}) {
+    const modifiers = options.modifiers || {};
+    const duration = options.duration || 100;
+    
+    // Key down event
+    const downEvent = {
+      type: 'keydown',
+      key: {
+        code: keyCode,
+        key: keyCode.replace(/^Key/, '').toLowerCase(),
+        location: 'standard'
+      },
+      modifiers,
+      timestamp: Date.now()
+    };
+    
+    await simulateInput(downEvent);
+    
+    // Wait for the specified duration
+    await new Promise(resolve => setTimeout(resolve, duration));
+    
+    // Key up event
+    const upEvent = {
+      ...downEvent,
+      type: 'keyup',
+      timestamp: Date.now()
+    };
+    
+    return simulateInput(upEvent);
+  }
+  
+  /**
+   * Type a string of text
+   * @param {string} text - Text to type
+   * @param {Object} [options] - Options for typing
+   * @param {number} [options.delay=50] - Delay between keystrokes in milliseconds
+   * @returns {Promise<boolean>} Promise resolving to true if successful
+   */
+  static async type(text, options = {}) {
+    const delay = options.delay || 50;
+    
+    for (const char of text) {
+      // Convert character to key code
+      let keyCode;
+      if (char.match(/[a-z]/i)) {
+        keyCode = `Key${char.toUpperCase()}`;
+      } else if (char.match(/[0-9]/)) {
+        keyCode = `Digit${char}`;
+      } else if (char === ' ') {
+        keyCode = 'Space';
+      } else {
+        // Handle special characters based on their character code
+        keyCode = char;
+      }
+      
+      await this.press(keyCode);
+      await new Promise(resolve => setTimeout(resolve, delay));
+    }
+    
+    return true;
+  }
+}
+
+/**
+ * Helper class for mouse input
+ */
+export class Mouse {
+  /**
+   * Check if mouse is available
+   * @returns {Promise<boolean>} Promise resolving to true if available
+   */
+  static async isAvailable() {
+    return isAvailable(InputDeviceType.MOUSE);
+  }
+  
+  /**
+   * Get current mouse position
+   * @returns {Promise<{x: number, y: number}>} Promise resolving to the current coordinates
+   */
+  static async getPosition() {
+    return getMousePosition();
+  }
+  
+  /**
+   * Move the mouse to a specific position
+   * @param {number} x - X coordinate
+   * @param {number} y - Y coordinate
+   * @param {Object} [options] - Options for the movement
+   * @param {boolean} [options.animate=false] - Whether to animate the movement
+   * @returns {Promise<boolean>} Promise resolving to true if successful
+   */
+  static async moveTo(x, y, options = {}) {
+    const animate = options.animate || false;
+    
+    if (animate) {
+      const start = await getMousePosition();
+      const steps = 10;
+      const deltaX = (x - start.x) / steps;
+      const deltaY = (y - start.y) / steps;
+      
+      for (let i = 1; i <= steps; i++) {
+        const event = {
+          type: 'mousemove',
+          x: start.x + deltaX * i,
+          y: start.y + deltaY * i,
+          modifiers: {},
+          timestamp: Date.now()
+        };
+        
+        await simulateInput(event);
+        await new Promise(resolve => setTimeout(resolve, 10));
+      }
+    } else {
+      const event = {
+        type: 'mousemove',
+        x,
+        y,
+        modifiers: {},
+        timestamp: Date.now()
+      };
+      
+      return simulateInput(event);
+    }
+    
+    return true;
+  }
+  
+  /**
+   * Click at the current mouse position or at specified coordinates
+   * @param {Object} [options] - Options for the click
+   * @param {number} [options.button=0] - Mouse button to click (0=left, 1=middle, 2=right)
+   * @param {number} [options.x] - X coordinate (if not specified, uses current position)
+   * @param {number} [options.y] - Y coordinate (if not specified, uses current position)
+   * @param {number} [options.clickCount=1] - Number of clicks (1=single, 2=double)
+   * @returns {Promise<boolean>} Promise resolving to true if successful
+   */
+  static async click(options = {}) {
+    const button = options.button || MouseButton.LEFT;
+    const clickCount = options.clickCount || 1;
+    
+    let x, y;
+    if (options.x !== undefined && options.y !== undefined) {
+      x = options.x;
+      y = options.y;
+      await this.moveTo(x, y);
+    } else {
+      const position = await getMousePosition();
+      x = position.x;
+      y = position.y;
+    }
+    
+    const buttonInfo = {
+      button,
+      name: button === 0 ? 'left' : button === 1 ? 'middle' : 'right'
+    };
+    
+    for (let i = 0; i < clickCount; i++) {
+      // Mouse down event
+      const downEvent = {
+        type: 'mousedown',
+        button: buttonInfo,
+        x,
+        y,
+        modifiers: {},
+        timestamp: Date.now()
+      };
+      
+      await simulateInput(downEvent);
+      
+      // Mouse up event
+      const upEvent = {
+        ...downEvent,
+        type: 'mouseup',
+        timestamp: Date.now() + 10
+      };
+      
+      await simulateInput(upEvent);
+      
+      if (i < clickCount - 1) {
+        await new Promise(resolve => setTimeout(resolve, 100));
+      }
+    }
+    
+    return true;
+  }
+}
+
+/**
+ * Helper class for touch input
+ */
+export class Touch {
+  /**
+   * Check if touch input is available
+   * @returns {Promise<boolean>} Promise resolving to true if available
+   */
+  static async isAvailable() {
+    return isAvailable(InputDeviceType.TOUCH);
+  }
+  
+  /**
+   * Get current touch points
+   * @returns {Promise<TouchPoint[]>} Promise resolving to an array of active touch points
+   */
+  static async getPoints() {
+    return getTouchPoints();
+  }
+  
+  /**
+   * Simulate a tap at the specified coordinates
+   * @param {number} x - X coordinate
+   * @param {number} y - Y coordinate
+   * @param {Object} [options] - Options for the tap
+   * @param {number} [options.duration=100] - Duration of the tap in milliseconds
+   * @param {number} [options.tapCount=1] - Number of taps (1=single, 2=double)
+   * @returns {Promise<boolean>} Promise resolving to true if successful
+   */
+  static async tap(x, y, options = {}) {
+    const duration = options.duration || 100;
+    const tapCount = options.tapCount || 1;
+    
+    for (let i = 0; i < tapCount; i++) {
+      const touchPoint = {
+        id: 1,
+        x,
+        y,
+        force: 1.0
+      };
+      
+      // Touch start event
+      const startEvent = {
+        type: 'touchstart',
+        touches: [touchPoint],
+        modifiers: {},
+        timestamp: Date.now()
+      };
+      
+      await simulateInput(startEvent);
+      
+      // Wait for the specified duration
+      await new Promise(resolve => setTimeout(resolve, duration));
+      
+      // Touch end event
+      const endEvent = {
+        ...startEvent,
+        type: 'touchend',
+        timestamp: Date.now()
+      };
+      
+      await simulateInput(endEvent);
+      
+      if (i < tapCount - 1) {
+        await new Promise(resolve => setTimeout(resolve, 100));
+      }
+    }
+    
+    return true;
+  }
+  
+  /**
+   * Simulate a swipe gesture
+   * @param {number} startX - Starting X coordinate
+   * @param {number} startY - Starting Y coordinate
+   * @param {number} endX - Ending X coordinate
+   * @param {number} endY - Ending Y coordinate
+   * @param {Object} [options] - Options for the swipe
+   * @param {number} [options.duration=300] - Duration of the swipe in milliseconds
+   * @returns {Promise<boolean>} Promise resolving to true if successful
+   */
+  static async swipe(startX, startY, endX, endY, options = {}) {
+    const duration = options.duration || 300;
+    const steps = Math.max(5, Math.floor(duration / 50));
+    const stepDuration = duration / steps;
+    
+    const touchPoint = {
+      id: 1,
+      x: startX,
+      y: startY,
+      force: 1.0
+    };
+    
+    // Touch start event
+    const startEvent = {
+      type: 'touchstart',
+      touches: [touchPoint],
+      modifiers: {},
+      timestamp: Date.now()
+    };
+    
+    await simulateInput(startEvent);
+    
+    // Touch move events
+    const deltaX = (endX - startX) / steps;
+    const deltaY = (endY - startY) / steps;
+    
+    for (let i = 1; i <= steps; i++) {
+      const movePoint = {
+        ...touchPoint,
+        x: startX + deltaX * i,
+        y: startY + deltaY * i
+      };
+      
+      const moveEvent = {
+        type: 'touchmove',
+        touches: [movePoint],
+        modifiers: {},
+        timestamp: Date.now()
+      };
+      
+      await simulateInput(moveEvent);
+      await new Promise(resolve => setTimeout(resolve, stepDuration));
+    }
+    
+    // Touch end event
+    const endPoint = {
+      ...touchPoint,
+      x: endX,
+      y: endY
+    };
+    
+    const endEvent = {
+      type: 'touchend',
+      touches: [endPoint],
+      modifiers: {},
+      timestamp: Date.now()
+    };
+    
+    return simulateInput(endEvent);
+  }
+}

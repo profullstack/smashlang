@@ -13,10 +13,12 @@ export { camera } from "./src/camera.smash";
 export { microphone } from "./src/microphone.smash";
 export { screen } from "./src/screen.smash";
 export { devices } from "./src/devices.smash";
+export { input } from "./src/input.smash";
 export * from "./src/camera";
 export * from "./src/microphone";
 export * from "./src/screen";
 export * from "./src/devices";
+export * from "./src/input";
 
 // Package information
 export const info = {

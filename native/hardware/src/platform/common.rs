@@ -6,9 +6,11 @@
 
 use async_trait::async_trait;
 use std::sync::Arc;
+use std::collections::HashMap;
 
 use crate::error::HardwareError;
 use crate::screen::{ScreenSource, ScreenshotData, RecordingOptions};
+use crate::input::{InputEvent, TouchPoint};
 use crate::Result;
 
 /// Common trait for screen recording capabilities across all platforms
@@ -45,12 +47,77 @@ pub trait ScreenCapture: Send + Sync {
     async fn add_marker(&self, recording_id: &str, marker_name: &str) -> Result<bool>;
 }
 
+/// Common trait for input device capabilities across all platforms
+#[async_trait]
+pub trait InputDevice: Send + Sync {
+    /// Check if the specified input device type is available
+    fn is_available(&self, device_type: &str) -> bool;
+    
+    /// Register for input events
+    async fn register_events(&self, device_types: Vec<String>) -> Result<String>;
+    
+    /// Unregister from input events
+    fn unregister_events(&self, registration_id: &str) -> Result<bool>;
+    
+    /// Simulate input event
+    async fn simulate_input(&self, event: InputEvent) -> Result<bool>;
+    
+    /// Get current keyboard state
+    fn get_keyboard_state(&self) -> Result<HashMap<String, bool>>;
+    
+    /// Get current mouse position
+    fn get_mouse_position(&self) -> Result<(f32, f32)>;
+    
+    /// Get current touch points
+    fn get_touch_points(&self) -> Result<Vec<TouchPoint>>;
+}
+
 /// Default implementation for unsupported platforms
 pub struct DefaultScreenCapture;
 
 impl DefaultScreenCapture {
     pub fn new() -> Self {
         DefaultScreenCapture
+    }
+}
+
+/// Default implementation for unsupported platforms
+pub struct DefaultInputDevice;
+
+impl DefaultInputDevice {
+    pub fn new() -> Self {
+        DefaultInputDevice
+    }
+}
+
+#[async_trait]
+impl InputDevice for DefaultInputDevice {
+    fn is_available(&self, _device_type: &str) -> bool {
+        false
+    }
+    
+    async fn register_events(&self, _device_types: Vec<String>) -> Result<String> {
+        Err(HardwareError::UnsupportedOperation("Input events are not supported on this platform".to_string()))
+    }
+    
+    fn unregister_events(&self, _registration_id: &str) -> Result<bool> {
+        Err(HardwareError::UnsupportedOperation("Input events are not supported on this platform".to_string()))
+    }
+    
+    async fn simulate_input(&self, _event: InputEvent) -> Result<bool> {
+        Err(HardwareError::UnsupportedOperation("Input simulation is not supported on this platform".to_string()))
+    }
+    
+    fn get_keyboard_state(&self) -> Result<HashMap<String, bool>> {
+        Err(HardwareError::UnsupportedOperation("Keyboard state is not supported on this platform".to_string()))
+    }
+    
+    fn get_mouse_position(&self) -> Result<(f32, f32)> {
+        Err(HardwareError::UnsupportedOperation("Mouse position is not supported on this platform".to_string()))
+    }
+    
+    fn get_touch_points(&self) -> Result<Vec<TouchPoint>> {
+        Err(HardwareError::UnsupportedOperation("Touch input is not supported on this platform".to_string()))
     }
 }
 
