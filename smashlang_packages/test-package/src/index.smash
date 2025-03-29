@@ -1,0 +1,7 @@
+/**
+ * Example function
+ * @returns {string} A greeting message
+ */
+export function example() {
+  return 'Hello from SmashLang package!';
+}
