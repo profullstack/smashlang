@@ -3,11 +3,17 @@
 use std::fs;
 #[cfg(feature = "compiler")]
 use std::path::Path;
+#[cfg(feature = "compiler")]
+use std::process::Command;
 
+#[cfg(feature = "compiler")]
+use crate::lexer::tokenize;
+#[cfg(feature = "compiler")]
+use crate::parser::Parser;
 #[cfg(feature = "compiler")]
 use crate::codegen::generate_llvm_ir;
 
-pub fn compile_file(_path: &str, _output: &str, _target: Option<&str>, _emit: &str) {
+pub fn compile_file(path: &str, output: &str, target: Option<&str>, emit: &str) {
     #[cfg(not(feature = "compiler"))]
     {
         println!("Compilation requires the 'compiler' feature to be enabled.");
