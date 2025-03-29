@@ -136,6 +136,11 @@ install_linux() {
       echo "$GIT_HASH" > "$temp_dir/src/git_hash.txt"
       echo -e "${BLUE}Captured git hash: $GIT_HASH${NC}"
       
+      # Make sure the git hash file gets copied to the installation directory
+      mkdir -p "$LINUX_INSTALL_DIR/src"
+      cp "$temp_dir/src/git_hash.txt" "$LINUX_INSTALL_DIR/git_hash.txt"
+      cp "$temp_dir/src/git_hash.txt" "$LINUX_INSTALL_DIR/src/git_hash.txt"
+      
       cargo build --release
       
       if [ -f "$temp_dir/target/release/smash" ]; then

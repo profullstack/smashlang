@@ -294,7 +294,19 @@ fn main() {
         },
         "--version" | "-v" => {
             // Try to read git hash if available
-            let git_hash = std::fs::read_to_string("src/git_hash.txt").ok();
+            // Try multiple possible locations for the git hash file
+            let git_hash = std::fs::read_to_string("src/git_hash.txt")
+                .or_else(|_| std::fs::read_to_string("git_hash.txt"))
+                .or_else(|_| {
+                    // Try to find the executable path and look for git_hash.txt next to it
+                    if let Ok(exe_path) = std::env::current_exe() {
+                        if let Some(dir) = exe_path.parent() {
+                            return std::fs::read_to_string(dir.join("git_hash.txt"));
+                        }
+                    }
+                    Err(std::io::Error::new(std::io::ErrorKind::NotFound, "git hash file not found"))
+                })
+                .ok();
             
             if let Some(hash) = git_hash {
                 let hash = hash.trim();
