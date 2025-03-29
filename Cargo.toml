@@ -25,3 +25,7 @@ path = "src/main.rs"
 [[bin]]
 name = "smashpkg"
 path = "src/smashpkg.rs"
+
+[[bin]]
+name = "smashc"
+path = "src/smashc.rs"

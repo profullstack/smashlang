@@ -136,6 +136,70 @@ install_linux() {
         cp "$temp_dir/target/release/smash" "$LINUX_INSTALL_DIR/"
         chmod +x "$LINUX_INSTALL_DIR/smash"
         echo -e "${GREEN}Successfully built and installed SmashLang binary.${NC}"
+        
+        # Check for smashc compiler binary
+        if [ -f "$temp_dir/target/release/smashc" ]; then
+          cp "$temp_dir/target/release/smashc" "$LINUX_INSTALL_DIR/"
+          chmod +x "$LINUX_INSTALL_DIR/smashc"
+          echo -e "${GREEN}Successfully installed smashc compiler binary.${NC}"
+        else
+          echo -e "${YELLOW}Warning: smashc compiler binary not found, creating placeholder...${NC}"
+          cat > "$LINUX_INSTALL_DIR/smashc" << 'EOF'
+#!/bin/bash
+
+# Colors for output
+RED="\033[0;31m"
+GREEN="\033[0;32m"
+YELLOW="\033[0;33m"
+BLUE="\033[0;34m"
+CYAN="\033[0;36m"
+NC="\033[0m" # No Color
+
+# Check for command line arguments
+if [[ "$1" == "--help" || "$1" == "-h" ]]; then
+  echo -e "${BLUE}SmashLang Compiler v0.1.0-dev${NC} - The SmashLang Compiler"
+  echo ""
+  echo -e "${YELLOW}Usage:${NC}"
+  echo -e "  smashc [options] <file.smash>"
+  echo ""
+  echo -e "${YELLOW}Options:${NC}"
+  echo -e "  -h, --help                 Show this help message"
+  echo -e "  -v, --version              Show version information"
+  echo -e "  -o, --output <file>        Specify output file name"
+  echo -e "  --target <platform>        Target platform (linux, macos, windows)"
+  echo -e "  --wasm                     Compile to WebAssembly"
+  echo -e "  --debug                    Include debug information"
+  echo -e "  --release                  Optimize for release"
+  echo -e "  --lib                      Compile as a library"
+  echo ""
+  echo -e "${YELLOW}Examples:${NC}"
+  echo -e "  smashc hello.smash                   Compile hello.smash to default output"
+  echo -e "  smashc hello.smash -o hello          Specify output filename"
+  echo -e "  smashc hello.smash --target windows  Cross-compile for Windows"
+  echo -e "  smashc hello.smash --wasm            Compile to WebAssembly"
+  echo ""
+  echo -e "${YELLOW}Documentation:${NC}"
+  echo -e "  Visit ${CYAN}https://smashlang.com/docs/compiler${NC} for full documentation"
+  exit 0
+fi
+
+if [[ "$1" == "--version" || "$1" == "-v" ]]; then
+  echo -e "${BLUE}SmashLang Compiler v0.1.0-dev${NC}"
+  exit 0
+fi
+
+if [[ -n "$1" && "$1" == *.smash ]]; then
+  echo -e "${BLUE}SmashLang Compiler v0.1.0-dev${NC} (placeholder)"
+  echo -e "Would compile file: $1 (not yet implemented)"
+  echo -e "This is a placeholder. The actual compiler is not yet implemented."
+else
+  echo -e "${RED}Error:${NC} No input file specified or file is not a .smash file"
+  echo -e "Run ${CYAN}smashc --help${NC} for usage information"
+  exit 1
+fi
+EOF
+          chmod +x "$LINUX_INSTALL_DIR/smashc"
+        fi
       else
         echo -e "${YELLOW}Warning: Failed to build smash binary, creating placeholder...${NC}"
         cat > "$LINUX_INSTALL_DIR/smash" << 'EOF'
