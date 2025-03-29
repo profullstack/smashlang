@@ -8,7 +8,7 @@ This document outlines the features and components that need to be implemented f
 
 - [x] Complete basic LLVM IR code generation for essential AST node types
 - [x] Implement simple error handling
-- [ ] Add support for basic binary operations
+- [x] Add support for basic binary operations
 - [ ] Support compilation for at least one target platform (Linux)
 - [ ] Implement basic memory management
 
