@@ -1,0 +1,239 @@
+{
+  "$schema": "https://raw.githubusercontent.com/martinring/tmlanguage/master/tmlanguage.json",
+  "name": "SmashLang",
+  "patterns": [
+    { "include": "#comments" },
+    { "include": "#strings" },
+    { "include": "#keywords" },
+    { "include": "#numbers" },
+    { "include": "#functions" },
+    { "include": "#variables" },
+    { "include": "#operators" },
+    { "include": "#punctuation" }
+  ],
+  "repository": {
+    "comments": {
+      "patterns": [
+        {
+          "name": "comment.line.double-slash.smashlang",
+          "match": "//.*$"
+        },
+        {
+          "name": "comment.block.smashlang",
+          "begin": "/\\*",
+          "end": "\\*/",
+          "captures": {
+            "0": { "name": "punctuation.definition.comment.smashlang" }
+          }
+        }
+      ]
+    },
+    "strings": {
+      "patterns": [
+        {
+          "name": "string.quoted.double.smashlang",
+          "begin": "\"",
+          "end": "\"",
+          "patterns": [
+            { "name": "constant.character.escape.smashlang", "match": "\\\\([\"\\\\/bfnrt]|u[0-9a-fA-F]{4})" }
+          ]
+        },
+        {
+          "name": "string.quoted.single.smashlang",
+          "begin": "'",
+          "end": "'",
+          "patterns": [
+            { "name": "constant.character.escape.smashlang", "match": "\\\\(['\\\\])" }
+          ]
+        },
+        {
+          "name": "string.template.smashlang",
+          "begin": "`",
+          "end": "`",
+          "patterns": [
+            { "name": "constant.character.escape.smashlang", "match": "\\\\([`\\\\$])" },
+            {
+              "name": "meta.template.expression.smashlang",
+              "begin": "\\$\\{",
+              "end": "\\}",
+              "patterns": [
+                { "include": "$self" }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    "keywords": {
+      "patterns": [
+        {
+          "name": "keyword.control.smashlang",
+          "match": "\\b(if|else|switch|case|default|for|while|do|break|continue|return|try|catch|finally|throw)\\b"
+        },
+        {
+          "name": "keyword.operator.new.smashlang",
+          "match": "\\b(new|delete|typeof|instanceof|void)\\b"
+        },
+        {
+          "name": "keyword.declaration.smashlang",
+          "match": "\\b(var|let|const|function|fn|class|extends|implements|import|export|from|as)\\b"
+        },
+        {
+          "name": "constant.language.smashlang",
+          "match": "\\b(true|false|null|undefined|NaN|Infinity)\\b"
+        },
+        {
+          "name": "variable.language.this.smashlang",
+          "match": "\\b(this|super)\\b"
+        },
+        {
+          "name": "keyword.operator.async.smashlang",
+          "match": "\\b(async|await)\\b"
+        }
+      ]
+    },
+    "numbers": {
+      "patterns": [
+        {
+          "name": "constant.numeric.decimal.smashlang",
+          "match": "\\b(0|[1-9][0-9]*)\\.[0-9]+([eE][+-]?[0-9]+)?\\b"
+        },
+        {
+          "name": "constant.numeric.integer.smashlang",
+          "match": "\\b(0|[1-9][0-9]*)([eE][+-]?[0-9]+)?\\b"
+        },
+        {
+          "name": "constant.numeric.hex.smashlang",
+          "match": "\\b0[xX][0-9a-fA-F]+\\b"
+        },
+        {
+          "name": "constant.numeric.binary.smashlang",
+          "match": "\\b0[bB][01]+\\b"
+        },
+        {
+          "name": "constant.numeric.octal.smashlang",
+          "match": "\\b0[oO][0-7]+\\b"
+        }
+      ]
+    },
+    "functions": {
+      "patterns": [
+        {
+          "name": "meta.function.smashlang",
+          "match": "\\b([a-zA-Z_$][\\w$]*)\\s*\\(",
+          "captures": {
+            "1": { "name": "entity.name.function.smashlang" }
+          }
+        },
+        {
+          "name": "meta.function.declaration.smashlang",
+          "match": "\\b(function|fn)\\s+([a-zA-Z_$][\\w$]*)\\s*\\(",
+          "captures": {
+            "1": { "name": "keyword.declaration.function.smashlang" },
+            "2": { "name": "entity.name.function.smashlang" }
+          }
+        },
+        {
+          "name": "meta.function.arrow.smashlang",
+          "match": "\\b([a-zA-Z_$][\\w$]*)\\s*=>\\s*",
+          "captures": {
+            "1": { "name": "variable.parameter.smashlang" }
+          }
+        }
+      ]
+    },
+    "variables": {
+      "patterns": [
+        {
+          "name": "variable.other.readwrite.smashlang",
+          "match": "\\b[a-zA-Z_$][\\w$]*\\b"
+        },
+        {
+          "name": "variable.other.property.smashlang",
+          "match": "\\b[a-zA-Z_$][\\w$]*\\s*(?=:)"
+        }
+      ]
+    },
+    "operators": {
+      "patterns": [
+        {
+          "name": "keyword.operator.arithmetic.smashlang",
+          "match": "[+\\-*/%]|\\*\\*"
+        },
+        {
+          "name": "keyword.operator.assignment.smashlang",
+          "match": "=|\\+=|\\-=|\\*=|\\/=|%=|\\*\\*="
+        },
+        {
+          "name": "keyword.operator.comparison.smashlang",
+          "match": "==|===|!=|!==|>|<|>=|<="
+        },
+        {
+          "name": "keyword.operator.logical.smashlang",
+          "match": "&&|\\|\\||!|\\?\\?"
+        },
+        {
+          "name": "keyword.operator.bitwise.smashlang",
+          "match": "&|\\||\\^|~|<<|>>"
+        },
+        {
+          "name": "keyword.operator.ternary.smashlang",
+          "match": "\\?|:"
+        },
+        {
+          "name": "keyword.operator.spread.smashlang",
+          "match": "\\.\\.\\."
+        },
+        {
+          "name": "keyword.operator.optional-chaining.smashlang",
+          "match": "\\?\\."
+        },
+        {
+          "name": "keyword.operator.arrow.smashlang",
+          "match": "=>"
+        }
+      ]
+    },
+    "punctuation": {
+      "patterns": [
+        {
+          "name": "punctuation.terminator.statement.smashlang",
+          "match": ";"
+        },
+        {
+          "name": "punctuation.accessor.smashlang",
+          "match": "\\."
+        },
+        {
+          "name": "punctuation.separator.comma.smashlang",
+          "match": ","
+        },
+        {
+          "name": "punctuation.section.brackets.begin.smashlang",
+          "match": "\\["
+        },
+        {
+          "name": "punctuation.section.brackets.end.smashlang",
+          "match": "\\]"
+        },
+        {
+          "name": "punctuation.section.parens.begin.smashlang",
+          "match": "\\("
+        },
+        {
+          "name": "punctuation.section.parens.end.smashlang",
+          "match": "\\)"
+        },
+        {
+          "name": "punctuation.section.braces.begin.smashlang",
+          "match": "\\{"
+        },
+        {
+          "name": "punctuation.section.braces.end.smashlang",
+          "match": "\\}"
+        }
+      ]
+    }
+  },
+  "scopeName": "source.smash"
+}

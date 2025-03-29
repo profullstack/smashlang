@@ -4,6 +4,7 @@
   "description": "Format SmashLang code using smashier",
   "version": "0.1.0",
   "publisher": "smashlang",
+  "icon": "icons/favicon.light.png",
   "engines": {
     "vscode": "^1.60.0"
   },
@@ -21,7 +22,11 @@
         "id": "smashlang",
         "aliases": ["SmashLang", "smashlang"],
         "extensions": [".smash"],
-        "configuration": "./language-configuration.json"
+        "configuration": "./language-configuration.json",
+        "icon": {
+          "light": "./icons/favicon.light.png",
+          "dark": "./icons/favicon.dark.png"
+        }
       }
     ],
     "grammars": [
@@ -37,39 +42,73 @@
         "title": "Format SmashLang Document"
       }
     ],
+    "menus": {
+      "editor/context": [
+        {
+          "when": "editorLangId == smashlang",
+          "command": "smashlang.format",
+          "group": "1_modification"
+        }
+      ]
+    },
     "configuration": {
       "title": "SmashLang Formatter",
       "properties": {
         "smashier.useTabs": {
           "type": "boolean",
           "default": false,
-          "description": "Use tabs instead of spaces"
+          "description": "Use tabs instead of spaces",
+          "order": 1
         },
         "smashier.tabWidth": {
           "type": "integer",
           "default": 2,
-          "description": "Number of spaces per tab"
+          "description": "Number of spaces per tab",
+          "order": 2
         },
         "smashier.printWidth": {
           "type": "integer",
           "default": 80,
-          "description": "Maximum line length"
+          "description": "Maximum line length",
+          "order": 3
         },
         "smashier.singleQuote": {
           "type": "boolean",
           "default": true,
-          "description": "Use single quotes instead of double quotes"
+          "description": "Use single quotes instead of double quotes",
+          "order": 4
         },
         "smashier.semi": {
           "type": "boolean",
           "default": true,
-          "description": "Add semicolons at the end of statements"
+          "description": "Add semicolons at the end of statements",
+          "order": 5
         },
         "smashier.trailingComma": {
           "type": "string",
           "enum": ["none", "es5", "all"],
           "default": "es5",
-          "description": "Print trailing commas wherever possible"
+          "description": "Print trailing commas wherever possible",
+          "order": 6
+        },
+        "smashier.formatOnSave": {
+          "type": "boolean",
+          "default": false,
+          "description": "Automatically format SmashLang files on save",
+          "order": 7
+        },
+        "smashier.formatOnType": {
+          "type": "boolean",
+          "default": false,
+          "description": "Automatically format SmashLang code as you type",
+          "order": 8
+        },
+        "smashier.highlightStyle": {
+          "type": "string",
+          "enum": ["default", "light", "monokai", "github"],
+          "default": "default",
+          "description": "Syntax highlighting style to use",
+          "order": 9
         }
       }
     }

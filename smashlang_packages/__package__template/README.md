@@ -1,7 +1,10 @@
 # Package Name
 
 <p align="center">
-  <img src="./assets/logo.svg" alt="Package Logo" width="200" />
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="./assets/logo.dark.svg">
+    <img src="./assets/logo.light.svg" alt="Package Logo" width="200" />
+  </picture>
 </p>
 
 A brief description of what your package does and why it's useful.
