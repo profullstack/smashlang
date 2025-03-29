@@ -1,0 +1,41 @@
+// keyboard_monitor.smash - A simple keyboard event monitor
+
+import { input } from "hardware";
+import { sleep } from "std/time";
+
+// Check if keyboard is available
+if (!input.isKeyboardAvailable()) {
+  print("Keyboard is not available on this system.");
+  exit(1);
+}
+
+print("Keyboard Monitor - Press keys to see events (Ctrl+C to exit)\n");
+print("Registering for keyboard events...");
+
+// Register for keyboard events
+const registration = input.registerEvents(["keyboard"], event => {
+  if (event.type === "keydown") {
+    print(`Key Down: ${event.key} (Code: ${event.keyCode})`);
+  } else if (event.type === "keyup") {
+    print(`Key Up: ${event.key} (Code: ${event.keyCode})`);
+  }
+});
+
+// Keep the program running until user presses Ctrl+C
+try {
+  while (true) {
+    await sleep(100);
+    
+    // Check for Ctrl+C manually as an alternative exit method
+    const keyState = input.getKeyboardState();
+    if (keyState["Control"] && keyState["c"]) {
+      print("\nCtrl+C detected, exiting...");
+      break;
+    }
+  }
+} finally {
+  // Always clean up by unregistering events
+  print("Unregistering keyboard events...");
+  input.unregisterEvents(registration);
+  print("Done.");
+}

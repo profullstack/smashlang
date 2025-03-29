@@ -1,0 +1,328 @@
+// input_tester.smash - A comprehensive demo of all input devices
+
+import { input } from "hardware";
+import { graphics } from "std";
+import { sleep } from "std/time";
+
+print("SmashLang Input Devices Tester");
+print("=============================");
+
+// Check available input devices
+print("\nChecking available input devices:");
+print(`Keyboard: ${input.isKeyboardAvailable() ? 'Available' : 'Not available'}`);
+print(`Mouse: ${input.isMouseAvailable() ? 'Available' : 'Not available'}`);
+print(`Touch: ${input.isTouchAvailable() ? 'Available' : 'Not available'}`);
+
+// Create a window for visualizing input events
+const window = graphics.createWindow({
+  title: "SmashLang Input Tester",
+  width: 800,
+  height: 600,
+  resizable: true
+});
+
+// Store input state
+const inputState = {
+  // Keyboard
+  pressedKeys: new Set(),
+  lastKeyEvent: null,
+  
+  // Mouse
+  mousePosition: { x: 0, y: 0 },
+  mouseButtons: { left: false, right: false, middle: false },
+  mouseWheel: { deltaX: 0, deltaY: 0 },
+  mouseTrail: [],
+  
+  // Touch
+  touchPoints: new Map(),
+  touchTrails: new Map()
+};
+
+const MAX_TRAIL_POINTS = 50;
+
+// Register for all input events
+const registration = input.registerEvents(["keyboard", "mouse", "touch"], event => {
+  // Process keyboard events
+  if (event.type === "keydown") {
+    inputState.pressedKeys.add(event.key);
+    inputState.lastKeyEvent = { type: "down", key: event.key, time: Date.now() };
+  } else if (event.type === "keyup") {
+    inputState.pressedKeys.delete(event.key);
+    inputState.lastKeyEvent = { type: "up", key: event.key, time: Date.now() };
+  }
+  
+  // Process mouse events
+  else if (event.type === "mousemove") {
+    inputState.mousePosition = { x: event.x, y: event.y };
+    
+    // Add point to trail
+    inputState.mouseTrail.push({ x: event.x, y: event.y, time: Date.now() });
+    if (inputState.mouseTrail.length > MAX_TRAIL_POINTS) {
+      inputState.mouseTrail.shift();
+    }
+  } else if (event.type === "mousedown") {
+    inputState.mouseButtons[event.button] = true;
+  } else if (event.type === "mouseup") {
+    inputState.mouseButtons[event.button] = false;
+  } else if (event.type === "wheel") {
+    inputState.mouseWheel = { deltaX: event.deltaX, deltaY: event.deltaY };
+  }
+  
+  // Process touch events
+  else if (event.type === "touchstart") {
+    event.touches.forEach(touch => {
+      inputState.touchPoints.set(touch.id, touch);
+      
+      // Initialize trail for this touch
+      if (!inputState.touchTrails.has(touch.id)) {
+        inputState.touchTrails.set(touch.id, []);
+      }
+      
+      // Add point to trail
+      inputState.touchTrails.get(touch.id).push({
+        x: touch.x,
+        y: touch.y,
+        pressure: touch.pressure,
+        time: Date.now()
+      });
+    });
+  } else if (event.type === "touchmove") {
+    event.touches.forEach(touch => {
+      inputState.touchPoints.set(touch.id, touch);
+      
+      // Add point to trail
+      const trail = inputState.touchTrails.get(touch.id) || [];
+      trail.push({
+        x: touch.x,
+        y: touch.y,
+        pressure: touch.pressure,
+        time: Date.now()
+      });
+      
+      // Limit trail length
+      if (trail.length > MAX_TRAIL_POINTS) {
+        trail.shift();
+      }
+      
+      inputState.touchTrails.set(touch.id, trail);
+    });
+  } else if (event.type === "touchend" || event.type === "touchcancel") {
+    event.touches.forEach(touch => {
+      inputState.touchPoints.delete(touch.id);
+      
+      // Keep the trail for a short time before removing
+      setTimeout(() => {
+        inputState.touchTrails.delete(touch.id);
+      }, 2000);
+    });
+  }
+});
+
+// Draw function for the window
+window.onDraw = (ctx) => {
+  // Clear the canvas
+  ctx.fillStyle = "#f0f0f0";
+  ctx.fillRect(0, 0, window.width, window.height);
+  
+  // Draw title
+  ctx.fillStyle = "#333333";
+  ctx.font = "bold 20px sans-serif";
+  ctx.textAlign = "center";
+  ctx.fillText("SmashLang Input Devices Tester", window.width / 2, 30);
+  ctx.textAlign = "left";
+  
+  // Draw sections
+  const sectionHeight = (window.height - 60) / 3;
+  
+  // Draw keyboard section
+  ctx.fillStyle = "#ffffff";
+  ctx.fillRect(10, 50, window.width - 20, sectionHeight - 10);
+  ctx.strokeStyle = "#cccccc";
+  ctx.lineWidth = 1;
+  ctx.strokeRect(10, 50, window.width - 20, sectionHeight - 10);
+  
+  ctx.fillStyle = "#333333";
+  ctx.font = "bold 16px sans-serif";
+  ctx.fillText("Keyboard", 20, 70);
+  ctx.font = "14px sans-serif";
+  
+  // Display pressed keys
+  ctx.fillText("Pressed keys:", 20, 95);
+  let keyX = 120;
+  inputState.pressedKeys.forEach(key => {
+    // Draw key box
+    ctx.fillStyle = "#0066cc";
+    const keyWidth = ctx.measureText(key).width + 10;
+    ctx.fillRect(keyX, 80, keyWidth, 20);
+    
+    // Draw key text
+    ctx.fillStyle = "#ffffff";
+    ctx.fillText(key, keyX + 5, 95);
+    keyX += keyWidth + 5;
+  });
+  
+  // Display last key event
+  if (inputState.lastKeyEvent) {
+    const timeSince = Date.now() - inputState.lastKeyEvent.time;
+    if (timeSince < 2000) {
+      ctx.fillStyle = "#333333";
+      ctx.fillText(
+        `Last key ${inputState.lastKeyEvent.type}: ${inputState.lastKeyEvent.key}`,
+        20, 120
+      );
+    }
+  }
+  
+  // Draw mouse section
+  ctx.fillStyle = "#ffffff";
+  ctx.fillRect(10, 50 + sectionHeight, window.width - 20, sectionHeight - 10);
+  ctx.strokeStyle = "#cccccc";
+  ctx.lineWidth = 1;
+  ctx.strokeRect(10, 50 + sectionHeight, window.width - 20, sectionHeight - 10);
+  
+  ctx.fillStyle = "#333333";
+  ctx.font = "bold 16px sans-serif";
+  ctx.fillText("Mouse", 20, 70 + sectionHeight);
+  ctx.font = "14px sans-serif";
+  
+  // Display mouse position
+  ctx.fillText(
+    `Position: ${Math.round(inputState.mousePosition.x)}, ${Math.round(inputState.mousePosition.y)}`,
+    20, 95 + sectionHeight
+  );
+  
+  // Display mouse buttons
+  ctx.fillText("Buttons:", 20, 120 + sectionHeight);
+  
+  // Draw button states
+  const buttons = ["left", "middle", "right"];
+  let buttonX = 80;
+  buttons.forEach(button => {
+    const isPressed = inputState.mouseButtons[button];
+    
+    // Draw button box
+    ctx.fillStyle = isPressed ? "#0066cc" : "#dddddd";
+    const buttonWidth = ctx.measureText(button).width + 10;
+    ctx.fillRect(buttonX, 105 + sectionHeight, buttonWidth, 20);
+    
+    // Draw button text
+    ctx.fillStyle = isPressed ? "#ffffff" : "#333333";
+    ctx.fillText(button, buttonX + 5, 120 + sectionHeight);
+    buttonX += buttonWidth + 10;
+  });
+  
+  // Draw mouse trail
+  if (inputState.mouseTrail.length > 1) {
+    ctx.beginPath();
+    ctx.moveTo(inputState.mouseTrail[0].x, inputState.mouseTrail[0].y);
+    
+    for (let i = 1; i < inputState.mouseTrail.length; i++) {
+      ctx.lineTo(inputState.mouseTrail[i].x, inputState.mouseTrail[i].y);
+    }
+    
+    ctx.strokeStyle = "#0066cc";
+    ctx.lineWidth = 2;
+    ctx.stroke();
+    
+    // Draw current position
+    const current = inputState.mouseTrail[inputState.mouseTrail.length - 1];
+    ctx.fillStyle = "#cc0000";
+    ctx.beginPath();
+    ctx.arc(current.x, current.y, 5, 0, Math.PI * 2);
+    ctx.fill();
+  }
+  
+  // Draw touch section
+  ctx.fillStyle = "#ffffff";
+  ctx.fillRect(10, 50 + sectionHeight * 2, window.width - 20, sectionHeight - 10);
+  ctx.strokeStyle = "#cccccc";
+  ctx.lineWidth = 1;
+  ctx.strokeRect(10, 50 + sectionHeight * 2, window.width - 20, sectionHeight - 10);
+  
+  ctx.fillStyle = "#333333";
+  ctx.font = "bold 16px sans-serif";
+  ctx.fillText("Touch", 20, 70 + sectionHeight * 2);
+  ctx.font = "14px sans-serif";
+  
+  // Display touch points count
+  ctx.fillText(
+    `Active touch points: ${inputState.touchPoints.size}`,
+    20, 95 + sectionHeight * 2
+  );
+  
+  if (inputState.touchPoints.size === 0) {
+    ctx.fillText(
+      "Touch the screen to see touch events",
+      20, 120 + sectionHeight * 2
+    );
+  }
+  
+  // Draw touch trails
+  inputState.touchTrails.forEach((trail, id) => {
+    if (trail.length > 1) {
+      ctx.beginPath();
+      ctx.moveTo(trail[0].x, trail[0].y);
+      
+      for (let i = 1; i < trail.length; i++) {
+        ctx.lineTo(trail[i].x, trail[i].y);
+      }
+      
+      // Use different colors for different touch points
+      const hue = (id * 137) % 360; // Generate a unique hue based on touch ID
+      ctx.strokeStyle = `hsl(${hue}, 80%, 50%)`;
+      ctx.lineWidth = 3;
+      ctx.stroke();
+    }
+  });
+  
+  // Draw active touch points
+  inputState.touchPoints.forEach(touch => {
+    const hue = (touch.id * 137) % 360;
+    ctx.fillStyle = `hsl(${hue}, 80%, 50%)`;
+    
+    // Size based on pressure
+    const radius = 10 + (touch.pressure * 20);
+    
+    ctx.beginPath();
+    ctx.arc(touch.x, touch.y, radius, 0, Math.PI * 2);
+    ctx.fill();
+    
+    // Draw touch ID
+    ctx.fillStyle = "#ffffff";
+    ctx.font = "12px sans-serif";
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+    ctx.fillText(touch.id.toString(), touch.x, touch.y);
+    ctx.textAlign = "left";
+    ctx.textBaseline = "alphabetic";
+  });
+  
+  // Draw instructions at the bottom
+  ctx.fillStyle = "#666666";
+  ctx.font = "12px sans-serif";
+  ctx.textAlign = "center";
+  ctx.fillText("Press ESC to exit", window.width / 2, window.height - 10);
+  ctx.textAlign = "left";
+};
+
+// Handle window events
+window.onKeyDown = (key) => {
+  if (key === "Escape") {
+    window.close();
+  }
+};
+
+// Keep the program running until window is closed
+try {
+  print("\nInput tester window opened. Close the window or press ESC to exit.");
+  
+  while (window.isOpen()) {
+    window.update();
+    await sleep(16); // ~60 FPS
+  }
+} finally {
+  // Always clean up by unregistering events
+  print("\nCleaning up resources...");
+  input.unregisterEvents(registration);
+  print("Done.");
+}

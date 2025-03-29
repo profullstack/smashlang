@@ -1,0 +1,96 @@
+// mouse_tracker.smash - Track mouse movements and button clicks
+
+import { input } from "hardware";
+import { sleep } from "std/time";
+import { graphics } from "std";
+
+// Check if mouse is available
+if (!input.isMouseAvailable()) {
+  print("Mouse is not available on this system.");
+  exit(1);
+}
+
+print("Mouse Tracker - Move the mouse and click buttons (Ctrl+C to exit)\n");
+
+// Create a simple window to track mouse movements visually
+const window = graphics.createWindow({
+  title: "Mouse Tracker",
+  width: 800,
+  height: 600,
+  resizable: true
+});
+
+// Store mouse trail points
+const trail = [];
+const MAX_TRAIL_POINTS = 50;
+
+// Register for mouse events
+const registration = input.registerEvents(["mouse"], event => {
+  if (event.type === "mousemove") {
+    print(`Mouse moved to: ${event.x}, ${event.y}`);
+    
+    // Add point to trail
+    trail.push({ x: event.x, y: event.y, time: Date.now() });
+    if (trail.length > MAX_TRAIL_POINTS) {
+      trail.shift(); // Remove oldest point
+    }
+  } else if (event.type === "mousedown") {
+    print(`Mouse button ${event.button} pressed at: ${event.x}, ${event.y}`);
+  } else if (event.type === "mouseup") {
+    print(`Mouse button ${event.button} released at: ${event.x}, ${event.y}`);
+  } else if (event.type === "wheel") {
+    print(`Mouse wheel scrolled: ${event.deltaY > 0 ? 'down' : 'up'}`);
+  }
+});
+
+// Draw function for the window
+window.onDraw = (ctx) => {
+  // Clear the canvas
+  ctx.fillStyle = "#ffffff";
+  ctx.fillRect(0, 0, window.width, window.height);
+  
+  // Draw mouse trail
+  if (trail.length > 1) {
+    ctx.beginPath();
+    ctx.moveTo(trail[0].x, trail[0].y);
+    
+    for (let i = 1; i < trail.length; i++) {
+      ctx.lineTo(trail[i].x, trail[i].y);
+    }
+    
+    ctx.strokeStyle = "#0066cc";
+    ctx.lineWidth = 2;
+    ctx.stroke();
+  }
+  
+  // Draw current mouse position
+  if (trail.length > 0) {
+    const current = trail[trail.length - 1];
+    ctx.fillStyle = "#cc0000";
+    ctx.beginPath();
+    ctx.arc(current.x, current.y, 5, 0, Math.PI * 2);
+    ctx.fill();
+  }
+  
+  // Draw mouse button states
+  const buttonState = input.getMouseButtonState();
+  ctx.fillStyle = "#000000";
+  ctx.font = "14px sans-serif";
+  ctx.fillText(`Left button: ${buttonState.left ? 'Pressed' : 'Released'}`, 10, 20);
+  ctx.fillText(`Right button: ${buttonState.right ? 'Pressed' : 'Released'}`, 10, 40);
+  ctx.fillText(`Middle button: ${buttonState.middle ? 'Pressed' : 'Released'}`, 10, 60);
+};
+
+// Keep the program running until window is closed
+try {
+  while (window.isOpen()) {
+    window.update();
+    await sleep(16); // ~60 FPS
+  }
+} finally {
+  // Always clean up by unregistering events
+  print("Unregistering mouse events...");
+  input.unregisterEvents(registration);
+  window.close();
+  print("Done.");
+}

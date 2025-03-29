@@ -1,0 +1,153 @@
+// touch_visualizer.smash - Visualize touch events on a canvas
+
+import { input } from "hardware";
+import { graphics } from "std";
+import { sleep } from "std/time";
+
+// Check if touch input is available
+if (!input.isTouchAvailable()) {
+  print("Touch input is not available on this system.");
+  print("This example is designed for touch-enabled devices like tablets, phones, or touch screens.");
+  exit(1);
+}
+
+print("Touch Visualizer - Touch the screen to see events (Close window to exit)\n");
+
+// Create a window for visualizing touch events
+const window = graphics.createWindow({
+  title: "Touch Visualizer",
+  width: 800,
+  height: 600,
+  fullscreen: false,
+  resizable: true
+});
+
+// Store active touch points and their trails
+const touchPoints = new Map();
+const trails = new Map();
+const MAX_TRAIL_POINTS = 50;
+
+// Register for touch events
+const registration = input.registerEvents(["touch"], event => {
+  if (event.type === "touchstart") {
+    print(`Touch started with ${event.touches.length} points`);
+    
+    // Add new touch points
+    event.touches.forEach(touch => {
+      touchPoints.set(touch.id, touch);
+      
+      // Initialize trail for this touch
+      if (!trails.has(touch.id)) {
+        trails.set(touch.id, []);
+      }
+      
+      // Add point to trail
+      trails.get(touch.id).push({
+        x: touch.x,
+        y: touch.y,
+        pressure: touch.pressure,
+        time: Date.now()
+      });
+    });
+  } else if (event.type === "touchmove") {
+    print(`Touch moved with ${event.touches.length} points`);
+    
+    // Update touch points
+    event.touches.forEach(touch => {
+      touchPoints.set(touch.id, touch);
+      
+      // Add point to trail
+      const trail = trails.get(touch.id) || [];
+      trail.push({
+        x: touch.x,
+        y: touch.y,
+        pressure: touch.pressure,
+        time: Date.now()
+      });
+      
+      // Limit trail length
+      if (trail.length > MAX_TRAIL_POINTS) {
+        trail.shift();
+      }
+      
+      trails.set(touch.id, trail);
+    });
+  } else if (event.type === "touchend" || event.type === "touchcancel") {
+    print(`Touch ${event.type === "touchend" ? "ended" : "canceled"} for ${event.touches.length} points`);
+    
+    // Remove ended touch points
+    event.touches.forEach(touch => {
+      touchPoints.delete(touch.id);
+      
+      // Keep the trail for a short time before removing
+      setTimeout(() => {
+        trails.delete(touch.id);
+      }, 2000);
+    });
+  }
+});
+
+// Draw function for the window
+window.onDraw = (ctx) => {
+  // Clear the canvas
+  ctx.fillStyle = "#f0f0f0";
+  ctx.fillRect(0, 0, window.width, window.height);
+  
+  // Draw instructions
+  ctx.fillStyle = "#333333";
+  ctx.font = "18px sans-serif";
+  ctx.fillText("Touch the screen to draw", 20, 30);
+  ctx.fillText(`Active touch points: ${touchPoints.size}`, 20, 60);
+  
+  // Draw touch trails
+  trails.forEach((trail, id) => {
+    if (trail.length > 1) {
+      ctx.beginPath();
+      ctx.moveTo(trail[0].x, trail[0].y);
+      
+      for (let i = 1; i < trail.length; i++) {
+        ctx.lineTo(trail[i].x, trail[i].y);
+      }
+      
+      // Use different colors for different touch points
+      const hue = (id * 137) % 360; // Generate a unique hue based on touch ID
+      ctx.strokeStyle = `hsl(${hue}, 80%, 50%)`;
+      ctx.lineWidth = 3;
+      ctx.stroke();
+    }
+  });
+  
+  // Draw active touch points
+  touchPoints.forEach(touch => {
+    const hue = (touch.id * 137) % 360;
+    ctx.fillStyle = `hsl(${hue}, 80%, 50%)`;
+    
+    // Size based on pressure
+    const radius = 10 + (touch.pressure * 20);
+    
+    ctx.beginPath();
+    ctx.arc(touch.x, touch.y, radius, 0, Math.PI * 2);
+    ctx.fill();
+    
+    // Draw touch ID
+    ctx.fillStyle = "#ffffff";
+    ctx.font = "12px sans-serif";
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+    ctx.fillText(touch.id.toString(), touch.x, touch.y);
+  });
+};
+
+// Keep the program running until window is closed
+try {
+  while (window.isOpen()) {
+    window.update();
+    await sleep(16); // ~60 FPS
+  }
+} finally {
+  // Always clean up by unregistering events
+  print("Unregistering touch events...");
+  input.unregisterEvents(registration);
+  window.close();
+  print("Done.");
+}
