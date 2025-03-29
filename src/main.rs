@@ -39,12 +39,28 @@ fn display_help() {
 use std::process::Command;
 
 fn display_docs(topic: Option<&String>, browser_mode: bool) {
-    // Base directory for documentation
-    let docs_dir = Path::new("docs");
+    // Try to find documentation in multiple locations
+    let possible_doc_locations = [
+        Path::new("docs").to_path_buf(),
+        Path::new("../docs").to_path_buf(),
+        // Try to find docs relative to the executable location
+        std::env::current_exe().ok().and_then(|p| p.parent().map(|d| d.join("docs"))).unwrap_or_else(|| Path::new("/usr/local/share/smashlang/docs").to_path_buf()),
+        // Common installation locations
+        Path::new("/usr/local/share/smashlang/docs").to_path_buf(),
+        Path::new("/usr/share/smashlang/docs").to_path_buf(),
+        Path::new("~/.local/share/smashlang/docs").to_path_buf(),
+    ];
+    
+    // Find the first valid docs directory
+    let docs_dir = possible_doc_locations.iter()
+        .find(|&path| path.exists())
+        .cloned()
+        .unwrap_or_else(|| Path::new("docs").to_path_buf());
     
     if !docs_dir.exists() {
         println!("{}: Documentation directory not found", "Error".red());
         println!("Expected documentation at: {}", docs_dir.display());
+        println!("Looked in: {}", possible_doc_locations.iter().map(|p| p.display().to_string()).collect::<Vec<_>>().join(", "));
         process::exit(1);
     }
     

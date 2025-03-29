@@ -146,6 +146,21 @@ install_linux() {
       if [ -f "$temp_dir/target/release/smash" ]; then
         cp "$temp_dir/target/release/smash" "$LINUX_INSTALL_DIR/"
         chmod +x "$LINUX_INSTALL_DIR/smash"
+        
+        # Copy documentation directory
+        mkdir -p "/usr/local/share/smashlang" || mkdir -p "$HOME/.local/share/smashlang"
+        if [ -d "$temp_dir/docs" ]; then
+          if [ -w "/usr/local/share/smashlang" ]; then
+            cp -r "$temp_dir/docs" "/usr/local/share/smashlang/"
+            echo -e "${GREEN}Documentation installed to /usr/local/share/smashlang/docs${NC}"
+          else
+            mkdir -p "$HOME/.local/share/smashlang"
+            cp -r "$temp_dir/docs" "$HOME/.local/share/smashlang/"
+            echo -e "${GREEN}Documentation installed to $HOME/.local/share/smashlang/docs${NC}"
+          fi
+        else
+          echo -e "${YELLOW}Warning: Documentation directory not found in the repository${NC}"
+        fi
         echo -e "${GREEN}Successfully built and installed SmashLang binary.${NC}"
         
         # Check for smashc compiler binary
