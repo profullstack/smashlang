@@ -293,7 +293,19 @@ fn main() {
             return;
         },
         "--version" | "-v" => {
-            println!("SmashLang version {}", VERSION);
+            // Try to read git hash if available
+            let git_hash = std::fs::read_to_string("src/git_hash.txt").ok();
+            
+            if let Some(hash) = git_hash {
+                let hash = hash.trim();
+                if !hash.is_empty() {
+                    println!("SmashLang version {} (git: {})", VERSION, hash);
+                } else {
+                    println!("SmashLang version {}", VERSION);
+                }
+            } else {
+                println!("SmashLang version {}", VERSION);
+            }
             return;
         },
         "--docs" => {

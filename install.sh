@@ -130,6 +130,12 @@ install_linux() {
       # Build from source
       echo -e "${BLUE}Building SmashLang from source...${NC}"
       cd "$temp_dir"
+      
+      # Capture git hash for version info
+      GIT_HASH=$(git rev-parse --short HEAD)
+      echo "$GIT_HASH" > "$temp_dir/src/git_hash.txt"
+      echo -e "${BLUE}Captured git hash: $GIT_HASH${NC}"
+      
       cargo build --release
       
       if [ -f "$temp_dir/target/release/smash" ]; then
