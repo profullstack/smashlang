@@ -40,6 +40,9 @@ use std::process::Command;
 
 fn display_docs(topic: Option<&String>, browser_mode: bool) {
     // Try to find documentation in multiple locations
+    // Get the home directory
+    let home_dir = std::env::var("HOME").unwrap_or_else(|_| String::from("/home"));
+    
     let possible_doc_locations = [
         Path::new("docs").to_path_buf(),
         Path::new("../docs").to_path_buf(),
@@ -48,7 +51,7 @@ fn display_docs(topic: Option<&String>, browser_mode: bool) {
         // Common installation locations
         Path::new("/usr/local/share/smashlang/docs").to_path_buf(),
         Path::new("/usr/share/smashlang/docs").to_path_buf(),
-        Path::new("~/.local/share/smashlang/docs").to_path_buf(),
+        Path::new(&format!("{}/{}" ,home_dir, ".local/share/smashlang/docs")).to_path_buf(),
     ];
     
     // Find the first valid docs directory
