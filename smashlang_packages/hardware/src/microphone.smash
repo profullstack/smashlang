@@ -1,0 +1,299 @@
+// hardware/src/microphone.smash - Microphone interface for SmashLang
+
+import "std";
+
+/**
+ * Microphone module for accessing and controlling audio input devices
+ * @module microphone
+ */
+
+/**
+ * Microphone device information
+ * @typedef {Object} MicrophoneDevice
+ * @property {string} id - Unique identifier for the microphone
+ * @property {string} label - Human-readable label for the microphone
+ * @property {string[]} capabilities - Array of supported capabilities
+ */
+
+/**
+ * Microphone configuration options
+ * @typedef {Object} MicrophoneOptions
+ * @property {number} sampleRate - Sample rate in Hz (e.g., 44100, 48000)
+ * @property {number} channels - Number of audio channels (1 for mono, 2 for stereo)
+ * @property {string} echoCancellation - Whether to enable echo cancellation
+ * @property {string} noiseSuppression - Whether to enable noise suppression
+ * @property {string} autoGainControl - Whether to enable automatic gain control
+ */
+
+/**
+ * Get a list of available microphone devices
+ * @returns {Promise<MicrophoneDevice[]>} Promise resolving to an array of microphone devices
+ */
+export async fn getDevices() {
+  try {
+    const devices = await __native_microphone_get_devices();
+    return devices.map(device => ({
+      id: device.id,
+      label: device.label || `Microphone ${device.index}`,
+      capabilities: device.capabilities || []
+    }));
+  } catch (error) {
+    print(`Error getting microphone devices: ${error}`);
+    return [];
+  }
+}
+
+/**
+ * Microphone stream class for controlling audio input
+ */
+export class MicrophoneStream {
+  /**
+   * Create a new microphone stream
+   * @param {string} [deviceId] - Optional device ID to use a specific microphone
+   * @param {MicrophoneOptions} [options] - Optional configuration options
+   */
+  constructor(deviceId, options = {}) {
+    this.deviceId = deviceId;
+    this.options = {
+      sampleRate: options.sampleRate || 44100,
+      channels: options.channels || 1,
+      echoCancellation: options.echoCancellation !== false,
+      noiseSuppression: options.noiseSuppression !== false,
+      autoGainControl: options.autoGainControl !== false
+    };
+    this.stream = null;
+    this.isActive = false;
+    this.isRecording = false;
+    this.recordingData = null;
+  }
+
+  /**
+   * Start the microphone stream
+   * @returns {Promise<boolean>} Promise resolving to true if successful
+   */
+  async start() {
+    if (this.isActive) {
+      return true;
+    }
+
+    try {
+      this.stream = await __native_microphone_start({
+        deviceId: this.deviceId,
+        ...this.options
+      });
+      this.isActive = true;
+      return true;
+    } catch (error) {
+      print(`Error starting microphone: ${error}`);
+      return false;
+    }
+  }
+
+  /**
+   * Stop the microphone stream
+   */
+  stop() {
+    if (!this.isActive) {
+      return;
+    }
+
+    try {
+      if (this.isRecording) {
+        this.stopRecording();
+      }
+      
+      __native_microphone_stop(this.stream.id);
+      this.isActive = false;
+      this.stream = null;
+    } catch (error) {
+      print(`Error stopping microphone: ${error}`);
+    }
+  }
+
+  /**
+   * Start recording audio from the microphone stream
+   * @param {Object} [options] - Audio recording options
+   * @param {string} [options.format='wav'] - Audio format ('wav', 'mp3', 'ogg')
+   * @param {number} [options.quality=0.9] - Audio quality (0.0 to 1.0)
+   * @returns {Promise<boolean>} Promise resolving to true if successful
+   */
+  async startRecording(options = {}) {
+    if (!this.isActive) {
+      throw new Error("Microphone stream is not active");
+    }
+
+    if (this.isRecording) {
+      return true;
+    }
+
+    const recordOptions = {
+      format: options.format || 'wav',
+      quality: options.quality || 0.9
+    };
+
+    try {
+      await __native_microphone_start_recording(this.stream.id, recordOptions);
+      this.isRecording = true;
+      return true;
+    } catch (error) {
+      throw new Error(`Failed to start recording: ${error}`);
+    }
+  }
+
+  /**
+   * Stop recording audio and optionally save to a file
+   * @param {string} [filePath] - Optional path where the audio should be saved
+   * @returns {Promise<Object>} Promise resolving to recording data or file info
+   */
+  async stopRecording(filePath = null) {
+    if (!this.isActive || !this.isRecording) {
+      throw new Error("No active recording");
+    }
+
+    try {
+      const result = await __native_microphone_stop_recording(this.stream.id, filePath);
+      this.isRecording = false;
+      
+      if (filePath) {
+        return {
+          path: result.path,
+          duration: result.duration,
+          format: result.format,
+          size: result.size
+        };
+      } else {
+        this.recordingData = result.data;
+        return {
+          data: result.data,
+          duration: result.duration,
+          format: result.format,
+          size: result.size
+        };
+      }
+    } catch (error) {
+      throw new Error(`Failed to stop recording: ${error}`);
+    }
+  }
+
+  /**
+   * Save the last recording to a file
+   * @param {string} filePath - Path where the audio should be saved
+   * @param {string} [format] - Optional format override ('wav', 'mp3', 'ogg')
+   * @returns {Promise<string>} Promise resolving to the file path
+   */
+  async saveRecording(filePath, format = null) {
+    if (!this.recordingData) {
+      throw new Error("No recording data available");
+    }
+
+    try {
+      const result = await __native_microphone_save_recording(
+        this.recordingData,
+        filePath,
+        format
+      );
+      return result.path;
+    } catch (error) {
+      throw new Error(`Failed to save recording: ${error}`);
+    }
+  }
+
+  /**
+   * Get the current audio level (volume) from the microphone
+   * @returns {Promise<number>} Promise resolving to the audio level (0.0 to 1.0)
+   */
+  async getAudioLevel() {
+    if (!this.isActive) {
+      throw new Error("Microphone stream is not active");
+    }
+
+    try {
+      return await __native_microphone_get_audio_level(this.stream.id);
+    } catch (error) {
+      throw new Error(`Failed to get audio level: ${error}`);
+    }
+  }
+
+  /**
+   * Apply audio processing to the microphone stream
+   * @param {string} processorName - Name of the processor to apply
+   * @param {Object} [options] - Processor-specific options
+   * @returns {Promise<boolean>} Promise resolving to true if successful
+   */
+  async applyProcessor(processorName, options = {}) {
+    if (!this.isActive) {
+      throw new Error("Microphone stream is not active");
+    }
+
+    try {
+      await __native_microphone_apply_processor(this.stream.id, processorName, options);
+      return true;
+    } catch (error) {
+      throw new Error(`Failed to apply processor: ${error}`);
+    }
+  }
+
+  /**
+   * Remove all audio processors from the microphone stream
+   * @returns {Promise<boolean>} Promise resolving to true if successful
+   */
+  async removeProcessors() {
+    if (!this.isActive) {
+      throw new Error("Microphone stream is not active");
+    }
+
+    try {
+      await __native_microphone_remove_processors(this.stream.id);
+      return true;
+    } catch (error) {
+      throw new Error(`Failed to remove processors: ${error}`);
+    }
+  }
+}
+
+/**
+ * Check if microphone access is available on this device
+ * @returns {Promise<boolean>} Promise resolving to true if microphone is available
+ */
+export async fn isAvailable() {
+  try {
+    return await __native_microphone_is_available();
+  } catch (error) {
+    return false;
+  }
+}
+
+/**
+ * Request permission to access the microphone
+ * @returns {Promise<boolean>} Promise resolving to true if permission granted
+ */
+export async fn requestPermission() {
+  try {
+    return await __native_microphone_request_permission();
+  } catch (error) {
+    print(`Error requesting microphone permission: ${error}`);
+    return false;
+  }
+}
+
+/**
+ * Speech recognition using the microphone
+ * @param {Object} [options] - Recognition options
+ * @param {string} [options.language='en-US'] - Language for recognition
+ * @param {boolean} [options.continuous=false] - Whether to continuously recognize
+ * @param {boolean} [options.interimResults=false] - Whether to return interim results
+ * @returns {Promise<Object>} Promise resolving to recognition result
+ */
+export async fn recognizeSpeech(options = {}) {
+  const recognitionOptions = {
+    language: options.language || 'en-US',
+    continuous: options.continuous || false,
+    interimResults: options.interimResults || false
+  };
+
+  try {
+    return await __native_microphone_recognize_speech(recognitionOptions);
+  } catch (error) {
+    throw new Error(`Speech recognition failed: ${error}`);
+  }
+}

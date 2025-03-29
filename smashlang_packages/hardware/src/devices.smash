@@ -1,0 +1,452 @@
+// hardware/src/devices.smash - General hardware devices interface for SmashLang
+
+import "std";
+
+/**
+ * Devices module for accessing and controlling various hardware devices
+ * @module devices
+ */
+
+/**
+ * Device information
+ * @typedef {Object} Device
+ * @property {string} id - Unique identifier for the device
+ * @property {string} name - Human-readable name for the device
+ * @property {string} type - Type of device ('audio', 'video', 'hid', 'bluetooth', etc.)
+ * @property {boolean} connected - Whether the device is currently connected
+ * @property {Object} capabilities - Device-specific capabilities
+ */
+
+/**
+ * Get a list of all connected hardware devices
+ * @param {string} [type] - Optional filter by device type
+ * @returns {Promise<Device[]>} Promise resolving to an array of devices
+ */
+export async fn getDevices(type = null) {
+  try {
+    const devices = await __native_devices_get_all(type);
+    return devices.map(device => ({
+      id: device.id,
+      name: device.name || `Device ${device.index}`,
+      type: device.type,
+      connected: device.connected,
+      capabilities: device.capabilities || {}
+    }));
+  } catch (error) {
+    print(`Error getting devices: ${error}`);
+    return [];
+  }
+}
+
+/**
+ * Register for device connection/disconnection events
+ * @param {Function} callback - Function to call when devices change
+ * @param {string} [type] - Optional filter by device type
+ * @returns {Promise<boolean>} Promise resolving to true if successful
+ */
+export async fn monitorDevices(callback, type = null) {
+  try {
+    await __native_devices_monitor(callback, type);
+    return true;
+  } catch (error) {
+    print(`Error monitoring devices: ${error}`);
+    return false;
+  }
+}
+
+/**
+ * Stop monitoring device changes
+ * @returns {Promise<boolean>} Promise resolving to true if successful
+ */
+export async fn stopMonitoring() {
+  try {
+    await __native_devices_stop_monitoring();
+    return true;
+  } catch (error) {
+    print(`Error stopping device monitoring: ${error}`);
+    return false;
+  }
+}
+
+/**
+ * Bluetooth device management
+ */
+export const bluetooth = {
+  /**
+   * Check if Bluetooth is available
+   * @returns {Promise<boolean>} Promise resolving to true if Bluetooth is available
+   */
+  isAvailable: async function() {
+    try {
+      return await __native_bluetooth_is_available();
+    } catch (error) {
+      return false;
+    }
+  },
+  
+  /**
+   * Enable Bluetooth
+   * @returns {Promise<boolean>} Promise resolving to true if successful
+   */
+  enable: async function() {
+    try {
+      return await __native_bluetooth_enable();
+    } catch (error) {
+      print(`Error enabling Bluetooth: ${error}`);
+      return false;
+    }
+  },
+  
+  /**
+   * Disable Bluetooth
+   * @returns {Promise<boolean>} Promise resolving to true if successful
+   */
+  disable: async function() {
+    try {
+      return await __native_bluetooth_disable();
+    } catch (error) {
+      print(`Error disabling Bluetooth: ${error}`);
+      return false;
+    }
+  },
+  
+  /**
+   * Scan for Bluetooth devices
+   * @param {Object} [options] - Scan options
+   * @param {number} [options.timeout=10000] - Scan timeout in milliseconds
+   * @param {boolean} [options.lowEnergy=true] - Whether to include BLE devices
+   * @returns {Promise<Device[]>} Promise resolving to an array of Bluetooth devices
+   */
+  scan: async function(options = {}) {
+    const scanOptions = {
+      timeout: options.timeout || 10000,
+      lowEnergy: options.lowEnergy !== false
+    };
+    
+    try {
+      const devices = await __native_bluetooth_scan(scanOptions);
+      return devices.map(device => ({
+        id: device.id,
+        name: device.name || `Bluetooth Device ${device.address}`,
+        type: 'bluetooth',
+        address: device.address,
+        rssi: device.rssi,
+        connected: device.connected,
+        paired: device.paired,
+        services: device.services || []
+      }));
+    } catch (error) {
+      print(`Error scanning for Bluetooth devices: ${error}`);
+      return [];
+    }
+  },
+  
+  /**
+   * Connect to a Bluetooth device
+   * @param {string} deviceId - ID of the device to connect to
+   * @returns {Promise<Object>} Promise resolving to connection information
+   */
+  connect: async function(deviceId) {
+    try {
+      return await __native_bluetooth_connect(deviceId);
+    } catch (error) {
+      throw new Error(`Failed to connect to Bluetooth device: ${error}`);
+    }
+  },
+  
+  /**
+   * Disconnect from a Bluetooth device
+   * @param {string} deviceId - ID of the device to disconnect from
+   * @returns {Promise<boolean>} Promise resolving to true if successful
+   */
+  disconnect: async function(deviceId) {
+    try {
+      return await __native_bluetooth_disconnect(deviceId);
+    } catch (error) {
+      throw new Error(`Failed to disconnect from Bluetooth device: ${error}`);
+    }
+  }
+};
+
+/**
+ * USB device management
+ */
+export const usb = {
+  /**
+   * Check if USB access is available
+   * @returns {Promise<boolean>} Promise resolving to true if USB access is available
+   */
+  isAvailable: async function() {
+    try {
+      return await __native_usb_is_available();
+    } catch (error) {
+      return false;
+    }
+  },
+  
+  /**
+   * Get a list of connected USB devices
+   * @returns {Promise<Device[]>} Promise resolving to an array of USB devices
+   */
+  getDevices: async function() {
+    try {
+      const devices = await __native_usb_get_devices();
+      return devices.map(device => ({
+        id: device.id,
+        name: device.name || `USB Device ${device.serialNumber}`,
+        type: 'usb',
+        vendorId: device.vendorId,
+        productId: device.productId,
+        serialNumber: device.serialNumber,
+        connected: device.connected,
+        interfaces: device.interfaces || []
+      }));
+    } catch (error) {
+      print(`Error getting USB devices: ${error}`);
+      return [];
+    }
+  },
+  
+  /**
+   * Request permission to access a USB device
+   * @param {string} deviceId - ID of the device to request permission for
+   * @returns {Promise<boolean>} Promise resolving to true if permission granted
+   */
+  requestPermission: async function(deviceId) {
+    try {
+      return await __native_usb_request_permission(deviceId);
+    } catch (error) {
+      print(`Error requesting USB permission: ${error}`);
+      return false;
+    }
+  },
+  
+  /**
+   * Open a connection to a USB device
+   * @param {string} deviceId - ID of the device to open
+   * @returns {Promise<Object>} Promise resolving to connection information
+   */
+  open: async function(deviceId) {
+    try {
+      return await __native_usb_open(deviceId);
+    } catch (error) {
+      throw new Error(`Failed to open USB device: ${error}`);
+    }
+  },
+  
+  /**
+   * Close a connection to a USB device
+   * @param {string} deviceId - ID of the device to close
+   * @returns {Promise<boolean>} Promise resolving to true if successful
+   */
+  close: async function(deviceId) {
+    try {
+      return await __native_usb_close(deviceId);
+    } catch (error) {
+      throw new Error(`Failed to close USB device: ${error}`);
+    }
+  },
+  
+  /**
+   * Transfer data to a USB device
+   * @param {string} deviceId - ID of the device to transfer to
+   * @param {Object} options - Transfer options
+   * @returns {Promise<Object>} Promise resolving to transfer result
+   */
+  transfer: async function(deviceId, options) {
+    try {
+      return await __native_usb_transfer(deviceId, options);
+    } catch (error) {
+      throw new Error(`Failed to transfer data to USB device: ${error}`);
+    }
+  }
+};
+
+/**
+ * MIDI device management
+ */
+export const midi = {
+  /**
+   * Check if MIDI access is available
+   * @returns {Promise<boolean>} Promise resolving to true if MIDI access is available
+   */
+  isAvailable: async function() {
+    try {
+      return await __native_midi_is_available();
+    } catch (error) {
+      return false;
+    }
+  },
+  
+  /**
+   * Get a list of MIDI input devices
+   * @returns {Promise<Device[]>} Promise resolving to an array of MIDI input devices
+   */
+  getInputs: async function() {
+    try {
+      const devices = await __native_midi_get_inputs();
+      return devices.map(device => ({
+        id: device.id,
+        name: device.name || `MIDI Input ${device.index}`,
+        type: 'midi-input',
+        manufacturer: device.manufacturer,
+        connected: device.connected
+      }));
+    } catch (error) {
+      print(`Error getting MIDI inputs: ${error}`);
+      return [];
+    }
+  },
+  
+  /**
+   * Get a list of MIDI output devices
+   * @returns {Promise<Device[]>} Promise resolving to an array of MIDI output devices
+   */
+  getOutputs: async function() {
+    try {
+      const devices = await __native_midi_get_outputs();
+      return devices.map(device => ({
+        id: device.id,
+        name: device.name || `MIDI Output ${device.index}`,
+        type: 'midi-output',
+        manufacturer: device.manufacturer,
+        connected: device.connected
+      }));
+    } catch (error) {
+      print(`Error getting MIDI outputs: ${error}`);
+      return [];
+    }
+  },
+  
+  /**
+   * Open a MIDI input device and register for events
+   * @param {string} deviceId - ID of the device to open
+   * @param {Function} callback - Function to call when MIDI messages are received
+   * @returns {Promise<Object>} Promise resolving to connection information
+   */
+  openInput: async function(deviceId, callback) {
+    try {
+      return await __native_midi_open_input(deviceId, callback);
+    } catch (error) {
+      throw new Error(`Failed to open MIDI input device: ${error}`);
+    }
+  },
+  
+  /**
+   * Open a MIDI output device
+   * @param {string} deviceId - ID of the device to open
+   * @returns {Promise<Object>} Promise resolving to connection information
+   */
+  openOutput: async function(deviceId) {
+    try {
+      return await __native_midi_open_output(deviceId);
+    } catch (error) {
+      throw new Error(`Failed to open MIDI output device: ${error}`);
+    }
+  },
+  
+  /**
+   * Close a MIDI device
+   * @param {string} deviceId - ID of the device to close
+   * @param {string} [type='input'] - Type of device ('input' or 'output')
+   * @returns {Promise<boolean>} Promise resolving to true if successful
+   */
+  close: async function(deviceId, type = 'input') {
+    try {
+      return await __native_midi_close(deviceId, type);
+    } catch (error) {
+      throw new Error(`Failed to close MIDI device: ${error}`);
+    }
+  },
+  
+  /**
+   * Send a MIDI message to an output device
+   * @param {string} deviceId - ID of the output device
+   * @param {Array} message - MIDI message data
+   * @returns {Promise<boolean>} Promise resolving to true if successful
+   */
+  send: async function(deviceId, message) {
+    try {
+      return await __native_midi_send(deviceId, message);
+    } catch (error) {
+      throw new Error(`Failed to send MIDI message: ${error}`);
+    }
+  }
+};
+
+/**
+ * Gamepad/controller device management
+ */
+export const gamepad = {
+  /**
+   * Check if gamepad access is available
+   * @returns {Promise<boolean>} Promise resolving to true if gamepad access is available
+   */
+  isAvailable: async function() {
+    try {
+      return await __native_gamepad_is_available();
+    } catch (error) {
+      return false;
+    }
+  },
+  
+  /**
+   * Get a list of connected gamepads
+   * @returns {Promise<Device[]>} Promise resolving to an array of gamepad devices
+   */
+  getDevices: async function() {
+    try {
+      const devices = await __native_gamepad_get_devices();
+      return devices.map(device => ({
+        id: device.id,
+        name: device.name || `Gamepad ${device.index}`,
+        type: 'gamepad',
+        index: device.index,
+        connected: device.connected,
+        buttons: device.buttons || [],
+        axes: device.axes || []
+      }));
+    } catch (error) {
+      print(`Error getting gamepads: ${error}`);
+      return [];
+    }
+  },
+  
+  /**
+   * Register for gamepad events
+   * @param {Function} callback - Function to call when gamepad state changes
+   * @returns {Promise<boolean>} Promise resolving to true if successful
+   */
+  registerEvents: async function(callback) {
+    try {
+      return await __native_gamepad_register_events(callback);
+    } catch (error) {
+      throw new Error(`Failed to register for gamepad events: ${error}`);
+    }
+  },
+  
+  /**
+   * Unregister from gamepad events
+   * @returns {Promise<boolean>} Promise resolving to true if successful
+   */
+  unregisterEvents: async function() {
+    try {
+      return await __native_gamepad_unregister_events();
+    } catch (error) {
+      throw new Error(`Failed to unregister from gamepad events: ${error}`);
+    }
+  },
+  
+  /**
+   * Get the current state of a gamepad
+   * @param {string} deviceId - ID of the gamepad
+   * @returns {Promise<Object>} Promise resolving to gamepad state
+   */
+  getState: async function(deviceId) {
+    try {
+      return await __native_gamepad_get_state(deviceId);
+    } catch (error) {
+      throw new Error(`Failed to get gamepad state: ${error}`);
+    }
+  }
+};

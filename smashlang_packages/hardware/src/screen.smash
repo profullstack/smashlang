@@ -1,0 +1,253 @@
+// hardware/src/screen.smash - Screen recording interface for SmashLang
+
+import "std";
+
+/**
+ * Screen module for screen recording and capture
+ * @module screen
+ */
+
+/**
+ * Screen source information
+ * @typedef {Object} ScreenSource
+ * @property {string} id - Unique identifier for the screen source
+ * @property {string} name - Human-readable name for the screen source
+ * @property {string} type - Type of source ('screen', 'window', 'application')
+ * @property {Object} thumbnail - Thumbnail image data (if available)
+ */
+
+/**
+ * Screen recording configuration options
+ * @typedef {Object} ScreenOptions
+ * @property {number} width - Desired width of the recording
+ * @property {number} height - Desired height of the recording
+ * @property {number} frameRate - Desired frame rate of the recording
+ * @property {boolean} captureMouseCursor - Whether to include the mouse cursor
+ * @property {boolean} captureClicks - Whether to highlight mouse clicks
+ * @property {boolean} captureAudio - Whether to include system audio
+ */
+
+/**
+ * Get a list of available screen sources (displays, windows, applications)
+ * @param {string} [type] - Optional filter by source type ('screen', 'window', 'application')
+ * @returns {Promise<ScreenSource[]>} Promise resolving to an array of screen sources
+ */
+export async fn getSources(type = null) {
+  try {
+    const sources = await __native_screen_get_sources(type);
+    return sources.map(source => ({
+      id: source.id,
+      name: source.name || `Screen ${source.index}`,
+      type: source.type,
+      thumbnail: source.thumbnail
+    }));
+  } catch (error) {
+    print(`Error getting screen sources: ${error}`);
+    return [];
+  }
+}
+
+/**
+ * Screen recorder class for recording screen content
+ */
+export class ScreenRecorder {
+  /**
+   * Create a new screen recorder
+   * @param {string} [sourceId] - Optional source ID to record a specific screen/window
+   * @param {ScreenOptions} [options] - Optional configuration options
+   */
+  constructor(sourceId, options = {}) {
+    this.sourceId = sourceId;
+    this.options = {
+      width: options.width || 1920,
+      height: options.height || 1080,
+      frameRate: options.frameRate || 30,
+      captureMouseCursor: options.captureMouseCursor !== false,
+      captureClicks: options.captureClicks || false,
+      captureAudio: options.captureAudio || false
+    };
+    this.recorder = null;
+    this.isRecording = false;
+  }
+
+  /**
+   * Start screen recording
+   * @param {Object} [options] - Recording options
+   * @param {string} [options.format='mp4'] - Video format ('mp4', 'webm', 'gif')
+   * @param {number} [options.quality=0.9] - Recording quality (0.0 to 1.0)
+   * @returns {Promise<boolean>} Promise resolving to true if successful
+   */
+  async start(options = {}) {
+    if (this.isRecording) {
+      return true;
+    }
+
+    const recordOptions = {
+      format: options.format || 'mp4',
+      quality: options.quality || 0.9
+    };
+
+    try {
+      this.recorder = await __native_screen_start_recording({
+        sourceId: this.sourceId,
+        ...this.options,
+        ...recordOptions
+      });
+      this.isRecording = true;
+      return true;
+    } catch (error) {
+      print(`Error starting screen recording: ${error}`);
+      return false;
+    }
+  }
+
+  /**
+   * Stop screen recording and save to a file
+   * @param {string} filePath - Path where the recording should be saved
+   * @returns {Promise<Object>} Promise resolving to recording information
+   */
+  async stop(filePath) {
+    if (!this.isRecording) {
+      throw new Error("No active recording");
+    }
+
+    try {
+      const result = await __native_screen_stop_recording(this.recorder.id, filePath);
+      this.isRecording = false;
+      this.recorder = null;
+      
+      return {
+        path: result.path,
+        duration: result.duration,
+        format: result.format,
+        size: result.size,
+        width: result.width,
+        height: result.height
+      };
+    } catch (error) {
+      throw new Error(`Failed to stop recording: ${error}`);
+    }
+  }
+
+  /**
+   * Pause the current recording
+   * @returns {Promise<boolean>} Promise resolving to true if successful
+   */
+  async pause() {
+    if (!this.isRecording) {
+      throw new Error("No active recording");
+    }
+
+    try {
+      await __native_screen_pause_recording(this.recorder.id);
+      return true;
+    } catch (error) {
+      throw new Error(`Failed to pause recording: ${error}`);
+    }
+  }
+
+  /**
+   * Resume a paused recording
+   * @returns {Promise<boolean>} Promise resolving to true if successful
+   */
+  async resume() {
+    if (!this.isRecording) {
+      throw new Error("No active recording");
+    }
+
+    try {
+      await __native_screen_resume_recording(this.recorder.id);
+      return true;
+    } catch (error) {
+      throw new Error(`Failed to resume recording: ${error}`);
+    }
+  }
+
+  /**
+   * Add a marker at the current position in the recording
+   * @param {string} label - Label for the marker
+   * @returns {Promise<boolean>} Promise resolving to true if successful
+   */
+  async addMarker(label) {
+    if (!this.isRecording) {
+      throw new Error("No active recording");
+    }
+
+    try {
+      await __native_screen_add_marker(this.recorder.id, label);
+      return true;
+    } catch (error) {
+      throw new Error(`Failed to add marker: ${error}`);
+    }
+  }
+}
+
+/**
+ * Take a screenshot of the screen or a specific window
+ * @param {string} [sourceId] - Optional source ID for a specific screen/window
+ * @param {Object} [options] - Screenshot options
+ * @param {string} [options.format='png'] - Image format ('png', 'jpeg', 'webp')
+ * @param {number} [options.quality=0.9] - Image quality (0.0 to 1.0)
+ * @returns {Promise<Object>} Promise resolving to screenshot data
+ */
+export async fn takeScreenshot(sourceId = null, options = {}) {
+  const screenshotOptions = {
+    format: options.format || 'png',
+    quality: options.quality || 0.9,
+    captureMouseCursor: options.captureMouseCursor !== false
+  };
+
+  try {
+    const screenshot = await __native_screen_take_screenshot(sourceId, screenshotOptions);
+    return {
+      data: screenshot.data,
+      width: screenshot.width,
+      height: screenshot.height,
+      format: screenshot.format
+    };
+  } catch (error) {
+    throw new Error(`Failed to take screenshot: ${error}`);
+  }
+}
+
+/**
+ * Save a screenshot to a file
+ * @param {string} filePath - Path where the screenshot should be saved
+ * @param {string} [sourceId] - Optional source ID for a specific screen/window
+ * @param {Object} [options] - Screenshot options
+ * @returns {Promise<string>} Promise resolving to the file path
+ */
+export async fn saveScreenshot(filePath, sourceId = null, options = {}) {
+  try {
+    const screenshot = await takeScreenshot(sourceId, options);
+    const result = await __native_screen_save_screenshot(screenshot.data, filePath);
+    return result.path;
+  } catch (error) {
+    throw new Error(`Failed to save screenshot: ${error}`);
+  }
+}
+
+/**
+ * Check if screen recording is available on this device
+ * @returns {Promise<boolean>} Promise resolving to true if screen recording is available
+ */
+export async fn isAvailable() {
+  try {
+    return await __native_screen_is_available();
+  } catch (error) {
+    return false;
+  }
+}
+
+/**
+ * Request permission to record the screen
+ * @returns {Promise<boolean>} Promise resolving to true if permission granted
+ */
+export async fn requestPermission() {
+  try {
+    return await __native_screen_request_permission();
+  } catch (error) {
+    print(`Error requesting screen recording permission: ${error}`);
+    return false;
+  }
+}

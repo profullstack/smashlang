@@ -1,0 +1,262 @@
+// hardware/src/camera.smash - Camera interface for SmashLang
+
+import "std";
+
+/**
+ * Camera module for accessing and controlling camera devices
+ * @module camera
+ */
+
+/**
+ * Camera device information
+ * @typedef {Object} CameraDevice
+ * @property {string} id - Unique identifier for the camera
+ * @property {string} label - Human-readable label for the camera
+ * @property {string[]} capabilities - Array of supported capabilities
+ */
+
+/**
+ * Camera configuration options
+ * @typedef {Object} CameraOptions
+ * @property {number} width - Desired width of the video stream
+ * @property {number} height - Desired height of the video stream
+ * @property {number} frameRate - Desired frame rate of the video stream
+ * @property {string} facingMode - Camera facing direction ('user' or 'environment')
+ * @property {boolean} audio - Whether to include audio from the camera's microphone
+ */
+
+/**
+ * Get a list of available camera devices
+ * @returns {Promise<CameraDevice[]>} Promise resolving to an array of camera devices
+ */
+export async fn getDevices() {
+  try {
+    const devices = await __native_camera_get_devices();
+    return devices.map(device => ({
+      id: device.id,
+      label: device.label || `Camera ${device.index}`,
+      capabilities: device.capabilities || []
+    }));
+  } catch (error) {
+    print(`Error getting camera devices: ${error}`);
+    return [];
+  }
+}
+
+/**
+ * Camera stream class for controlling camera input
+ */
+export class CameraStream {
+  /**
+   * Create a new camera stream
+   * @param {string} [deviceId] - Optional device ID to use a specific camera
+   * @param {CameraOptions} [options] - Optional configuration options
+   */
+  constructor(deviceId, options = {}) {
+    this.deviceId = deviceId;
+    this.options = {
+      width: options.width || 1280,
+      height: options.height || 720,
+      frameRate: options.frameRate || 30,
+      facingMode: options.facingMode || 'user',
+      audio: options.audio || false
+    };
+    this.stream = null;
+    this.isActive = false;
+  }
+
+  /**
+   * Start the camera stream
+   * @returns {Promise<boolean>} Promise resolving to true if successful
+   */
+  async start() {
+    if (this.isActive) {
+      return true;
+    }
+
+    try {
+      this.stream = await __native_camera_start({
+        deviceId: this.deviceId,
+        ...this.options
+      });
+      this.isActive = true;
+      return true;
+    } catch (error) {
+      print(`Error starting camera: ${error}`);
+      return false;
+    }
+  }
+
+  /**
+   * Stop the camera stream
+   */
+  stop() {
+    if (!this.isActive) {
+      return;
+    }
+
+    try {
+      __native_camera_stop(this.stream.id);
+      this.isActive = false;
+      this.stream = null;
+    } catch (error) {
+      print(`Error stopping camera: ${error}`);
+    }
+  }
+
+  /**
+   * Take a photo from the current camera stream
+   * @param {Object} [options] - Photo capture options
+   * @param {string} [options.format='jpeg'] - Image format ('jpeg', 'png', 'webp')
+   * @param {number} [options.quality=0.9] - Image quality (0.0 to 1.0)
+   * @returns {Promise<Object>} Promise resolving to photo data
+   */
+  async takePhoto(options = {}) {
+    if (!this.isActive) {
+      throw new Error("Camera stream is not active");
+    }
+
+    const photoOptions = {
+      format: options.format || 'jpeg',
+      quality: options.quality || 0.9
+    };
+
+    try {
+      const photo = await __native_camera_take_photo(this.stream.id, photoOptions);
+      return {
+        data: photo.data,
+        width: photo.width,
+        height: photo.height,
+        format: photo.format,
+        timestamp: photo.timestamp
+      };
+    } catch (error) {
+      throw new Error(`Failed to take photo: ${error}`);
+    }
+  }
+
+  /**
+   * Save a photo to a file
+   * @param {string} filePath - Path where the photo should be saved
+   * @param {Object} [options] - Photo capture options
+   * @returns {Promise<string>} Promise resolving to the file path
+   */
+  async savePhoto(filePath, options = {}) {
+    if (!this.isActive) {
+      throw new Error("Camera stream is not active");
+    }
+
+    try {
+      const photo = await this.takePhoto(options);
+      const saved = await __native_camera_save_photo(photo.data, filePath);
+      return saved.path;
+    } catch (error) {
+      throw new Error(`Failed to save photo: ${error}`);
+    }
+  }
+
+  /**
+   * Start recording video from the camera stream
+   * @param {Object} [options] - Video recording options
+   * @param {string} [options.format='mp4'] - Video format ('mp4', 'webm')
+   * @param {number} [options.quality=0.9] - Video quality (0.0 to 1.0)
+   * @returns {Promise<boolean>} Promise resolving to true if successful
+   */
+  async startRecording(options = {}) {
+    if (!this.isActive) {
+      throw new Error("Camera stream is not active");
+    }
+
+    const recordOptions = {
+      format: options.format || 'mp4',
+      quality: options.quality || 0.9,
+      includeAudio: this.options.audio
+    };
+
+    try {
+      await __native_camera_start_recording(this.stream.id, recordOptions);
+      return true;
+    } catch (error) {
+      throw new Error(`Failed to start recording: ${error}`);
+    }
+  }
+
+  /**
+   * Stop recording video and save to a file
+   * @param {string} filePath - Path where the video should be saved
+   * @returns {Promise<string>} Promise resolving to the file path
+   */
+  async stopRecording(filePath) {
+    if (!this.isActive) {
+      throw new Error("Camera stream is not active");
+    }
+
+    try {
+      const result = await __native_camera_stop_recording(this.stream.id, filePath);
+      return result.path;
+    } catch (error) {
+      throw new Error(`Failed to stop recording: ${error}`);
+    }
+  }
+
+  /**
+   * Apply an effect filter to the camera stream
+   * @param {string} filterName - Name of the filter to apply
+   * @param {Object} [options] - Filter-specific options
+   * @returns {Promise<boolean>} Promise resolving to true if successful
+   */
+  async applyFilter(filterName, options = {}) {
+    if (!this.isActive) {
+      throw new Error("Camera stream is not active");
+    }
+
+    try {
+      await __native_camera_apply_filter(this.stream.id, filterName, options);
+      return true;
+    } catch (error) {
+      throw new Error(`Failed to apply filter: ${error}`);
+    }
+  }
+
+  /**
+   * Remove all filters from the camera stream
+   * @returns {Promise<boolean>} Promise resolving to true if successful
+   */
+  async removeFilters() {
+    if (!this.isActive) {
+      throw new Error("Camera stream is not active");
+    }
+
+    try {
+      await __native_camera_remove_filters(this.stream.id);
+      return true;
+    } catch (error) {
+      throw new Error(`Failed to remove filters: ${error}`);
+    }
+  }
+}
+
+/**
+ * Check if camera access is available on this device
+ * @returns {Promise<boolean>} Promise resolving to true if camera is available
+ */
+export async fn isAvailable() {
+  try {
+    return await __native_camera_is_available();
+  } catch (error) {
+    return false;
+  }
+}
+
+/**
+ * Request permission to access the camera
+ * @returns {Promise<boolean>} Promise resolving to true if permission granted
+ */
+export async fn requestPermission() {
+  try {
+    return await __native_camera_request_permission();
+  } catch (error) {
+    print(`Error requesting camera permission: ${error}`);
+    return false;
+  }
+}

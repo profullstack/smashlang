@@ -1,0 +1,471 @@
+// hardware_example.smash - Example demonstrating SmashLang hardware interfaces
+
+import "std";
+import "hardware";
+
+// Main function to demonstrate hardware interfaces
+async fn main() {
+  print("SmashLang Hardware Interfaces Example");
+  print("=====================================\n");
+  
+  // Check hardware availability
+  await checkAvailability();
+  
+  // Choose a demo based on user input
+  print("\nChoose a demo to run:");
+  print("1. Camera Demo");
+  print("2. Microphone Demo");
+  print("3. Screen Recording Demo");
+  print("4. Device Information Demo");
+  print("5. Run All Demos");
+  print("0. Exit");
+  
+  const choice = await std.readline("Enter your choice (0-5): ");
+  
+  switch (choice.trim()) {
+    case "1":
+      await cameraDemo();
+      break;
+    case "2":
+      await microphoneDemo();
+      break;
+    case "3":
+      await screenDemo();
+      break;
+    case "4":
+      await deviceInfoDemo();
+      break;
+    case "5":
+      await runAllDemos();
+      break;
+    case "0":
+      print("Exiting...");
+      return;
+    default:
+      print("Invalid choice. Exiting...");
+      return;
+  }
+}
+
+// Check availability of hardware interfaces
+async fn checkAvailability() {
+  print("Checking hardware availability...");
+  
+  const cameraAvailable = await hardware.camera.isAvailable();
+  print(`Camera available: ${cameraAvailable}`);
+  
+  const microphoneAvailable = await hardware.microphone.isAvailable();
+  print(`Microphone available: ${microphoneAvailable}`);
+  
+  const screenAvailable = await hardware.screen.isAvailable();
+  print(`Screen recording available: ${screenAvailable}`);
+  
+  const bluetoothAvailable = await hardware.devices.bluetooth.isAvailable();
+  print(`Bluetooth available: ${bluetoothAvailable}`);
+  
+  const usbAvailable = await hardware.devices.usb.isAvailable();
+  print(`USB available: ${usbAvailable}`);
+  
+  const midiAvailable = await hardware.devices.midi.isAvailable();
+  print(`MIDI available: ${midiAvailable}`);
+  
+  const gamepadAvailable = await hardware.devices.gamepad.isAvailable();
+  print(`Gamepad available: ${gamepadAvailable}`);
+}
+
+// Camera demo - capture photos and video
+async fn cameraDemo() {
+  print("\nCamera Demo");
+  print("-----------");
+  
+  // Request camera permission
+  const permission = await hardware.camera.requestPermission();
+  if (!permission) {
+    print("Camera permission denied. Exiting demo.");
+    return;
+  }
+  
+  // List available cameras
+  const cameras = await hardware.camera.getDevices();
+  print(`Found ${cameras.length} camera(s):\n`);
+  
+  cameras.forEach((camera, index) => {
+    print(`${index + 1}. ${camera.label} (${camera.id})`);
+    if (camera.capabilities.length > 0) {
+      print(`   Capabilities: ${camera.capabilities.join(", ")}`);
+    }
+  });
+  
+  if (cameras.length === 0) {
+    print("No cameras found. Exiting demo.");
+    return;
+  }
+  
+  // Select a camera
+  const cameraIndex = 0; // Use the first camera
+  const selectedCamera = cameras[cameraIndex];
+  print(`\nUsing camera: ${selectedCamera.label}`);
+  
+  // Create a camera stream
+  const cameraStream = new hardware.camera.CameraStream(selectedCamera.id, {
+    width: 1280,
+    height: 720,
+    frameRate: 30
+  });
+  
+  // Start the camera
+  print("Starting camera...");
+  const started = await cameraStream.start();
+  if (!started) {
+    print("Failed to start camera. Exiting demo.");
+    return;
+  }
+  
+  print("Camera started successfully!");
+  print("Taking a photo in 3 seconds...");
+  
+  // Wait 3 seconds before taking a photo
+  await new Promise(resolve => setTimeout(resolve, 3000));
+  
+  // Take a photo
+  try {
+    const photoPath = await cameraStream.savePhoto("./camera_photo.jpg", {
+      format: 'jpeg',
+      quality: 0.9
+    });
+    print(`Photo saved to: ${photoPath}`);
+  } catch (error) {
+    print(`Error taking photo: ${error}`);
+  }
+  
+  // Ask if user wants to record video
+  const recordVideo = await std.readline("\nRecord a short video? (y/n): ");
+  
+  if (recordVideo.trim().toLowerCase() === 'y') {
+    print("Recording 5 seconds of video...");
+    
+    try {
+      // Start recording
+      await cameraStream.startRecording({
+        format: 'mp4',
+        quality: 0.8
+      });
+      
+      // Record for 5 seconds
+      await new Promise(resolve => setTimeout(resolve, 5000));
+      
+      // Stop recording
+      const videoPath = await cameraStream.stopRecording("./camera_video.mp4");
+      print(`Video saved to: ${videoPath}`);
+    } catch (error) {
+      print(`Error recording video: ${error}`);
+    }
+  }
+  
+  // Stop the camera
+  print("Stopping camera...");
+  cameraStream.stop();
+  print("Camera demo completed.");
+}
+
+// Microphone demo - record audio
+async fn microphoneDemo() {
+  print("\nMicrophone Demo");
+  print("---------------");
+  
+  // Request microphone permission
+  const permission = await hardware.microphone.requestPermission();
+  if (!permission) {
+    print("Microphone permission denied. Exiting demo.");
+    return;
+  }
+  
+  // List available microphones
+  const microphones = await hardware.microphone.getDevices();
+  print(`Found ${microphones.length} microphone(s):\n`);
+  
+  microphones.forEach((mic, index) => {
+    print(`${index + 1}. ${mic.label} (${mic.id})`);
+    if (mic.capabilities.length > 0) {
+      print(`   Capabilities: ${mic.capabilities.join(", ")}`);
+    }
+  });
+  
+  if (microphones.length === 0) {
+    print("No microphones found. Exiting demo.");
+    return;
+  }
+  
+  // Select a microphone
+  const micIndex = 0; // Use the first microphone
+  const selectedMic = microphones[micIndex];
+  print(`\nUsing microphone: ${selectedMic.label}`);
+  
+  // Create a microphone stream
+  const micStream = new hardware.microphone.MicrophoneStream(selectedMic.id, {
+    sampleRate: 44100,
+    channels: 1,
+    echoCancellation: true,
+    noiseSuppression: true
+  });
+  
+  // Start the microphone
+  print("Starting microphone...");
+  const started = await micStream.start();
+  if (!started) {
+    print("Failed to start microphone. Exiting demo.");
+    return;
+  }
+  
+  print("Microphone started successfully!");
+  
+  // Monitor audio levels
+  let levelInterval = setInterval(async () => {
+    try {
+      const level = await micStream.getAudioLevel();
+      const bars = Math.floor(level * 20);
+      const levelBar = "[".padEnd(bars + 1, "=").padEnd(21, " ") + "]";
+      print(`\rAudio Level: ${levelBar} ${Math.floor(level * 100)}%`, false);
+    } catch (error) {
+      // Ignore errors
+    }
+  }, 100);
+  
+  // Record audio
+  print("\n\nRecording 5 seconds of audio...");
+  
+  try {
+    // Start recording
+    await micStream.startRecording({
+      format: 'wav',
+      quality: 0.9
+    });
+    
+    // Record for 5 seconds
+    await new Promise(resolve => setTimeout(resolve, 5000));
+    
+    // Stop recording
+    const audioPath = await micStream.stopRecording("./microphone_recording.wav");
+    print(`\nAudio saved to: ${audioPath}`);
+  } catch (error) {
+    print(`\nError recording audio: ${error}`);
+  }
+  
+  // Clean up
+  clearInterval(levelInterval);
+  
+  // Ask if user wants to try speech recognition
+  const trySpeech = await std.readline("\nTry speech recognition? (y/n): ");
+  
+  if (trySpeech.trim().toLowerCase() === 'y') {
+    print("Speak for 5 seconds...");
+    
+    try {
+      // Start speech recognition in the background
+      const recognitionPromise = hardware.microphone.recognizeSpeech({
+        language: 'en-US',
+        continuous: false
+      });
+      
+      // Wait for 5 seconds
+      await new Promise(resolve => setTimeout(resolve, 5000));
+      
+      // Get the result
+      const result = await recognitionPromise;
+      print(`\nRecognized text: "${result.transcript}"`);  
+    } catch (error) {
+      print(`\nError with speech recognition: ${error}`);
+    }
+  }
+  
+  // Stop the microphone
+  print("Stopping microphone...");
+  micStream.stop();
+  print("Microphone demo completed.");
+}
+
+// Screen recording demo
+async fn screenDemo() {
+  print("\nScreen Recording Demo");
+  print("---------------------");
+  
+  // Request screen recording permission
+  const permission = await hardware.screen.requestPermission();
+  if (!permission) {
+    print("Screen recording permission denied. Exiting demo.");
+    return;
+  }
+  
+  // List available screen sources
+  const screens = await hardware.screen.getSources('screen');
+  print(`Found ${screens.length} screen(s):\n`);
+  
+  screens.forEach((screen, index) => {
+    print(`${index + 1}. ${screen.name} (${screen.id})`);
+  });
+  
+  if (screens.length === 0) {
+    print("No screens found. Exiting demo.");
+    return;
+  }
+  
+  // Take a screenshot
+  print("\nTaking a screenshot...");
+  try {
+    const screenshotPath = await hardware.screen.saveScreenshot(
+      "./screenshot.png",
+      screens[0].id,
+      { captureMouseCursor: true }
+    );
+    print(`Screenshot saved to: ${screenshotPath}`);
+  } catch (error) {
+    print(`Error taking screenshot: ${error}`);
+  }
+  
+  // Ask if user wants to record the screen
+  const recordScreen = await std.readline("\nRecord screen for 5 seconds? (y/n): ");
+  
+  if (recordScreen.trim().toLowerCase() === 'y') {
+    // Create a screen recorder
+    const screenRecorder = new hardware.screen.ScreenRecorder(screens[0].id, {
+      width: 1280,
+      height: 720,
+      frameRate: 30,
+      captureMouseCursor: true,
+      captureClicks: true,
+      captureAudio: false
+    });
+    
+    print("Starting screen recording...");
+    try {
+      // Start recording
+      await screenRecorder.start({
+        format: 'mp4',
+        quality: 0.8
+      });
+      
+      // Add a marker at the beginning
+      await screenRecorder.addMarker("Recording started");
+      
+      // Record for 5 seconds
+      for (let i = 5; i > 0; i--) {
+        print(`Recording... ${i} seconds remaining`);
+        await new Promise(resolve => setTimeout(resolve, 1000));
+      }
+      
+      // Stop recording
+      const recordingInfo = await screenRecorder.stop("./screen_recording.mp4");
+      print("Screen recording completed!");
+      print(`Recording saved to: ${recordingInfo.path}`);
+      print(`Duration: ${recordingInfo.duration.toFixed(2)} seconds`);
+      print(`Size: ${(recordingInfo.size / 1024 / 1024).toFixed(2)} MB`);
+    } catch (error) {
+      print(`Error recording screen: ${error}`);
+    }
+  }
+  
+  print("Screen demo completed.");
+}
+
+// Device information demo
+async fn deviceInfoDemo() {
+  print("\nDevice Information Demo");
+  print("-----------------------");
+  
+  // Get all connected devices
+  print("Scanning for connected devices...");
+  const devices = await hardware.devices.getDevices();
+  
+  print(`Found ${devices.length} device(s):\n`);
+  devices.forEach((device, index) => {
+    print(`${index + 1}. ${device.name} (${device.type})`);
+    print(`   ID: ${device.id}`);
+    print(`   Connected: ${device.connected}`);
+    print("");
+  });
+  
+  // Check for gamepads
+  print("Checking for gamepads...");
+  const gamepads = await hardware.devices.gamepad.getDevices();
+  
+  if (gamepads.length > 0) {
+    print(`Found ${gamepads.length} gamepad(s):\n`);
+    gamepads.forEach((gamepad, index) => {
+      print(`${index + 1}. ${gamepad.name}`);
+      print(`   Buttons: ${gamepad.buttons.length}`);
+      print(`   Axes: ${gamepad.axes.length}`);
+      print("");
+    });
+    
+    // Monitor gamepad for 5 seconds if available
+    if (gamepads.length > 0) {
+      print("Monitoring first gamepad for 5 seconds...");
+      print("Press buttons or move sticks to see events\n");
+      
+      try {
+        await hardware.devices.gamepad.registerEvents((event) => {
+          if (event.type === 'button') {
+            print(`Button ${event.button}: ${event.pressed ? 'Pressed' : 'Released'} (${event.value.toFixed(2)})`);
+          } else if (event.type === 'axis') {
+            print(`Axis ${event.axis}: ${event.value.toFixed(2)}`);
+          }
+        });
+        
+        // Monitor for 5 seconds
+        await new Promise(resolve => setTimeout(resolve, 5000));
+        
+        // Unregister events
+        await hardware.devices.gamepad.unregisterEvents();
+      } catch (error) {
+        print(`Error monitoring gamepad: ${error}`);
+      }
+    }
+  } else {
+    print("No gamepads found.");
+  }
+  
+  // Check for Bluetooth devices if available
+  const bluetoothAvailable = await hardware.devices.bluetooth.isAvailable();
+  if (bluetoothAvailable) {
+    const scanBluetooth = await std.readline("\nScan for Bluetooth devices? (y/n): ");
+    
+    if (scanBluetooth.trim().toLowerCase() === 'y') {
+      print("Scanning for Bluetooth devices (5 seconds)...");
+      
+      try {
+        const bluetoothDevices = await hardware.devices.bluetooth.scan({
+          timeout: 5000,
+          lowEnergy: true
+        });
+        
+        print(`\nFound ${bluetoothDevices.length} Bluetooth device(s):\n`);
+        bluetoothDevices.forEach((device, index) => {
+          print(`${index + 1}. ${device.name}`);
+          print(`   Address: ${device.address}`);
+          print(`   Signal Strength: ${device.rssi} dBm`);
+          print(`   Paired: ${device.paired}`);
+          print("");
+        });
+      } catch (error) {
+        print(`Error scanning for Bluetooth devices: ${error}`);
+      }
+    }
+  }
+  
+  print("Device information demo completed.");
+}
+
+// Run all demos sequentially
+async fn runAllDemos() {
+  await cameraDemo();
+  await microphoneDemo();
+  await screenDemo();
+  await deviceInfoDemo();
+  
+  print("\nAll demos completed!");
+}
+
+// Run the main function
+main().catch(error => {
+  print(`Error in main: ${error}`);
+});
