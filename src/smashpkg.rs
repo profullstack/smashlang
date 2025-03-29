@@ -2,7 +2,7 @@ use colored::*;
 use std::env;
 use std::path::Path;
 use std::fs;
-use std::io::{self, Write};
+use std::io;
 use chrono::Local;
 
 fn main() {
@@ -184,7 +184,7 @@ fn create_package(args: &[String]) {
     }
     
     let package_name = &args[0];
-    let packages_dir = get_packages_dir();
+    let _packages_dir = get_packages_dir();
     let local_packages_dir = format!("{}/smashlang_packages", env::current_dir().unwrap_or_default().to_string_lossy());
     let package_dir = Path::new(&local_packages_dir).join(package_name);
     
