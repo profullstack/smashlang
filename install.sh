@@ -889,8 +889,26 @@ display_help() {
 generate_package_assets() {
   local script_dir=$(get_script_dir)
   
+  # Try to find assets in multiple locations
+  local assets_dir=""
+  
+  # Check possible asset locations
+  for dir in "$script_dir/assets" "$script_dir/../assets" "$(pwd)/assets"; do
+    if [ -d "$dir" ]; then
+      assets_dir="$dir"
+      break
+    fi
+  done
+  
+  if [ -z "$assets_dir" ]; then
+    echo -e "${YELLOW}Warning: Could not find assets directory${NC}"
+    return
+  fi
+  
+  echo -e "${BLUE}Found assets directory at: $assets_dir${NC}"
+  
   # Use pre-generated logo.txt and favicon.txt files
-  if [ -f "$script_dir/assets/logo.txt" ]; then
+  if [ -f "$assets_dir/logo.txt" ]; then
     echo -e "${BLUE}Using pre-generated logo.txt file...${NC}"
     
     # Create package template directory if it doesn't exist
@@ -898,7 +916,7 @@ generate_package_assets() {
     mkdir -p "$template_dir"
     
     # Copy logo.txt to template directory
-    cp "$script_dir/assets/logo.txt" "$template_dir/logo.txt"
+    cp "$assets_dir/logo.txt" "$template_dir/logo.txt"
     
     echo -e "${GREEN}Package logo.txt file copied successfully.${NC}"
   elif [ -f "$script_dir/scripts/generate_package_logo.sh" ]; then
@@ -916,7 +934,7 @@ generate_package_assets() {
   fi
   
   # Use pre-generated favicon.txt file
-  if [ -f "$script_dir/assets/favicon.txt" ]; then
+  if [ -f "$assets_dir/favicon.txt" ]; then
     echo -e "${BLUE}Using pre-generated favicon.txt file...${NC}"
     
     # Create package template directory if it doesn't exist
@@ -924,7 +942,7 @@ generate_package_assets() {
     mkdir -p "$template_dir"
     
     # Copy favicon.txt to template directory
-    cp "$script_dir/assets/favicon.txt" "$template_dir/favicon.txt"
+    cp "$assets_dir/favicon.txt" "$template_dir/favicon.txt"
     
     echo -e "${GREEN}Package favicon.txt file copied successfully.${NC}"
   elif [ -f "$script_dir/scripts/generate_favicon.sh" ]; then
