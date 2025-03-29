@@ -20,7 +20,7 @@ use {
 };
 
 use crate::error::HardwareError;
-use crate::screen::{ScreenSource, Screenshot, ScreenshotOptions, ScreenRecorder, ScreenRecordingOptions, RecordingResult, SaveResult, RecordingInstance};
+use crate::screen::{ScreenSource, ScreenshotData, RecordingOptions};
 use crate::Result;
 use crate::platform::common::ScreenCapture;
 
@@ -28,7 +28,7 @@ use crate::platform::common::ScreenCapture;
 pub struct AndroidScreenCapture {
     #[cfg(target_os = "android")]
     vm: Option<JavaVM>,
-    recording_instances: Arc<Mutex<HashMap<String, RecordingInstance>>>,
+    recording_instances: Arc<Mutex<HashMap<String, String>>>,
 }
 
 impl AndroidScreenCapture {

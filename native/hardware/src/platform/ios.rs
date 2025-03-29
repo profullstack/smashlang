@@ -20,13 +20,13 @@ use {
 };
 
 use crate::error::HardwareError;
-use crate::screen::{ScreenSource, Screenshot, ScreenshotOptions, ScreenRecorder, ScreenRecordingOptions, RecordingResult, SaveResult, RecordingInstance, RecordingMarker};
+use crate::screen::{ScreenSource, ScreenshotData, RecordingOptions};
 use crate::Result;
 use crate::platform::common::ScreenCapture;
 
 /// iOS implementation of screen capture using ReplayKit
 pub struct IOSScreenCapture {
-    recording_instances: Arc<Mutex<HashMap<String, RecordingInstance>>>,
+    recording_instances: Arc<Mutex<HashMap<String, String>>>,
 }
 
 impl IOSScreenCapture {
@@ -161,7 +161,7 @@ impl ScreenCapture for IOSScreenCapture {
         }
     }
     
-    async fn take_screenshot(&self, source_id: Option<&str>, options: ScreenshotOptions) -> Result<Screenshot> {
+    async fn take_screenshot(&self, source_id: Option<&str>) -> Result<ScreenshotData> {
         #[cfg(target_os = "ios")]
         {
             unsafe {
@@ -220,11 +220,11 @@ impl ScreenCapture for IOSScreenCapture {
                 
                 let (width, height) = self.get_screen_dimensions();
                 
-                Ok(Screenshot {
+                Ok(ScreenshotData {
                     data: base64_data,
                     width,
                     height,
-                    format: options.format.unwrap_or_else(|| "png".to_string()),
+                    format: "png".to_string(),
                 })
             }
         }
@@ -235,7 +235,7 @@ impl ScreenCapture for IOSScreenCapture {
         }
     }
     
-    async fn save_screenshot(&self, screenshot_data: &str, file_path: &str) -> Result<SaveResult> {
+    async fn save_screenshot(&self, source_id: Option<&str>, file_path: &str, format: Option<&str>) -> Result<String> {
         let path = Path::new(file_path);
         
         // Ensure parent directory exists
@@ -243,23 +243,23 @@ impl ScreenCapture for IOSScreenCapture {
             fs::create_dir_all(parent)?;
         }
         
+        // Take a screenshot first
+        let screenshot = self.take_screenshot(source_id).await?;
+        
         // Decode base64 data
-        let bytes = match BASE64.decode(screenshot_data) {
+        let bytes = match BASE64.decode(&screenshot.data) {
             Ok(data) => data,
-            Err(e) => return Err(HardwareError::InvalidData(format!("Failed to decode screenshot data: {}", e))),
+            Err(e) => return Err(HardwareError::DeviceAccessError(format!("Failed to decode screenshot data: {}", e))),
         };
         
         // Write to file
         match fs::write(path, &bytes) {
-            Ok(_) => Ok(SaveResult {
-                path: file_path.to_string(),
-                success: true,
-            }),
-            Err(e) => Err(HardwareError::FileOperationError(format!("Failed to save screenshot: {}", e))),
+            Ok(_) => Ok(file_path.to_string()),
+            Err(e) => Err(HardwareError::FileSystemError(format!("Failed to save screenshot: {}", e))),
         }
     }
     
-    async fn start_recording(&self, options: ScreenRecordingOptions) -> Result<ScreenRecorder> {
+    async fn start_recording(&self, source_id: Option<&str>, options: Option<RecordingOptions>) -> Result<String> {
         #[cfg(target_os = "ios")]
         {
             unsafe {
@@ -331,14 +331,9 @@ impl ScreenCapture for IOSScreenCapture {
                             };
                             
                             // Store in our map
-                            self.recording_instances.lock().unwrap().insert(recorder_id.clone(), instance);
+                            self.recording_instances.lock().unwrap().insert(recorder_id.clone(), recorder_id.clone());
                             
-                            return Ok(ScreenRecorder {
-                                id: recorder_id,
-                                width,
-                                height,
-                                frame_rate,
-                            });
+                            return Ok(recorder_id);
                         }
                     }
                     
@@ -365,7 +360,7 @@ impl ScreenCapture for IOSScreenCapture {
         }
     }
     
-    async fn stop_recording(&self, recorder_id: &str, file_path: &str) -> Result<RecordingResult> {
+    async fn stop_recording(&self, recording_id: &str, file_path: &str) -> Result<String> {
         #[cfg(target_os = "ios")]
         {
             unsafe {
