@@ -123,20 +123,83 @@ install_linux() {
     # Copy binaries from the repository or build them
     echo -e "${BLUE}Installing SmashLang binaries...${NC}"
     if [ -f "$temp_dir/bin/smash" ]; then
+      # Use pre-built binary
       cp "$temp_dir/bin/smash" "$LINUX_INSTALL_DIR/"
       chmod +x "$LINUX_INSTALL_DIR/smash"
-    elif [ -f "$temp_dir/Cargo.toml" ]; then
+    elif [ -f "$temp_dir/Cargo.toml" ] && command -v cargo &> /dev/null; then
+      # Build from source
       echo -e "${BLUE}Building SmashLang from source...${NC}"
       cd "$temp_dir"
-      if command -v cargo &> /dev/null; then
-        cargo build --release
-        if [ -f "$temp_dir/target/release/smash" ]; then
-          cp "$temp_dir/target/release/smash" "$LINUX_INSTALL_DIR/"
-          chmod +x "$LINUX_INSTALL_DIR/smash"
-          echo -e "${GREEN}Successfully built and installed SmashLang binary.${NC}"
-        else
-          echo -e "${YELLOW}Warning: Failed to build smash binary, creating placeholder...${NC}"
-          cat > "$LINUX_INSTALL_DIR/smash" << 'EOF'
+      cargo build --release
+      
+      if [ -f "$temp_dir/target/release/smash" ]; then
+        cp "$temp_dir/target/release/smash" "$LINUX_INSTALL_DIR/"
+        chmod +x "$LINUX_INSTALL_DIR/smash"
+        echo -e "${GREEN}Successfully built and installed SmashLang binary.${NC}"
+      else
+        echo -e "${YELLOW}Warning: Failed to build smash binary, creating placeholder...${NC}"
+        cat > "$LINUX_INSTALL_DIR/smash" << 'EOF'
+#!/bin/bash
+
+# Colors for output
+RED="\033[0;31m"
+GREEN="\033[0;32m"
+YELLOW="\033[0;33m"
+BLUE="\033[0;34m"
+CYAN="\033[0;36m"
+NC="\033[0m" # No Color
+
+# Check for command line arguments
+if [[ "$1" == "--help" || "$1" == "-h" ]]; then
+  echo -e "${BLUE}SmashLang v0.1.0-dev${NC} - A JavaScript-inspired programming language"
+  echo ""
+  echo -e "${YELLOW}Usage:${NC}"
+  echo -e "  smash [options] <file.smash>    Run a SmashLang program"
+  echo -e "  smash                          Start interactive REPL mode"
+  echo ""
+  echo -e "${YELLOW}Options:${NC}"
+  echo -e "  -h, --help                     Show this help message"
+  echo -e "  -v, --version                  Show version information"
+  echo -e "  -c, --compile <file.smash>     Compile a SmashLang program to binary"
+  echo -e "  -o, --output <file>            Specify output file for compilation"
+  echo -e "  --wasm                         Compile to WebAssembly (see docs/wasm_support.md)"
+  echo -e "  --target <platform>            Specify target platform (linux, macos, windows)"
+  echo -e "  --debug                        Enable debug mode"
+  echo ""
+  echo -e "${YELLOW}Examples:${NC}"
+  echo -e "  smash                           Start interactive REPL"
+  echo -e "  smash hello.smash               Run a SmashLang program"
+  echo -e "  smash -c hello.smash -o hello  Compile a program to binary"
+  echo -e "  smash --wasm hello.smash       Compile a program to WebAssembly"
+  echo ""
+  echo -e "${YELLOW}Documentation:${NC}"
+  echo -e "  Visit ${CYAN}https://smashlang.com/docs${NC} for full documentation"
+  exit 0
+elif [[ "$1" == "--version" || "$1" == "-v" ]]; then
+  echo -e "${BLUE}SmashLang v0.1.0-dev${NC}"
+  exit 0
+elif [[ "$1" == "repl" || -z "$1" ]]; then
+  echo -e "${YELLOW}SmashLang REPL v0.1.0-dev${NC}"
+  echo -e "${BLUE}Type .help for available commands or .exit to quit${NC}"
+  echo -e "${YELLOW}> ${NC}This is a placeholder. The actual REPL is not yet implemented."
+  exit 0
+else
+  if [[ -n "$1" && "$1" == *.smash ]]; then
+    echo -e "${YELLOW}SmashLang v0.1.0-dev (placeholder)${NC}"
+    echo -e "Would run file: $1 (not yet implemented)"
+  else
+    echo -e "${YELLOW}SmashLang v0.1.0-dev (placeholder)${NC}"
+    echo -e "Unknown command or file: $1"
+    echo -e "Run ${CYAN}smash --help${NC} for usage information"
+  fi
+fi
+EOF
+        chmod +x "$LINUX_INSTALL_DIR/smash"
+      fi
+    else
+      # Create placeholder if no binary and can't build
+      echo -e "${YELLOW}Warning: smash binary not found, creating placeholder...${NC}"
+      cat > "$LINUX_INSTALL_DIR/smash" << 'EOF'
 #!/bin/bash
 
 # Colors for output
@@ -193,18 +256,20 @@ else
 fi
 EOF
       chmod +x "$LINUX_INSTALL_DIR/smash"
-        fi
-      fi
     fi
     
+    # Install smashpkg binary or create placeholder
     if [ -f "$temp_dir/bin/smashpkg" ]; then
+      # Use pre-built binary
       cp "$temp_dir/bin/smashpkg" "$LINUX_INSTALL_DIR/"
       chmod +x "$LINUX_INSTALL_DIR/smashpkg"
     elif [ -f "$temp_dir/target/release/smashpkg" ]; then
+      # Use binary built from source
       cp "$temp_dir/target/release/smashpkg" "$LINUX_INSTALL_DIR/"
       chmod +x "$LINUX_INSTALL_DIR/smashpkg"
       echo -e "${GREEN}Successfully installed SmashLang package manager binary.${NC}"
     else
+      # Create placeholder
       echo -e "${YELLOW}Warning: smashpkg binary not found, creating placeholder...${NC}"
       cat > "$LINUX_INSTALL_DIR/smashpkg" << 'EOF'
 #!/bin/bash
