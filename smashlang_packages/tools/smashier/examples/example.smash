@@ -1,0 +1,49 @@
+import { format, highlight, lint, formatAndHighlight } from 'tools/smashier';
+
+// Example of poorly formatted code to demonstrate formatting
+const poorlyFormattedCode = `
+function calculateTotal(items,tax){
+  let total=0;for(let i=0;i<items.length;i++){
+    const item=items[i];total+=item.price;
+}
+return total*(1+tax);
+}
+
+// Example usage
+const items=[{name:"Widget",price:9.99},{name:"Gadget",price:14.95}];
+const taxRate=0.07;
+console.log("Total: "+calculateTotal(items,taxRate));
+`;
+
+// Format the code
+console.log('\n--- Formatted Code ---');
+const formattedCode = format(poorlyFormattedCode);
+console.log(formattedCode);
+
+// Highlight the code (this would output HTML in a real environment)
+console.log('\n--- Syntax Highlighting (HTML output) ---');
+const highlightedCode = highlight(formattedCode);
+console.log('HTML output generated with syntax highlighting');
+
+// Lint the code for style issues
+console.log('\n--- Linting Results ---');
+const lintResults = lint(poorlyFormattedCode);
+console.log(JSON.stringify(lintResults, null, 2));
+
+// Format and highlight in one step
+console.log('\n--- Format and Highlight (HTML output) ---');
+const formattedAndHighlighted = formatAndHighlight(poorlyFormattedCode, { theme: 'monokai' });
+console.log('HTML output generated with formatting and monokai theme highlighting');
+
+// Example of using different themes
+console.log('\n--- Available Themes ---');
+console.log('default, light, monokai, github');
+
+// Example of using custom options
+console.log('\n--- Custom Formatting Options ---');
+const customFormatted = format(poorlyFormattedCode, {
+  indentSize: 4,
+  printWidth: 60,
+  singleQuote: false
+});
+console.log(customFormatted);

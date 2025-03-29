@@ -1,0 +1,341 @@
+/**
+ * Tokenizer for SmashLang code
+ * 
+ * This module parses SmashLang code into tokens that can be processed
+ * by the formatter and highlighter.
+ */
+
+/**
+ * Token types for SmashLang syntax
+ */
+export const TokenType = {
+  // Keywords
+  KEYWORD: 'keyword',
+  // Identifiers (variable names, function names, etc.)
+  IDENTIFIER: 'identifier',
+  // Literals (strings, numbers, booleans, etc.)
+  STRING: 'string',
+  NUMBER: 'number',
+  BOOLEAN: 'boolean',
+  NULL: 'null',
+  // Operators
+  OPERATOR: 'operator',
+  // Punctuation
+  PUNCTUATION: 'punctuation',
+  // Comments
+  COMMENT: 'comment',
+  // Whitespace
+  WHITESPACE: 'whitespace',
+  // Other
+  UNKNOWN: 'unknown'
+};
+
+/**
+ * Keywords in SmashLang
+ */
+const KEYWORDS = [
+  'import', 'export', 'from', 'as',
+  'const', 'let', 'var',
+  'function', 'fn', 'return',
+  'if', 'else', 'switch', 'case', 'default',
+  'for', 'while', 'do', 'break', 'continue',
+  'try', 'catch', 'finally', 'throw',
+  'class', 'new', 'this', 'super',
+  'async', 'await',
+  'true', 'false', 'null', 'undefined'
+];
+
+/**
+ * Operators in SmashLang
+ */
+const OPERATORS = [
+  '+', '-', '*', '/', '%', '**',
+  '=', '+=', '-=', '*=', '/=', '%=',
+  '==', '===', '!=', '!==',
+  '>', '<', '>=', '<=',
+  '&&', '||', '!',
+  '&', '|', '^', '~', '<<', '>>',
+  '?', ':', '??', '?.', '=>'
+];
+
+/**
+ * Punctuation in SmashLang
+ */
+const PUNCTUATION = [
+  '{', '}', '(', ')', '[', ']',
+  '.', ',', ';', '
+'
+];
+
+/**
+ * Tokenizer for SmashLang code
+ */
+export const tokenizer = {
+  /**
+   * Tokenize SmashLang code into an array of tokens
+   * @param {string} code - The code to tokenize
+   * @returns {Array} Array of tokens
+   */
+  tokenize(code) {
+    const tokens = [];
+    let position = 0;
+    
+    while (position < code.length) {
+      const char = code[position];
+      
+      // Skip whitespace
+      if (/\s/.test(char)) {
+        const whitespace = this.consumeWhitespace(code, position);
+        tokens.push({
+          type: TokenType.WHITESPACE,
+          value: whitespace.value,
+          position: position
+        });
+        position = whitespace.position;
+        continue;
+      }
+      
+      // Handle comments
+      if (char === '/' && (code[position + 1] === '/' || code[position + 1] === '*')) {
+        const comment = this.consumeComment(code, position);
+        tokens.push({
+          type: TokenType.COMMENT,
+          value: comment.value,
+          position: position
+        });
+        position = comment.position;
+        continue;
+      }
+      
+      // Handle strings
+      if (char === '"' || char === "'" || char === '`') {
+        const string = this.consumeString(code, position);
+        tokens.push({
+          type: TokenType.STRING,
+          value: string.value,
+          position: position
+        });
+        position = string.position;
+        continue;
+      }
+      
+      // Handle numbers
+      if (/[0-9]/.test(char) || (char === '.' && /[0-9]/.test(code[position + 1]))) {
+        const number = this.consumeNumber(code, position);
+        tokens.push({
+          type: TokenType.NUMBER,
+          value: number.value,
+          position: position
+        });
+        position = number.position;
+        continue;
+      }
+      
+      // Handle identifiers and keywords
+      if (/[a-zA-Z_$]/.test(char)) {
+        const identifier = this.consumeIdentifier(code, position);
+        
+        // Check if it's a keyword
+        if (KEYWORDS.includes(identifier.value)) {
+          tokens.push({
+            type: TokenType.KEYWORD,
+            value: identifier.value,
+            position: position
+          });
+        } else if (identifier.value === 'true' || identifier.value === 'false') {
+          tokens.push({
+            type: TokenType.BOOLEAN,
+            value: identifier.value,
+            position: position
+          });
+        } else if (identifier.value === 'null') {
+          tokens.push({
+            type: TokenType.NULL,
+            value: identifier.value,
+            position: position
+          });
+        } else {
+          tokens.push({
+            type: TokenType.IDENTIFIER,
+            value: identifier.value,
+            position: position
+          });
+        }
+        
+        position = identifier.position;
+        continue;
+      }
+      
+      // Handle operators
+      let isOperator = false;
+      for (const op of OPERATORS) {
+        if (code.substring(position, position + op.length) === op) {
+          tokens.push({
+            type: TokenType.OPERATOR,
+            value: op,
+            position: position
+          });
+          position += op.length;
+          isOperator = true;
+          break;
+        }
+      }
+      if (isOperator) continue;
+      
+      // Handle punctuation
+      if (PUNCTUATION.includes(char)) {
+        tokens.push({
+          type: TokenType.PUNCTUATION,
+          value: char,
+          position: position
+        });
+        position++;
+        continue;
+      }
+      
+      // Handle unknown characters
+      tokens.push({
+        type: TokenType.UNKNOWN,
+        value: char,
+        position: position
+      });
+      position++;
+    }
+    
+    return tokens;
+  },
+  
+  /**
+   * Consume whitespace characters
+   * @param {string} code - The code being tokenized
+   * @param {number} position - The current position in the code
+   * @returns {Object} The consumed whitespace and new position
+   */
+  consumeWhitespace(code, position) {
+    let value = '';
+    while (position < code.length && /\s/.test(code[position])) {
+      value += code[position];
+      position++;
+    }
+    return { value, position };
+  },
+  
+  /**
+   * Consume a comment
+   * @param {string} code - The code being tokenized
+   * @param {number} position - The current position in the code
+   * @returns {Object} The consumed comment and new position
+   */
+  consumeComment(code, position) {
+    let value = '';
+    
+    // Single-line comment
+    if (code[position] === '/' && code[position + 1] === '/') {
+      value = '//';
+      position += 2;
+      
+      while (position < code.length && code[position] !== '\n') {
+        value += code[position];
+        position++;
+      }
+    }
+    // Multi-line comment
+    else if (code[position] === '/' && code[position + 1] === '*') {
+      value = '/*';
+      position += 2;
+      
+      while (position < code.length && !(code[position] === '*' && code[position + 1] === '/')) {
+        value += code[position];
+        position++;
+      }
+      
+      if (position < code.length) {
+        value += '*/';
+        position += 2;
+      }
+    }
+    
+    return { value, position };
+  },
+  
+  /**
+   * Consume a string literal
+   * @param {string} code - The code being tokenized
+   * @param {number} position - The current position in the code
+   * @returns {Object} The consumed string and new position
+   */
+  consumeString(code, position) {
+    const quote = code[position];
+    let value = quote;
+    position++;
+    
+    while (position < code.length) {
+      const char = code[position];
+      value += char;
+      position++;
+      
+      if (char === quote && code[position - 2] !== '\\') {
+        break;
+      }
+    }
+    
+    return { value, position };
+  },
+  
+  /**
+   * Consume a number literal
+   * @param {string} code - The code being tokenized
+   * @param {number} position - The current position in the code
+   * @returns {Object} The consumed number and new position
+   */
+  consumeNumber(code, position) {
+    let value = '';
+    let hasDot = false;
+    
+    while (position < code.length) {
+      const char = code[position];
+      
+      if (/[0-9]/.test(char)) {
+        value += char;
+      } else if (char === '.' && !hasDot) {
+        value += char;
+        hasDot = true;
+      } else if (char.toLowerCase() === 'e' && /[0-9]/.test(value[value.length - 1])) {
+        value += char;
+        if (code[position + 1] === '+' || code[position + 1] === '-') {
+          position++;
+          value += code[position];
+        }
+      } else {
+        break;
+      }
+      
+      position++;
+    }
+    
+    return { value, position };
+  },
+  
+  /**
+   * Consume an identifier
+   * @param {string} code - The code being tokenized
+   * @param {number} position - The current position in the code
+   * @returns {Object} The consumed identifier and new position
+   */
+  consumeIdentifier(code, position) {
+    let value = '';
+    
+    while (position < code.length) {
+      const char = code[position];
+      
+      if (/[a-zA-Z0-9_$]/.test(char)) {
+        value += char;
+        position++;
+      } else {
+        break;
+      }
+    }
+    
+    return { value, position };
+  }
+};

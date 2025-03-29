@@ -1,0 +1,48 @@
+/**
+ * Default options for the Smashier formatter
+ * 
+ * This module defines the default formatting options used by Smashier.
+ */
+
+/**
+ * Default formatting options
+ */
+export const defaultOptions = {
+  // Indentation
+  useTabs: false,           // Use spaces instead of tabs
+  tabWidth: 2,              // Number of spaces per tab
+  indentSize: 2,            // Number of spaces for indentation
+  
+  // Line wrapping
+  printWidth: 80,           // Maximum line length
+  
+  // Quotes
+  singleQuote: true,        // Use single quotes instead of double quotes
+  
+  // Semicolons
+  semi: true,               // Add semicolons at the end of statements
+  
+  // Trailing commas
+  trailingComma: 'es5',     // Add trailing commas where valid in ES5
+  
+  // Spacing
+  bracketSpacing: true,     // Print spaces between brackets in object literals
+  arrowParens: 'always',    // Include parentheses around a sole arrow function parameter
+  
+  // JSX
+  jsxSingleQuote: false,    // Use double quotes in JSX
+  jsxBracketSameLine: false, // Put the > of a multi-line JSX element at the end of the last line
+  
+  // Special parser options
+  parser: 'smash',          // The parser to use
+  requirePragma: false,     // Only format files with a special comment at the top
+  insertPragma: false,      // Insert a special comment at the top of files
+  proseWrap: 'preserve',    // Wrap prose as-is
+  
+  // End of line
+  endOfLine: 'lf',          // Line Feed only (\n)
+  
+  // SmashLang specific options
+  moduleImportStyle: 'es6', // Use ES6 style imports
+  functionStyle: 'arrow'    // Prefer arrow functions
+};

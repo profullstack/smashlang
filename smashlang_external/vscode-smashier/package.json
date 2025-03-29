@@ -1,0 +1,96 @@
+{
+  "name": "vscode-smashier",
+  "displayName": "SmashLang Formatter",
+  "description": "Format SmashLang code using smashier",
+  "version": "0.1.0",
+  "publisher": "smashlang",
+  "engines": {
+    "vscode": "^1.60.0"
+  },
+  "categories": [
+    "Formatters",
+    "Programming Languages"
+  ],
+  "activationEvents": [
+    "onLanguage:smashlang"
+  ],
+  "main": "./extension.js",
+  "contributes": {
+    "languages": [
+      {
+        "id": "smashlang",
+        "aliases": ["SmashLang", "smashlang"],
+        "extensions": [".smash"],
+        "configuration": "./language-configuration.json"
+      }
+    ],
+    "grammars": [
+      {
+        "language": "smashlang",
+        "scopeName": "source.smash",
+        "path": "./syntaxes/smashlang.tmLanguage.json"
+      }
+    ],
+    "commands": [
+      {
+        "command": "smashlang.format",
+        "title": "Format SmashLang Document"
+      }
+    ],
+    "configuration": {
+      "title": "SmashLang Formatter",
+      "properties": {
+        "smashier.useTabs": {
+          "type": "boolean",
+          "default": false,
+          "description": "Use tabs instead of spaces"
+        },
+        "smashier.tabWidth": {
+          "type": "integer",
+          "default": 2,
+          "description": "Number of spaces per tab"
+        },
+        "smashier.printWidth": {
+          "type": "integer",
+          "default": 80,
+          "description": "Maximum line length"
+        },
+        "smashier.singleQuote": {
+          "type": "boolean",
+          "default": true,
+          "description": "Use single quotes instead of double quotes"
+        },
+        "smashier.semi": {
+          "type": "boolean",
+          "default": true,
+          "description": "Add semicolons at the end of statements"
+        },
+        "smashier.trailingComma": {
+          "type": "string",
+          "enum": ["none", "es5", "all"],
+          "default": "es5",
+          "description": "Print trailing commas wherever possible"
+        }
+      }
+    }
+  },
+  "scripts": {
+    "vscode:prepublish": "npm run compile",
+    "compile": "tsc -p ./",
+    "watch": "tsc -watch -p ./",
+    "lint": "eslint src --ext ts",
+    "package": "vsce package"
+  },
+  "devDependencies": {
+    "@types/node": "^16.11.7",
+    "@types/vscode": "^1.60.0",
+    "@typescript-eslint/eslint-plugin": "^5.30.0",
+    "@typescript-eslint/parser": "^5.30.0",
+    "eslint": "^8.13.0",
+    "typescript": "^4.7.2",
+    "vsce": "^2.7.0"
+  },
+  "dependencies": {
+    "node-fetch": "^3.2.0"
+  }
+}

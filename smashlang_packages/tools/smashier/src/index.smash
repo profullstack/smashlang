@@ -1,0 +1,73 @@
+/**
+ * Smashier - A code formatter and syntax highlighter for SmashLang
+ * 
+ * This package provides formatting and syntax highlighting functionality
+ * for SmashLang code, similar to Prettier for JavaScript.
+ */
+
+import { tokenizer } from './tokenizer.smash';
+import { formatter } from './formatter.smash';
+import { highlighter } from './highlighter.smash';
+import { defaultOptions } from './options.smash';
+
+/**
+ * Format SmashLang code according to standard style guidelines
+ * @param {string} code - The SmashLang code to format
+ * @param {Object} options - Formatting options (optional)
+ * @returns {string} The formatted code
+ */
+export function format(code, options = {}) {
+  // Merge provided options with defaults
+  const mergedOptions = { ...defaultOptions, ...options };
+  
+  // Tokenize the code
+  const tokens = tokenizer.tokenize(code);
+  
+  // Format the tokens
+  return formatter.format(tokens, mergedOptions);
+}
+
+/**
+ * Highlight SmashLang code with syntax coloring
+ * @param {string} code - The SmashLang code to highlight
+ * @param {string} theme - The color theme to use (default: 'default')
+ * @returns {string} HTML string with syntax highlighting
+ */
+export function highlight(code, theme = 'default') {
+  // Tokenize the code
+  const tokens = tokenizer.tokenize(code);
+  
+  // Apply syntax highlighting
+  return highlighter.highlight(tokens, theme);
+}
+
+/**
+ * Check if SmashLang code follows style guidelines
+ * @param {string} code - The SmashLang code to check
+ * @param {Object} options - Linting options (optional)
+ * @returns {Array} Array of style issues found
+ */
+export function lint(code, options = {}) {
+  // Merge provided options with defaults
+  const mergedOptions = { ...defaultOptions, ...options };
+  
+  // Tokenize the code
+  const tokens = tokenizer.tokenize(code);
+  
+  // Check for style issues
+  return formatter.lint(tokens, mergedOptions);
+}
+
+/**
+ * Format and highlight SmashLang code in one operation
+ * @param {string} code - The SmashLang code to process
+ * @param {Object} options - Processing options (optional)
+ * @returns {string} HTML string with formatted and highlighted code
+ */
+export function formatAndHighlight(code, options = {}) {
+  const formatted = format(code, options);
+  return highlight(formatted, options.theme || 'default');
+}
+
+// Export sub-modules for advanced usage
+export { tokenizer, formatter, highlighter, defaultOptions };

@@ -1,0 +1,25 @@
+import { example } from 'tools/smashier';
+import { test, describe, expect, beforeEach, afterEach } from 'std/testing';
+
+test('example function returns correct greeting', () => {
+  expect(example()).toBe('Hello from SmashLang package!');
+});
+
+describe('Package: tools/smashier', () => {
+  beforeEach(() => {
+    // Setup code for each test
+  });
+
+  afterEach(() => {
+    // Cleanup code for each test
+  });
+
+  test('can be imported correctly', () => {
+    expect(typeof example).toBe('function');
+  });
+
+  test('returns a string', () => {
+    const result = example();
+    expect(typeof result).toBe('string');
+  });
+});

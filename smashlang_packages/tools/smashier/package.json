@@ -1,0 +1,9 @@
+{
+  "name": "tools/smashier",
+  "version": "0.1.0",
+  "description": "A SmashLang package",
+  "main": "src/index.smash",
+  "author": "",
+  "license": "MIT",
+  "dependencies": {}
+}

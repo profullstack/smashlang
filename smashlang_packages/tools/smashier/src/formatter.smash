@@ -1,0 +1,312 @@
+/**
+ * Formatter for SmashLang code
+ * 
+ * This module formats tokenized SmashLang code according to style guidelines.
+ */
+
+import { TokenType } from './tokenizer.smash';
+
+/**
+ * Formatter for SmashLang code
+ */
+export const formatter = {
+  /**
+   * Format tokenized code according to style guidelines
+   * @param {Array} tokens - Array of tokens from the tokenizer
+   * @param {Object} options - Formatting options
+   * @returns {string} The formatted code
+   */
+  format(tokens, options) {
+    // Initialize state
+    let result = '';
+    let indentLevel = 0;
+    let lineLength = 0;
+    let lastToken = null;
+    let lastNonWhitespaceToken = null;
+    
+    // Process each token
+    for (let i = 0; i < tokens.length; i++) {
+      const token = tokens[i];
+      const nextToken = i < tokens.length - 1 ? tokens[i + 1] : null;
+      
+      // Handle indentation for blocks
+      if (token.type === TokenType.PUNCTUATION && token.value === '{') {
+        indentLevel++;
+      } else if (token.type === TokenType.PUNCTUATION && token.value === '}') {
+        indentLevel = Math.max(0, indentLevel - 1);
+      }
+      
+      // Apply formatting based on token type
+      switch (token.type) {
+        case TokenType.WHITESPACE:
+          // Normalize whitespace
+          if (this.shouldPreserveWhitespace(lastNonWhitespaceToken, nextToken)) {
+            result += this.normalizeWhitespace(token.value, options);
+            lineLength += token.value.length;
+          }
+          break;
+          
+        case TokenType.COMMENT:
+          // Preserve comments with proper indentation
+          result += this.formatComment(token.value, indentLevel, options);
+          lineLength = 0; // Reset line length after comment
+          break;
+          
+        case TokenType.PUNCTUATION:
+          // Format punctuation with proper spacing
+          result += this.formatPunctuation(token.value, lastNonWhitespaceToken, nextToken, options);
+          
+          // Add newline after certain punctuation
+          if (token.value === '{' || token.value === '}' || token.value === ';') {
+            result += '\n' + ' '.repeat(indentLevel * options.indentSize);
+            lineLength = indentLevel * options.indentSize;
+          } else {
+            lineLength += token.value.length;
+          }
+          break;
+          
+        case TokenType.OPERATOR:
+          // Format operators with proper spacing
+          const formattedOp = this.formatOperator(token.value, lastNonWhitespaceToken, nextToken, options);
+          result += formattedOp;
+          lineLength += formattedOp.length;
+          break;
+          
+        default:
+          // Add the token value as is
+          result += token.value;
+          lineLength += token.value.length;
+          break;
+      }
+      
+      // Check if we need to wrap the line
+      if (options.printWidth > 0 && lineLength > options.printWidth) {
+        const wrapPoint = this.findLineWrapPoint(result);
+        if (wrapPoint > 0) {
+          result = result.substring(0, wrapPoint) + '\n' + 
+                  ' '.repeat(indentLevel * options.indentSize) + 
+                  result.substring(wrapPoint).trimLeft();
+          lineLength = result.length - result.lastIndexOf('\n') - 1;
+        }
+      }
+      
+      // Update last token
+      lastToken = token;
+      if (token.type !== TokenType.WHITESPACE) {
+        lastNonWhitespaceToken = token;
+      }
+    }
+    
+    return result.trim();
+  },
+  
+  /**
+   * Normalize whitespace according to options
+   * @param {string} whitespace - The whitespace to normalize
+   * @param {Object} options - Formatting options
+   * @returns {string} Normalized whitespace
+   */
+  normalizeWhitespace(whitespace, options) {
+    // Convert tabs to spaces if specified
+    if (options.useTabs === false) {
+      whitespace = whitespace.replace(/\t/g, ' '.repeat(options.tabWidth || 2));
+    }
+    
+    // Normalize newlines
+    whitespace = whitespace.replace(/\r\n|\r/g, '\n');
+    
+    // Collapse multiple spaces to a single space
+    if (!whitespace.includes('\n')) {
+      whitespace = whitespace.replace(/  +/g, ' ');
+    }
+    
+    return whitespace;
+  },
+  
+  /**
+   * Format a comment with proper indentation
+   * @param {string} comment - The comment to format
+   * @param {number} indentLevel - Current indentation level
+   * @param {Object} options - Formatting options
+   * @returns {string} Formatted comment
+   */
+  formatComment(comment, indentLevel, options) {
+    const indentation = ' '.repeat(indentLevel * options.indentSize);
+    
+    // Single-line comment
+    if (comment.startsWith('//')) {
+      return comment + '\n' + indentation;
+    }
+    
+    // Multi-line comment
+    if (comment.startsWith('/*')) {
+      // Format JSDoc-style comments
+      if (comment.includes('*') && !comment.startsWith('/**')) {
+        return comment.split('\n')
+          .map((line, i) => {
+            if (i === 0) return line;
+            return indentation + ' ' + line.trim();
+          })
+          .join('\n') + '\n' + indentation;
+      }
+      
+      return comment + '\n' + indentation;
+    }
+    
+    return comment;
+  },
+  
+  /**
+   * Format punctuation with proper spacing
+   * @param {string} punctuation - The punctuation to format
+   * @param {Object} lastToken - The last non-whitespace token
+   * @param {Object} nextToken - The next token
+   * @param {Object} options - Formatting options
+   * @returns {string} Formatted punctuation
+   */
+  formatPunctuation(punctuation, lastToken, nextToken, options) {
+    // Add space after commas
+    if (punctuation === ',' && nextToken && nextToken.type !== TokenType.WHITESPACE) {
+      return ', ';
+    }
+    
+    // No space before semicolons
+    if (punctuation === ';') {
+      return ';';
+    }
+    
+    return punctuation;
+  },
+  
+  /**
+   * Format an operator with proper spacing
+   * @param {string} operator - The operator to format
+   * @param {Object} lastToken - The last non-whitespace token
+   * @param {Object} nextToken - The next token
+   * @param {Object} options - Formatting options
+   * @returns {string} Formatted operator
+   */
+  formatOperator(operator, lastToken, nextToken, options) {
+    // Binary operators should have spaces on both sides
+    if (['+', '-', '*', '/', '%', '=', '==', '===', '!=', '!==', '>', '<', '>=', '<=', '&&', '||'].includes(operator)) {
+      return ` ${operator} `;
+    }
+    
+    // Arrow function
+    if (operator === '=>') {
+      return ` ${operator} `;
+    }
+    
+    // Unary operators should not have space between operator and operand
+    if (['+', '-', '!', '++', '--'].includes(operator)) {
+      // Check if it's being used as a unary operator
+      if (!lastToken || lastToken.type === TokenType.PUNCTUATION || lastToken.type === TokenType.OPERATOR) {
+        return operator;
+      }
+    }
+    
+    return operator;
+  },
+  
+  /**
+   * Find a suitable point to wrap a line
+   * @param {string} code - The code to analyze
+   * @returns {number} The position where the line can be wrapped
+   */
+  findLineWrapPoint(code) {
+    // Find the last occurrence of certain characters that are good wrap points
+    const lastLine = code.split('\n').pop();
+    
+    // Try to wrap after operators
+    for (const op of [',', '{', '}', '(', ')', '[', ']', ';']) {
+      const pos = lastLine.lastIndexOf(op);
+      if (pos > 0) {
+        return code.length - lastLine.length + pos + 1;
+      }
+    }
+    
+    // If no good wrap point found, don't wrap
+    return -1;
+  },
+  
+  /**
+   * Determine if whitespace should be preserved between tokens
+   * @param {Object} lastToken - The last non-whitespace token
+   * @param {Object} nextToken - The next token
+   * @returns {boolean} Whether whitespace should be preserved
+   */
+  shouldPreserveWhitespace(lastToken, nextToken) {
+    // Always preserve whitespace between tokens that would run together
+    if (lastToken && nextToken) {
+      // Preserve whitespace between identifiers and keywords
+      if ((lastToken.type === TokenType.IDENTIFIER && nextToken.type === TokenType.IDENTIFIER) ||
+          (lastToken.type === TokenType.IDENTIFIER && nextToken.type === TokenType.KEYWORD) ||
+          (lastToken.type === TokenType.KEYWORD && nextToken.type === TokenType.IDENTIFIER) ||
+          (lastToken.type === TokenType.KEYWORD && nextToken.type === TokenType.KEYWORD)) {
+        return true;
+      }
+    }
+    
+    return false;
+  },
+  
+  /**
+   * Check code for style issues
+   * @param {Array} tokens - Array of tokens from the tokenizer
+   * @param {Object} options - Linting options
+   * @returns {Array} Array of style issues found
+   */
+  lint(tokens, options) {
+    const issues = [];
+    let indentLevel = 0;
+    
+    for (let i = 0; i < tokens.length; i++) {
+      const token = tokens[i];
+      const prevToken = i > 0 ? tokens[i - 1] : null;
+      const nextToken = i < tokens.length - 1 ? tokens[i + 1] : null;
+      
+      // Check indentation
+      if (token.type === TokenType.PUNCTUATION && token.value === '{') {
+        indentLevel++;
+      } else if (token.type === TokenType.PUNCTUATION && token.value === '}') {
+        indentLevel = Math.max(0, indentLevel - 1);
+      }
+      
+      // Check for missing semicolons
+      if (options.semi && token.type === TokenType.IDENTIFIER && 
+          nextToken && nextToken.type === TokenType.PUNCTUATION && nextToken.value === '\n') {
+        issues.push({
+          message: 'Missing semicolon',
+          position: token.position + token.value.length
+        });
+      }
+      
+      // Check for consistent quotes
+      if (token.type === TokenType.STRING) {
+        const quoteChar = token.value[0];
+        if (options.singleQuote && quoteChar === '"' && !token.value.includes("'")) {
+          issues.push({
+            message: 'Use single quotes instead of double quotes',
+            position: token.position
+          });
+        } else if (!options.singleQuote && quoteChar === "'" && !token.value.includes('"')) {
+          issues.push({
+            message: 'Use double quotes instead of single quotes',
+            position: token.position
+          });
+        }
+      }
+      
+      // Check for trailing spaces
+      if (token.type === TokenType.WHITESPACE && token.value.endsWith(' ') && 
+          nextToken && nextToken.type === TokenType.PUNCTUATION && nextToken.value === '\n') {
+        issues.push({
+          message: 'Trailing spaces',
+          position: token.position + token.value.length - 1
+        });
+      }
+    }
+    
+    return issues;
+  }
+};

@@ -1,0 +1,145 @@
+/**
+ * Highlighter for SmashLang code
+ * 
+ * This module provides syntax highlighting for SmashLang code
+ * with support for multiple color themes.
+ */
+
+import { TokenType } from './tokenizer.smash';
+
+/**
+ * Color themes for syntax highlighting
+ */
+const THEMES = {
+  // Default theme (similar to VS Code dark theme)
+  default: {
+    [TokenType.KEYWORD]: '#569CD6',     // Blue
+    [TokenType.IDENTIFIER]: '#9CDCFE',  // Light blue
+    [TokenType.STRING]: '#CE9178',      // Orange
+    [TokenType.NUMBER]: '#B5CEA8',      // Light green
+    [TokenType.BOOLEAN]: '#569CD6',     // Blue
+    [TokenType.NULL]: '#569CD6',        // Blue
+    [TokenType.OPERATOR]: '#D4D4D4',    // Light gray
+    [TokenType.PUNCTUATION]: '#D4D4D4', // Light gray
+    [TokenType.COMMENT]: '#6A9955',     // Green
+    [TokenType.UNKNOWN]: '#D4D4D4',     // Light gray
+    background: '#1E1E1E',              // Dark gray
+    text: '#D4D4D4'                     // Light gray
+  },
+  
+  // Light theme
+  light: {
+    [TokenType.KEYWORD]: '#0000FF',     // Blue
+    [TokenType.IDENTIFIER]: '#001080',   // Dark blue
+    [TokenType.STRING]: '#A31515',       // Red
+    [TokenType.NUMBER]: '#098658',       // Green
+    [TokenType.BOOLEAN]: '#0000FF',      // Blue
+    [TokenType.NULL]: '#0000FF',         // Blue
+    [TokenType.OPERATOR]: '#000000',     // Black
+    [TokenType.PUNCTUATION]: '#000000',  // Black
+    [TokenType.COMMENT]: '#008000',      // Green
+    [TokenType.UNKNOWN]: '#000000',      // Black
+    background: '#FFFFFF',               // White
+    text: '#000000'                      // Black
+  },
+  
+  // Monokai theme
+  monokai: {
+    [TokenType.KEYWORD]: '#F92672',     // Pink
+    [TokenType.IDENTIFIER]: '#F8F8F2',   // White
+    [TokenType.STRING]: '#E6DB74',       // Yellow
+    [TokenType.NUMBER]: '#AE81FF',       // Purple
+    [TokenType.BOOLEAN]: '#AE81FF',      // Purple
+    [TokenType.NULL]: '#AE81FF',         // Purple
+    [TokenType.OPERATOR]: '#F92672',     // Pink
+    [TokenType.PUNCTUATION]: '#F8F8F2',  // White
+    [TokenType.COMMENT]: '#75715E',      // Gray
+    [TokenType.UNKNOWN]: '#F8F8F2',      // White
+    background: '#272822',               // Dark olive
+    text: '#F8F8F2'                      // White
+  },
+  
+  // GitHub theme
+  github: {
+    [TokenType.KEYWORD]: '#D73A49',     // Red
+    [TokenType.IDENTIFIER]: '#24292E',   // Black
+    [TokenType.STRING]: '#032F62',       // Blue
+    [TokenType.NUMBER]: '#005CC5',       // Blue
+    [TokenType.BOOLEAN]: '#005CC5',      // Blue
+    [TokenType.NULL]: '#005CC5',         // Blue
+    [TokenType.OPERATOR]: '#D73A49',     // Red
+    [TokenType.PUNCTUATION]: '#24292E',  // Black
+    [TokenType.COMMENT]: '#6A737D',      // Gray
+    [TokenType.UNKNOWN]: '#24292E',      // Black
+    background: '#FFFFFF',               // White
+    text: '#24292E'                      // Black
+  }
+};
+
+/**
+ * Highlighter for SmashLang code
+ */
+export const highlighter = {
+  /**
+   * Highlight tokenized code with syntax coloring
+   * @param {Array} tokens - Array of tokens from the tokenizer
+   * @param {string} themeName - The name of the color theme to use
+   * @returns {string} HTML string with syntax highlighting
+   */
+  highlight(tokens, themeName = 'default') {
+    // Get the theme colors
+    const theme = THEMES[themeName] || THEMES.default;
+    
+    // Generate HTML with syntax highlighting
+    let html = `<pre style="background-color: ${theme.background}; color: ${theme.text}; padding: 1em; border-radius: 5px; overflow: auto;">`;
+    
+    for (const token of tokens) {
+      const color = theme[token.type] || theme.text;
+      
+      // Escape HTML special characters
+      const escapedValue = this.escapeHtml(token.value);
+      
+      // Add the token with appropriate styling
+      if (token.type === TokenType.WHITESPACE) {
+        // Preserve whitespace
+        html += escapedValue.replace(/ /g, '&nbsp;').replace(/\n/g, '<br>');
+      } else {
+        html += `<span style="color: ${color};">${escapedValue}</span>`;
+      }
+    }
+    
+    html += '</pre>';
+    return html;
+  },
+  
+  /**
+   * Escape HTML special characters
+   * @param {string} text - The text to escape
+   * @returns {string} Escaped text
+   */
+  escapeHtml(text) {
+    return text
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#039;');
+  },
+  
+  /**
+   * Get available theme names
+   * @returns {Array} Array of available theme names
+   */
+  getAvailableThemes() {
+    return Object.keys(THEMES);
+  },
+  
+  /**
+   * Add a custom theme
+   * @param {string} name - The name of the theme
+   * @param {Object} colors - The color definitions for the theme
+   */
+  addTheme(name, colors) {
+    THEMES[name] = { ...THEMES.default, ...colors };
+  }
+};
