@@ -50,9 +50,48 @@ run_tests() {
     echo -e "${BLUE}Running main crate tests...${NC}"
     echo "Main Crate Tests" >> "$log_file"
     echo "---------------" >> "$log_file"
-    # Run tests in the tests directory - use the full path to ensure we're in the right directory
-    (cd "$repo_dir" && cargo test --test compiler_tests --test lexer_parser_tests --test codegen_tests) > "$log_file.tmp" 2>&1 || true
-    local main_test_result=$?
+    
+    # First ensure the tests directory exists
+    if [ ! -d "$repo_dir/tests" ]; then
+      echo -e "${YELLOW}Warning: tests directory not found at $repo_dir/tests${NC}"
+      echo "Warning: tests directory not found at $repo_dir/tests" >> "$log_file"
+      local main_test_result=1
+    else
+      # Run each test file separately to better handle errors
+      echo -e "${BLUE}Running compiler_tests...${NC}"
+      (cd "$repo_dir" && cargo test --test compiler_tests --no-fail-fast) > "$log_file.tmp" 2>&1 || true
+      local compiler_test_result=$?
+      if [ -f "$log_file.tmp" ]; then
+        cat "$log_file.tmp"
+        cat "$log_file.tmp" >> "$log_file"
+        rm "$log_file.tmp"
+      fi
+      
+      echo -e "${BLUE}Running lexer_parser_tests...${NC}"
+      (cd "$repo_dir" && cargo test --test lexer_parser_tests --no-fail-fast) > "$log_file.tmp" 2>&1 || true
+      local lexer_parser_test_result=$?
+      if [ -f "$log_file.tmp" ]; then
+        cat "$log_file.tmp"
+        cat "$log_file.tmp" >> "$log_file"
+        rm "$log_file.tmp"
+      fi
+      
+      echo -e "${BLUE}Running codegen_tests...${NC}"
+      (cd "$repo_dir" && cargo test --test codegen_tests --no-fail-fast) > "$log_file.tmp" 2>&1 || true
+      local codegen_test_result=$?
+      if [ -f "$log_file.tmp" ]; then
+        cat "$log_file.tmp"
+        cat "$log_file.tmp" >> "$log_file"
+        rm "$log_file.tmp"
+      fi
+      
+      # Determine overall test result
+      if [ $compiler_test_result -eq 0 ] && [ $lexer_parser_test_result -eq 0 ] && [ $codegen_test_result -eq 0 ]; then
+        local main_test_result=0
+      else
+        local main_test_result=1
+      fi
+    fi
     if [ -f "$log_file.tmp" ]; then
       # Display output to console
       cat "$log_file.tmp"
@@ -74,7 +113,7 @@ run_tests() {
     echo "All Packages Tests" >> "$log_file"
     echo "-----------------" >> "$log_file"
     # Run tests in src directory - use the full path to ensure we're in the right directory
-    (cd "$repo_dir" && cargo test --lib --bins) > "$log_file.tmp" 2>&1 || true
+    (cd "$repo_dir" && cargo test --lib --bins --no-fail-fast) > "$log_file.tmp" 2>&1 || true
     local all_test_result=$?
     if [ -f "$log_file.tmp" ]; then
       # Display output to console
@@ -97,7 +136,7 @@ run_tests() {
     echo "All Features Tests" >> "$log_file"
     echo "-----------------" >> "$log_file"
     # Run all tests with all features enabled - use the full path to ensure we're in the right directory
-    (cd "$repo_dir" && cargo test --all-features --tests --bins --lib) > "$log_file.tmp" 2>&1 || true
+    (cd "$repo_dir" && cargo test --all-features --tests --bins --lib --no-fail-fast) > "$log_file.tmp" 2>&1 || true
     local features_test_result=$?
     if [ -f "$log_file.tmp" ]; then
       # Display output to console
@@ -124,7 +163,7 @@ run_tests() {
     if [ -d "$repo_dir/smashlang_packages" ]; then
       echo "Testing SmashLang packages..." >> "$log_file"
       # Find all .test.smash files in the smashlang_packages directory
-      local test_files=$(find "$repo_dir/smashlang_packages" -name "*.test.smash" -type f)
+      local test_files=$(find "$repo_dir/smashlang_packages" -name "*.test.smash" -type f 2>/dev/null || echo "")
       local package_test_result=0
       
       if [ -n "$test_files" ]; then
@@ -135,7 +174,20 @@ run_tests() {
         # Run each test file using the smashtest binary
         for test_file in $test_files; do
           echo "Running test: $test_file" >> "$log_file"
-          (cd "$repo_dir" && ./target/release/smashtest "$test_file") > "$log_file.tmp" 2>&1 || package_test_result=1
+          # First check if the smashtest binary exists
+          if [ -f "$repo_dir/target/release/smashtest" ]; then
+            (cd "$repo_dir" && ./target/release/smashtest "$test_file") > "$log_file.tmp" 2>&1 || package_test_result=1
+          else
+            echo "Warning: smashtest binary not found at $repo_dir/target/release/smashtest" >> "$log_file"
+            echo "Attempting to build smashtest..." >> "$log_file"
+            (cd "$repo_dir" && cargo build --release --bin smashtest) >> "$log_file" 2>&1
+            if [ -f "$repo_dir/target/release/smashtest" ]; then
+              (cd "$repo_dir" && ./target/release/smashtest "$test_file") > "$log_file.tmp" 2>&1 || package_test_result=1
+            else
+              echo "Error: Failed to build smashtest binary" >> "$log_file"
+              package_test_result=1
+            fi
+          fi
           
           if [ -f "$log_file.tmp" ]; then
             # Display output to console
@@ -163,7 +215,7 @@ run_tests() {
     if [ -d "$repo_dir/docs" ]; then
       echo "Testing documentation examples..." >> "$log_file"
       # Find all .smash files in the docs directory
-      local doc_files=$(find "$repo_dir/docs" -name "*.smash" -type f)
+      local doc_files=$(find "$repo_dir/docs" -name "*.smash" -type f 2>/dev/null || echo "")
       local doc_test_result=0
       
       if [ -n "$doc_files" ]; then
@@ -175,7 +227,22 @@ run_tests() {
         for doc_file in $doc_files; do
           echo "Compiling example: $doc_file" >> "$log_file"
           local output_file="$(dirname "$doc_file")/$(basename "$doc_file" .smash)_compiled"
-          (cd "$repo_dir" && ./target/release/smashc "$doc_file" -o "$output_file") > "$log_file.tmp" 2>&1 || doc_test_result=1
+          
+          # Check if the smashc binary exists
+          if [ -f "$repo_dir/target/release/smashc" ]; then
+            # Run the compiler on the example file
+            (cd "$repo_dir" && ./target/release/smashc "$doc_file" -o "$output_file") > "$log_file.tmp" 2>&1 || doc_test_result=1
+          else
+            echo "Warning: smashc binary not found at $repo_dir/target/release/smashc" >> "$log_file"
+            echo "Attempting to build smashc..." >> "$log_file"
+            (cd "$repo_dir" && cargo build --release --bin smashc) >> "$log_file" 2>&1
+            if [ -f "$repo_dir/target/release/smashc" ]; then
+              (cd "$repo_dir" && ./target/release/smashc "$doc_file" -o "$output_file") > "$log_file.tmp" 2>&1 || doc_test_result=1
+            else
+              echo "Error: Failed to build smashc binary" >> "$log_file"
+              doc_test_result=1
+            fi
+          fi
           
           if [ -f "$log_file.tmp" ]; then
             # Display output to console
@@ -205,6 +272,24 @@ run_tests() {
       echo "TEST SUMMARY: All tests passed successfully!" >> "$log_file"
     else
       echo -e "${YELLOW}Warning: Some tests failed. Continuing with installation...${NC}"
+      
+      # Provide more detailed information about which tests failed
+      if [ $main_test_result -ne 0 ]; then
+        echo -e "${YELLOW}  - Main crate tests failed${NC}"
+      fi
+      if [ $all_test_result -ne 0 ]; then
+        echo -e "${YELLOW}  - Package tests failed${NC}"
+      fi
+      if [ $features_test_result -ne 0 ]; then
+        echo -e "${YELLOW}  - Feature tests failed${NC}"
+      fi
+      if [ $package_test_result -ne 0 ]; then
+        echo -e "${YELLOW}  - SmashLang package tests failed${NC}"
+      fi
+      if [ $doc_test_result -ne 0 ]; then
+        echo -e "${YELLOW}  - Documentation tests failed${NC}"
+      fi
+      
       echo "TEST SUMMARY: Some tests failed. See details above." >> "$log_file"
     fi
     
