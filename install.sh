@@ -331,8 +331,12 @@ run_tests() {
         for test_file in $rust_test_files; do
           echo -e "${BLUE}Running Rust test: $test_file${NC}"
           echo "Running Rust test: $test_file" >> "$log_file"
-          # Run the test using cargo test
-          (cd "$repo_dir" && cargo test --test "$(basename "$test_file" .test.rs)") > "$log_file.tmp" 2>&1 || package_test_result=1
+          
+          # Extract the test file name without extension
+          test_name=$(basename "$test_file" .test.rs)
+          
+          # Run the test using cargo test with specific filters to avoid compiling everything
+          (cd "$repo_dir" && RUSTFLAGS="--cfg test_only" cargo test --test "$test_name" --no-default-features) > "$log_file.tmp" 2>&1 || package_test_result=1
           
           if [ -f "$log_file.tmp" ]; then
             # Display output to console
@@ -358,7 +362,8 @@ run_tests() {
           echo -e "${BLUE}Testing Rust package: $pkg_name${NC}"
           echo "Testing Rust package: $pkg_name" >> "$log_file"
           
-          (cd "$pkg_dir" && cargo test --no-fail-fast) > "$log_file.tmp" 2>&1 || true
+          # Run only the tests in the package directory with specific filters
+          (cd "$pkg_dir" && RUSTFLAGS="--cfg test_only" cargo test --no-fail-fast --no-default-features --tests) > "$log_file.tmp" 2>&1 || true
           local pkg_test_result=$?
           if [ $pkg_test_result -ne 0 ]; then
             package_test_result=1
