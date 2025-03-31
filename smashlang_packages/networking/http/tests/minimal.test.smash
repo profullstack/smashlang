@@ -1,0 +1,16 @@
+// networking/http/tests/minimal.test.smash
+// Minimal test file for http package
+
+// Basic test function
+fn test_http() {
+  return 0;
+}
+
+// Run the test
+fn main() {
+  test_http();
+  return 0;
+}
+
+// Call main
+main();

@@ -1,0 +1,16 @@
+// community/game_engine/tests/minimal.test.smash
+// Minimal test file for game_engine package
+
+// Basic test function
+fn test_game_engine() {
+  return 0;
+}
+
+// Run the test
+fn main() {
+  test_game_engine();
+  return 0;
+}
+
+// Call main
+main();

@@ -1,0 +1,16 @@
+// hardware/devices/tests/minimal.test.smash
+// Minimal test file for devices package
+
+// Basic test function
+fn test_devices() {
+  return 0;
+}
+
+// Run the test
+fn main() {
+  test_devices();
+  return 0;
+}
+
+// Call main
+main();

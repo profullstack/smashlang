@@ -1,0 +1,16 @@
+// hardware/screen/tests/minimal.test.smash
+// Minimal test file for screen package
+
+// Basic test function
+fn test_screen() {
+  return 0;
+}
+
+// Run the test
+fn main() {
+  test_screen();
+  return 0;
+}
+
+// Call main
+main();

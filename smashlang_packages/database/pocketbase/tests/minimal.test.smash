@@ -1,0 +1,16 @@
+// database/pocketbase/tests/minimal.test.smash
+// Minimal test file for pocketbase package
+
+// Basic test function
+fn test_pocketbase() {
+  return 0;
+}
+
+// Run the test
+fn main() {
+  test_pocketbase();
+  return 0;
+}
+
+// Call main
+main();

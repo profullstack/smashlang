@@ -1,0 +1,16 @@
+// tools/smashlice/tests/minimal.test.smash
+// Minimal test file for smashlice package
+
+// Basic test function
+fn test_smashlice() {
+  return 0;
+}
+
+// Run the test
+fn main() {
+  test_smashlice();
+  return 0;
+}
+
+// Call main
+main();

@@ -1,0 +1,16 @@
+// community/ml/tests/minimal.test.smash
+// Minimal test file for ml package
+
+// Basic test function
+fn test_ml() {
+  return 0;
+}
+
+// Run the test
+fn main() {
+  test_ml();
+  return 0;
+}
+
+// Call main
+main();

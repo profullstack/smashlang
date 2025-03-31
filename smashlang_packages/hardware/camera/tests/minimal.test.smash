@@ -1,0 +1,16 @@
+// hardware/camera/tests/minimal.test.smash
+// Minimal test file for camera package
+
+// Basic test function
+fn test_camera() {
+  return 0;
+}
+
+// Run the test
+fn main() {
+  test_camera();
+  return 0;
+}
+
+// Call main
+main();

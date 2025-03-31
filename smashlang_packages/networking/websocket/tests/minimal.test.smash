@@ -1,0 +1,16 @@
+// networking/websocket/tests/minimal.test.smash
+// Minimal test file for websocket package
+
+// Basic test function
+fn test_websocket() {
+  return 0;
+}
+
+// Run the test
+fn main() {
+  test_websocket();
+  return 0;
+}
+
+// Call main
+main();

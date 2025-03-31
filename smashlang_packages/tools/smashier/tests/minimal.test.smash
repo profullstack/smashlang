@@ -1,0 +1,16 @@
+// tools/smashier/tests/minimal.test.smash
+// Minimal test file for smashier package
+
+// Basic test function
+fn test_smashier() {
+  return 0;
+}
+
+// Run the test
+fn main() {
+  test_smashier();
+  return 0;
+}
+
+// Call main
+main();

@@ -1,0 +1,16 @@
+// hardware/microphone/tests/minimal.test.smash
+// Minimal test file for microphone package
+
+// Basic test function
+fn test_microphone() {
+  return 0;
+}
+
+// Run the test
+fn main() {
+  test_microphone();
+  return 0;
+}
+
+// Call main
+main();

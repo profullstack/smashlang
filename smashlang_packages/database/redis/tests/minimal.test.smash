@@ -1,0 +1,16 @@
+// database/redis/tests/minimal.test.smash
+// Minimal test file for redis package
+
+// Basic test function
+fn test_redis() {
+  return 0;
+}
+
+// Run the test
+fn main() {
+  test_redis();
+  return 0;
+}
+
+// Call main
+main();

@@ -37,6 +37,7 @@ pub enum Token {
     Number(i64),
     Float(f64),
     String(String),
+    TemplateString(String), // Template literals with backticks
     Regex(String),
     Bool(bool),
     Null,
@@ -48,15 +49,47 @@ pub enum Token {
     Slash,     // /
     Equal,     // =
     
+    // Comparison operators
+    EqualEqual,       // ==
+    NotEqual,         // !=
+    StrictEqual,      // ===
+    StrictNotEqual,   // !==
+    LessThan,         // <
+    GreaterThan,      // >
+    LessThanEqual,    // <=
+    GreaterThanEqual, // >=
+    
+    // Logical operators
+    And,        // &&
+    Or,         // ||
+    Not,        // !
+    
+    // Bitwise operators
+    BitwiseAnd,       // &
+    BitwiseOr,        // |
+    BitwiseXor,       // ^
+    BitwiseNot,       // ~
+    LeftShift,        // <<
+    RightShift,       // >>
+    UnsignedRightShift, // >>>
+    
     // Increment/Decrement operators
     Increment, // ++
     Decrement, // --
     
     // Compound assignment operators
-    PlusEqual,  // +=
-    MinusEqual, // -=
-    StarEqual,  // *=
-    SlashEqual, // /=
+    PlusEqual,        // +=
+    MinusEqual,       // -=
+    StarEqual,        // *=
+    SlashEqual,       // /=
+    AndEqual,         // &=
+    OrEqual,          // |=
+    XorEqual,         // ^=
+    LeftShiftEqual,   // <<=
+    RightShiftEqual,  // >>=
+    
+    // Conditional (ternary) operator
+    QuestionMark,     // ?
     
     // Delimiters
     Colon,     // :
@@ -72,6 +105,11 @@ pub enum Token {
     // Special operators
     Dot,       // .
     Ellipsis,  // ... (spread operator)
+    Dollar,    // $
+    Percent,   // %
+    Backtick,  // `
+    SingleQuote, // '
+    At,        // @
 }
 
 pub fn tokenize(input: &str) -> Vec<Token> {
@@ -180,7 +218,29 @@ pub fn tokenize(input: &str) -> Vec<Token> {
             }
             '=' => {
                 chars.next(); // consume the '='
-                tokens.push(Token::Equal);
+                
+                // Check for == or ===
+                if let Some(&next_ch) = chars.peek() {
+                    if next_ch == '=' {
+                        chars.next(); // consume the second '='
+                        
+                        // Check for ===
+                        if let Some(&third_ch) = chars.peek() {
+                            if third_ch == '=' {
+                                tokens.push(Token::StrictEqual);
+                                chars.next(); // consume the third '='
+                            } else {
+                                tokens.push(Token::EqualEqual);
+                            }
+                        } else {
+                            tokens.push(Token::EqualEqual);
+                        }
+                    } else {
+                        tokens.push(Token::Equal);
+                    }
+                } else {
+                    tokens.push(Token::Equal);
+                }
             }
             ':' => {
                 chars.next(); // consume the ':'
@@ -378,6 +438,272 @@ pub fn tokenize(input: &str) -> Vec<Token> {
                     "null" => tokens.push(Token::Null),
                     _ => tokens.push(Token::Identifier(ident)),
                 }
+            }
+            '\'' => {
+                chars.next(); // consume the opening single quote
+                tokens.push(Token::SingleQuote);
+                
+                let mut string = String::new();
+                
+                while let Some(&ch) = chars.peek() {
+                    if ch == '\'' {
+                        chars.next(); // consume the closing quote
+                        tokens.push(Token::SingleQuote);
+                        break;
+                    } else if ch == '\\' {
+                        // Handle escape sequences
+                        chars.next(); // consume the backslash
+                        
+                        if let Some(&next_ch) = chars.peek() {
+                            match next_ch {
+                                'n' => string.push('\n'),
+                                't' => string.push('\t'),
+                                'r' => string.push('\r'),
+                                '\\' => string.push('\\'),
+                                '\'' => string.push('\''),
+                                _ => string.push(next_ch),
+                            }
+                            chars.next(); // consume the escaped character
+                        }
+                    } else {
+                        string.push(ch);
+                        chars.next();
+                    }
+                }
+                
+                tokens.push(Token::String(string));
+            }
+            '`' => {
+                chars.next(); // consume the opening backtick
+                tokens.push(Token::Backtick);
+                
+                let mut template = String::new();
+                
+                while let Some(&ch) = chars.peek() {
+                    if ch == '`' {
+                        chars.next(); // consume the closing backtick
+                        tokens.push(Token::Backtick);
+                        break;
+                    } else if ch == '\\' {
+                        // Handle escape sequences
+                        chars.next(); // consume the backslash
+                        
+                        if let Some(&next_ch) = chars.peek() {
+                            match next_ch {
+                                'n' => template.push('\n'),
+                                't' => template.push('\t'),
+                                'r' => template.push('\r'),
+                                '\\' => template.push('\\'),
+                                '`' => template.push('`'),
+                                '$' => template.push('$'),
+                                _ => template.push(next_ch),
+                            }
+                            chars.next(); // consume the escaped character
+                        }
+                    } else if ch == '$' {
+                        chars.next(); // consume the $
+                        
+                        // Check for ${...} expression
+                        if let Some(&next_ch) = chars.peek() {
+                            if next_ch == '{' {
+                                // This is a template expression
+                                // For now, we'll just include it as part of the template string
+                                template.push('$');
+                                template.push('{');
+                                chars.next(); // consume the {
+                                
+                                // Find the closing }
+                                let mut brace_count = 1;
+                                while let Some(&ch) = chars.peek() {
+                                    if ch == '{' {
+                                        brace_count += 1;
+                                    } else if ch == '}' {
+                                        brace_count -= 1;
+                                        if brace_count == 0 {
+                                            template.push('}');
+                                            chars.next(); // consume the }
+                                            break;
+                                        }
+                                    }
+                                    template.push(ch);
+                                    chars.next();
+                                }
+                            } else {
+                                template.push('$');
+                            }
+                        } else {
+                            template.push('$');
+                        }
+                    } else {
+                        template.push(ch);
+                        chars.next();
+                    }
+                }
+                
+                tokens.push(Token::TemplateString(template));
+            }
+            '<' => {
+                chars.next(); // consume the '<'
+                
+                if let Some(&next_ch) = chars.peek() {
+                    match next_ch {
+                        '=' => {
+                            tokens.push(Token::LessThanEqual);
+                            chars.next(); // consume the '='
+                        },
+                        '<' => {
+                            chars.next(); // consume the second '<'
+                            
+                            // Check for <<=
+                            if let Some(&third_ch) = chars.peek() {
+                                if third_ch == '=' {
+                                    tokens.push(Token::LeftShiftEqual);
+                                    chars.next(); // consume the '='
+                                } else {
+                                    tokens.push(Token::LeftShift);
+                                }
+                            } else {
+                                tokens.push(Token::LeftShift);
+                            }
+                        },
+                        _ => tokens.push(Token::LessThan),
+                    }
+                } else {
+                    tokens.push(Token::LessThan);
+                }
+            }
+            '>' => {
+                chars.next(); // consume the '>'
+                
+                if let Some(&next_ch) = chars.peek() {
+                    match next_ch {
+                        '=' => {
+                            tokens.push(Token::GreaterThanEqual);
+                            chars.next(); // consume the '='
+                        },
+                        '>' => {
+                            chars.next(); // consume the second '>'
+                            
+                            // Check for >>= or >>>
+                            if let Some(&third_ch) = chars.peek() {
+                                match third_ch {
+                                    '=' => {
+                                        tokens.push(Token::RightShiftEqual);
+                                        chars.next(); // consume the '='
+                                    },
+                                    '>' => {
+                                        tokens.push(Token::UnsignedRightShift);
+                                        chars.next(); // consume the third '>'
+                                    },
+                                    _ => tokens.push(Token::RightShift),
+                                }
+                            } else {
+                                tokens.push(Token::RightShift);
+                            }
+                        },
+                        _ => tokens.push(Token::GreaterThan),
+                    }
+                } else {
+                    tokens.push(Token::GreaterThan);
+                }
+            }
+            '!' => {
+                chars.next(); // consume the '!'
+                
+                if let Some(&next_ch) = chars.peek() {
+                    match next_ch {
+                        '=' => {
+                            chars.next(); // consume the '='
+                            
+                            // Check for !==
+                            if let Some(&third_ch) = chars.peek() {
+                                if third_ch == '=' {
+                                    tokens.push(Token::StrictNotEqual);
+                                    chars.next(); // consume the second '='
+                                } else {
+                                    tokens.push(Token::NotEqual);
+                                }
+                            } else {
+                                tokens.push(Token::NotEqual);
+                            }
+                        },
+                        _ => tokens.push(Token::Not),
+                    }
+                } else {
+                    tokens.push(Token::Not);
+                }
+            }
+            '&' => {
+                chars.next(); // consume the '&'
+                
+                if let Some(&next_ch) = chars.peek() {
+                    match next_ch {
+                        '&' => {
+                            tokens.push(Token::And);
+                            chars.next(); // consume the second '&'
+                        },
+                        '=' => {
+                            tokens.push(Token::AndEqual);
+                            chars.next(); // consume the '='
+                        },
+                        _ => tokens.push(Token::BitwiseAnd),
+                    }
+                } else {
+                    tokens.push(Token::BitwiseAnd);
+                }
+            }
+            '|' => {
+                chars.next(); // consume the '|'
+                
+                if let Some(&next_ch) = chars.peek() {
+                    match next_ch {
+                        '|' => {
+                            tokens.push(Token::Or);
+                            chars.next(); // consume the second '|'
+                        },
+                        '=' => {
+                            tokens.push(Token::OrEqual);
+                            chars.next(); // consume the '='
+                        },
+                        _ => tokens.push(Token::BitwiseOr),
+                    }
+                } else {
+                    tokens.push(Token::BitwiseOr);
+                }
+            }
+            '^' => {
+                chars.next(); // consume the '^'
+                
+                if let Some(&next_ch) = chars.peek() {
+                    if next_ch == '=' {
+                        tokens.push(Token::XorEqual);
+                        chars.next(); // consume the '='
+                    } else {
+                        tokens.push(Token::BitwiseXor);
+                    }
+                } else {
+                    tokens.push(Token::BitwiseXor);
+                }
+            }
+            '~' => {
+                chars.next(); // consume the '~'
+                tokens.push(Token::BitwiseNot);
+            }
+            '?' => {
+                chars.next(); // consume the '?'
+                tokens.push(Token::QuestionMark);
+            }
+            '$' => {
+                chars.next(); // consume the '$'
+                tokens.push(Token::Dollar);
+            }
+            '%' => {
+                chars.next(); // consume the '%'
+                tokens.push(Token::Percent);
+            }
+            '@' => {
+                chars.next(); // consume the '@'
+                tokens.push(Token::At);
             }
             _ => {
                 println!("Unexpected character: {}", ch);

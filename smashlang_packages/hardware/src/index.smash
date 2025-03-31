@@ -1,0 +1,18 @@
+// hardware/index.smash - Main entry point for hardware package
+// This file imports and re-exports functionality from all hardware subpackages
+
+// Imports from subpackages
+import * as camera from './camera';
+import * as devices from './devices';
+import * as input from './input';
+import * as microphone from './microphone';
+import * as screen from './screen';
+
+// Re-export all imports
+export {
+    camera,
+    devices,
+    input,
+    microphone,
+    screen,
+};

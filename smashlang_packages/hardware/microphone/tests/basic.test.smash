@@ -1,0 +1,19 @@
+// hardware/microphone/tests/basic.test.smash
+// Ultra-basic test file for microphone package
+
+import "std";
+
+// Basic test function
+fn test_microphone() {
+  std.print("Microphone package test");
+  return 0;
+}
+
+// Run the test
+fn main() {
+  test_microphone();
+  return 0;
+}
+
+// Call main
+main();

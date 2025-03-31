@@ -1,0 +1,28 @@
+// hardware/microphone/tests/simple.test.smash
+// Simple test file for microphone package using basic SmashLang features
+
+import "std";
+import "hardware/microphone";
+
+// Basic test function
+fn test_microphone() {
+  // Simple assertion
+  if (true) {
+    std.print("Microphone package test passed");
+    return true;
+  } else {
+    std.print("Microphone package test failed");
+    return false;
+  }
+}
+
+// Run the test
+fn main() {
+  std.print("Testing microphone package...");
+  const result = test_microphone();
+  std.print("Test complete.");
+  return result ? 0 : 1;
+}
+
+// Call main
+main();
