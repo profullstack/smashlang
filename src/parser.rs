@@ -283,10 +283,8 @@ impl Parser {
             // Parse the value expression
             let value = self.parse_expr()?;
             
-            // Make semicolon optional - try to consume it if it exists
-            if matches!(self.peek(), Some(Token::Semicolon)) {
-                self.advance(); // Consume the semicolon if present
-            }
+            // Expect semicolon
+            self.expect(&Token::Semicolon)?;
             
             Ok(Some(AstNode::ConstDecl { name, value: Box::new(value) }))
         } else {
@@ -308,10 +306,8 @@ impl Parser {
             // Parse the value expression
             let value = self.parse_expr()?;
             
-            // Make semicolon optional - try to consume it if it exists
-            if matches!(self.peek(), Some(Token::Semicolon)) {
-                self.advance(); // Consume the semicolon if present
-            }
+            // Expect semicolon
+            self.expect(&Token::Semicolon)?;
             
             Ok(Some(AstNode::LetDecl { name, value: Box::new(value) }))
         } else {

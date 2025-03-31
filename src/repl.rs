@@ -174,8 +174,18 @@ impl Repl {
         // Add to history
         self.history.push(input.to_string());
         
-        // Append to context
-        self.context.push_str(input);
+        // Append to context with automatic semicolon insertion if needed
+        let mut processed_input = input.trim().to_string();
+        
+        // Add semicolon if it's missing and the input looks like a statement
+        if !processed_input.ends_with(';') && 
+           !processed_input.ends_with('}') && 
+           !processed_input.ends_with('{') && 
+           !processed_input.is_empty() {
+            processed_input.push(';');
+        }
+        
+        self.context.push_str(&processed_input);
         self.context.push('\n');
         
         // Try to tokenize and parse
