@@ -585,3 +585,4 @@ create_config_linux() {
   "assets_dir": "$LINUX_INSTALL_DIR/assets",
   "packages_dir": "$HOME/.local/share/smashlang_packages"
 }
+EOF
