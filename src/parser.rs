@@ -252,6 +252,311 @@ impl Parser {
         }
     }
     
+    fn parse_import(&mut self) -> ParseResult<Option<AstNode>> {
+        self.advance(); // Consume Import token
+        
+        // Parse the module path as a string
+        if let Some(Token::String(path)) = self.peek() {
+            let path = path.clone();
+            self.advance();
+            
+            // Expect semicolon
+            self.expect(&Token::Semicolon)?;
+            
+            Ok(Some(AstNode::Import(path)))
+        } else {
+            Err(ParseError::new("Expected string literal after import", self.pos))
+        }
+    }
+    
+    fn parse_const(&mut self) -> ParseResult<Option<AstNode>> {
+        self.advance(); // Consume Const token
+        
+        // Parse identifier
+        if let Some(Token::Identifier(name)) = self.peek() {
+            let name = name.clone();
+            self.advance();
+            
+            // Expect assignment operator
+            self.expect(&Token::Equal)?;
+            
+            // Parse the value expression
+            let value = self.parse_expr()?;
+            
+            // Expect semicolon
+            self.expect(&Token::Semicolon)?;
+            
+            Ok(Some(AstNode::ConstDecl { name, value: Box::new(value) }))
+        } else {
+            Err(ParseError::new("Expected identifier after const", self.pos))
+        }
+    }
+    
+    fn parse_let(&mut self) -> ParseResult<Option<AstNode>> {
+        self.advance(); // Consume Let token
+        
+        // Parse identifier
+        if let Some(Token::Identifier(name)) = self.peek() {
+            let name = name.clone();
+            self.advance();
+            
+            // Expect assignment operator
+            self.expect(&Token::Equal)?;
+            
+            // Parse the value expression
+            let value = self.parse_expr()?;
+            
+            // Expect semicolon
+            self.expect(&Token::Semicolon)?;
+            
+            Ok(Some(AstNode::LetDecl { name, value: Box::new(value) }))
+        } else {
+            Err(ParseError::new("Expected identifier after let", self.pos))
+        }
+    }
+    
+    fn parse_function(&mut self) -> ParseResult<Option<AstNode>> {
+        self.advance(); // Consume Fn token
+        
+        // Parse function name
+        if let Some(Token::Identifier(name)) = self.peek() {
+            let name = name.clone();
+            self.advance();
+            
+            // Parse parameter list
+            self.expect(&Token::LParen)?;
+            let mut params = Vec::new();
+            
+            if !matches!(self.peek(), Some(Token::RParen)) {
+                loop {
+                    if let Some(Token::Identifier(param)) = self.peek() {
+                        params.push(param.clone());
+                        self.advance();
+                    } else {
+                        return Err(ParseError::new("Expected parameter name", self.pos));
+                    }
+                    
+                    match self.peek() {
+                        Some(Token::Comma) => {
+                            self.advance();
+                        }
+                        Some(Token::RParen) => break,
+                        _ => return Err(ParseError::new("Expected comma or closing parenthesis", self.pos)),
+                    }
+                }
+            }
+            
+            self.expect(&Token::RParen)?;
+            
+            // Parse function body
+            self.expect(&Token::LBrace)?;
+            let mut body = Vec::new();
+            
+            while !matches!(self.peek(), Some(Token::RBrace) | None) {
+                if let Some(stmt) = self.parse_statement()? {
+                    body.push(stmt);
+                }
+            }
+            
+            self.expect(&Token::RBrace)?;
+            
+            Ok(Some(AstNode::Function { name, params, body }))
+        } else {
+            Err(ParseError::new("Expected function name", self.pos))
+        }
+    }
+    
+    fn parse_return(&mut self) -> ParseResult<Option<AstNode>> {
+        self.advance(); // Consume Return token
+        
+        // Check if there's a return value
+        let value = if !matches!(self.peek(), Some(Token::Semicolon)) {
+            self.parse_expr()?
+        } else {
+            AstNode::Null
+        };
+        
+        // Expect semicolon
+        self.expect(&Token::Semicolon)?;
+        
+        Ok(Some(AstNode::Return(Box::new(value))))
+    }
+    
+    fn parse_try_catch(&mut self) -> ParseResult<Option<AstNode>> {
+        self.advance(); // Consume Try token
+        
+        // Parse try block
+        self.expect(&Token::LBrace)?;
+        let mut try_body = Vec::new();
+        
+        while !matches!(self.peek(), Some(Token::RBrace) | None) {
+            if let Some(stmt) = self.parse_statement()? {
+                try_body.push(stmt);
+            }
+        }
+        
+        self.expect(&Token::RBrace)?;
+        
+        // Parse catch block
+        self.expect(&Token::Catch)?;
+        
+        // Parse optional catch parameter
+        let catch_param = if matches!(self.peek(), Some(Token::LParen)) {
+            self.advance(); // Consume LParen
+            
+            if let Some(Token::Identifier(param)) = self.peek() {
+                let param = param.clone();
+                self.advance();
+                self.expect(&Token::RParen)?;
+                Some(param)
+            } else {
+                return Err(ParseError::new("Expected identifier in catch clause", self.pos));
+            }
+        } else {
+            None
+        };
+        
+        // Parse catch body
+        self.expect(&Token::LBrace)?;
+        let mut catch_body = Vec::new();
+        
+        while !matches!(self.peek(), Some(Token::RBrace) | None) {
+            if let Some(stmt) = self.parse_statement()? {
+                catch_body.push(stmt);
+            }
+        }
+        
+        self.expect(&Token::RBrace)?;
+        
+        // Parse optional finally block
+        let finally_body = if matches!(self.peek(), Some(Token::Finally)) {
+            self.advance(); // Consume Finally token
+            
+            self.expect(&Token::LBrace)?;
+            let mut finally_stmts = Vec::new();
+            
+            while !matches!(self.peek(), Some(Token::RBrace) | None) {
+                if let Some(stmt) = self.parse_statement()? {
+                    finally_stmts.push(stmt);
+                }
+            }
+            
+            self.expect(&Token::RBrace)?;
+            Some(finally_stmts)
+        } else {
+            None
+        };
+        
+        Ok(Some(AstNode::Try {
+            body: try_body,
+            catch_param,
+            catch_body,
+            finally_body,
+        }))
+    }
+    
+    fn parse_throw(&mut self) -> ParseResult<Option<AstNode>> {
+        self.advance(); // Consume Throw token
+        
+        // Parse the expression to throw
+        let expr = self.parse_expr()?;
+        
+        // Expect semicolon
+        self.expect(&Token::Semicolon)?;
+        
+        Ok(Some(AstNode::Throw(Box::new(expr))))
+    }
+    
+    fn parse_break(&mut self) -> ParseResult<Option<AstNode>> {
+        self.advance(); // Consume Break token
+        
+        // Expect semicolon
+        self.expect(&Token::Semicolon)?;
+        
+        Ok(Some(AstNode::Break))
+    }
+    
+    fn parse_continue(&mut self) -> ParseResult<Option<AstNode>> {
+        self.advance(); // Consume Continue token
+        
+        // Expect semicolon
+        self.expect(&Token::Semicolon)?;
+        
+        Ok(Some(AstNode::Continue))
+    }
+    
+    fn parse_block(&mut self) -> ParseResult<Option<AstNode>> {
+        self.advance(); // Consume LBrace token
+        
+        let mut statements = Vec::new();
+        
+        while !matches!(self.peek(), Some(Token::RBrace) | None) {
+            if let Some(stmt) = self.parse_statement()? {
+                statements.push(stmt);
+            }
+        }
+        
+        self.expect(&Token::RBrace)?;
+        
+        Ok(Some(AstNode::Block(statements)))
+    }
+    
+    fn parse_if(&mut self) -> ParseResult<Option<AstNode>> {
+        self.advance(); // Consume If token
+        
+        // Parse condition
+        self.expect(&Token::LParen)?;
+        let condition = self.parse_expr()?;
+        self.expect(&Token::RParen)?;
+        
+        // Parse then branch
+        let then_branch = if let Some(stmt) = self.parse_statement()? {
+            stmt
+        } else {
+            return Err(ParseError::new("Expected statement after if condition", self.pos));
+        };
+        
+        // Parse optional else branch
+        let else_branch = if matches!(self.peek(), Some(Token::Else)) {
+            self.advance(); // Consume Else token
+            
+            if let Some(stmt) = self.parse_statement()? {
+                Some(Box::new(stmt))
+            } else {
+                return Err(ParseError::new("Expected statement after else", self.pos));
+            }
+        } else {
+            None
+        };
+        
+        Ok(Some(AstNode::If {
+            condition: Box::new(condition),
+            then_branch: Box::new(then_branch),
+            else_branch,
+        }))
+    }
+    
+    fn parse_while(&mut self) -> ParseResult<Option<AstNode>> {
+        self.advance(); // Consume While token
+        
+        // Parse condition
+        self.expect(&Token::LParen)?;
+        let condition = self.parse_expr()?;
+        self.expect(&Token::RParen)?;
+        
+        // Parse body
+        let body = if let Some(stmt) = self.parse_statement()? {
+            stmt
+        } else {
+            return Err(ParseError::new("Expected statement after while condition", self.pos));
+        };
+        
+        Ok(Some(AstNode::While {
+            condition: Box::new(condition),
+            body: Box::new(body),
+        }))
+    }
+    
     fn parse_for(&mut self) -> ParseResult<Option<AstNode>> {
         // Consume the for keyword
         self.advance(); // for
