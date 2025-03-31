@@ -287,6 +287,35 @@ impl Repl {
             AstNode::Null => Ok(Value::Null),
             AstNode::Regex(pattern) => Ok(Value::Regex(pattern.clone())),
             
+            AstNode::TemplateLiteral(parts) => {
+                // Evaluate each part of the template literal
+                let mut result = String::new();
+                
+                for part in parts {
+                    match part {
+                        AstNode::String(s) => {
+                            // String parts are added directly
+                            result.push_str(s);
+                        },
+                        _ => {
+                            // Evaluate expressions and convert to string
+                            let value = self.evaluate_ast_with_scope(part, scope)?;
+                            match value {
+                                Value::String(s) => result.push_str(&s),
+                                Value::Number(n) => result.push_str(&n.to_string()),
+                                Value::Float(f) => result.push_str(&f.to_string()),
+                                Value::Boolean(b) => result.push_str(&b.to_string()),
+                                Value::Null => result.push_str("null"),
+                                Value::Undefined => result.push_str("undefined"),
+                                _ => result.push_str(&format!("{:?}", value))
+                            }
+                        }
+                    }
+                }
+                
+                Ok(Value::String(result))
+            },
+            
             // Binary operations
             AstNode::BinaryOp { left, op, right } => {
                 let left_val = self.evaluate_ast_with_scope(left, scope)?;
