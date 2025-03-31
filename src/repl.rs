@@ -388,16 +388,20 @@ impl Repl {
                     
                     if let Some(current_value) = scope.get(name) {
                         let new_value = match (current_value.clone(), &right_value, op.as_str()) {
-                            (Value::Number(left), Value::Number(right), "+") => {
+                            // Handle both + and += for addition
+                            (Value::Number(left), Value::Number(right), op) if op == "+" || op == "+=" => {
                                 Value::Number(left + *right)
                             },
-                            (Value::Number(left), Value::Number(right), "-") => {
+                            // Handle both - and -= for subtraction
+                            (Value::Number(left), Value::Number(right), op) if op == "-" || op == "-=" => {
                                 Value::Number(left - *right)
                             },
-                            (Value::Number(left), Value::Number(right), "*") => {
+                            // Handle both * and *= for multiplication
+                            (Value::Number(left), Value::Number(right), op) if op == "*" || op == "*=" => {
                                 Value::Number(left * *right)
                             },
-                            (Value::Number(left), Value::Number(right), "/") => {
+                            // Handle both / and /= for division
+                            (Value::Number(left), Value::Number(right), op) if op == "/" || op == "/=" => {
                                 if *right == 0 {
                                     return Err("Division by zero".to_string());
                                 }
