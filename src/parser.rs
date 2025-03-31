@@ -283,8 +283,10 @@ impl Parser {
             // Parse the value expression
             let value = self.parse_expr()?;
             
-            // Expect semicolon
-            self.expect(&Token::Semicolon)?;
+            // Make semicolon optional - try to consume it if it exists
+            if matches!(self.peek(), Some(Token::Semicolon)) {
+                self.advance(); // Consume the semicolon if present
+            }
             
             Ok(Some(AstNode::ConstDecl { name, value: Box::new(value) }))
         } else {
@@ -306,8 +308,10 @@ impl Parser {
             // Parse the value expression
             let value = self.parse_expr()?;
             
-            // Expect semicolon
-            self.expect(&Token::Semicolon)?;
+            // Make semicolon optional - try to consume it if it exists
+            if matches!(self.peek(), Some(Token::Semicolon)) {
+                self.advance(); // Consume the semicolon if present
+            }
             
             Ok(Some(AstNode::LetDecl { name, value: Box::new(value) }))
         } else {
@@ -376,8 +380,10 @@ impl Parser {
             AstNode::Null
         };
         
-        // Expect semicolon
-        self.expect(&Token::Semicolon)?;
+        // Make semicolon optional - try to consume it if it exists
+        if matches!(self.peek(), Some(Token::Semicolon)) {
+            self.advance(); // Consume the semicolon if present
+        }
         
         Ok(Some(AstNode::Return(Box::new(value))))
     }
@@ -461,8 +467,10 @@ impl Parser {
         // Parse the expression to throw
         let expr = self.parse_expr()?;
         
-        // Expect semicolon
-        self.expect(&Token::Semicolon)?;
+        // Make semicolon optional - try to consume it if it exists
+        if matches!(self.peek(), Some(Token::Semicolon)) {
+            self.advance(); // Consume the semicolon if present
+        }
         
         Ok(Some(AstNode::Throw(Box::new(expr))))
     }
@@ -470,8 +478,10 @@ impl Parser {
     fn parse_break(&mut self) -> ParseResult<Option<AstNode>> {
         self.advance(); // Consume Break token
         
-        // Expect semicolon
-        self.expect(&Token::Semicolon)?;
+        // Make semicolon optional - try to consume it if it exists
+        if matches!(self.peek(), Some(Token::Semicolon)) {
+            self.advance(); // Consume the semicolon if present
+        }
         
         Ok(Some(AstNode::Break))
     }
@@ -479,8 +489,10 @@ impl Parser {
     fn parse_continue(&mut self) -> ParseResult<Option<AstNode>> {
         self.advance(); // Consume Continue token
         
-        // Expect semicolon
-        self.expect(&Token::Semicolon)?;
+        // Make semicolon optional - try to consume it if it exists
+        if matches!(self.peek(), Some(Token::Semicolon)) {
+            self.advance(); // Consume the semicolon if present
+        }
         
         Ok(Some(AstNode::Continue))
     }
