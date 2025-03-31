@@ -205,21 +205,21 @@ display_test_results() {
     # Extract and display test results
     echo -e "${YELLOW}Main Crate Tests:${NC}"
     if grep -q "Main Crate Tests" "$log_file"; then
-      grep -A 5 "Main Crate Tests" "$log_file" | grep -v "Main Crate Tests" | grep -v "---------------" | head -n 3
+      grep -A 5 "Main Crate Tests" "$log_file" | grep -v "Main Crate Tests" | grep -v -- "---------------" | head -n 3
     else
       echo "No main crate test results found"
     fi
     
     echo -e "\n${YELLOW}All Packages Tests:${NC}"
     if grep -q "All Packages Tests" "$log_file"; then
-      grep -A 5 "All Packages Tests" "$log_file" | grep -v "All Packages Tests" | grep -v "-----------------" | head -n 3
+      grep -A 5 "All Packages Tests" "$log_file" | grep -v "All Packages Tests" | grep -v -- "-----------------" | head -n 3
     else
       echo "No package test results found"
     fi
     
     echo -e "\n${YELLOW}All Features Tests:${NC}"
     if grep -q "All Features Tests" "$log_file"; then
-      grep -A 5 "All Features Tests" "$log_file" | grep -v "All Features Tests" | grep -v "-----------------" | head -n 3
+      grep -A 5 "All Features Tests" "$log_file" | grep -v "All Features Tests" | grep -v -- "-----------------" | head -n 3
     else
       echo "No feature test results found"
     fi
@@ -359,10 +359,14 @@ install_linux() {
     git clone --depth 1 "$REPO_URL" "$temp_dir"
     
     # Check if docs/getting-started exists locally but not in the cloned repo
-    if [ -d "$(pwd)/docs/getting-started" ] && [ ! -d "$temp_dir/docs/getting-started" ]; then
+    if [ -d "$(pwd)/docs/getting-started" ]; then
       echo -e "${BLUE}Copying docs/getting-started from local repository...${NC}"
       mkdir -p "$temp_dir/docs/getting-started"
       cp -r "$(pwd)/docs/getting-started/"* "$temp_dir/docs/getting-started/"
+      # Make sure the run_all_examples.sh script is executable
+      if [ -f "$temp_dir/docs/getting-started/run_all_examples.sh" ]; then
+        chmod +x "$temp_dir/docs/getting-started/run_all_examples.sh"
+      fi
     fi
     
     # Copy binaries from the repository
