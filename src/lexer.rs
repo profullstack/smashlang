@@ -127,7 +127,7 @@ pub enum Token {
 }
 
 // Helper function to tokenize interpolated expressions in template strings
-fn tokenize_interpolation<I>(start: I, end: I) -> Vec<Token>
+fn tokenize_interpolation<I>(start: I, _end: I) -> Vec<Token>
 where
     I: Iterator<Item = char> + Clone,
 {

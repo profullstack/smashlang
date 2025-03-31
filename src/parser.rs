@@ -1269,8 +1269,7 @@ impl Parser {
             },
             Some(Token::TemplateStringPart(s)) => {
                 // This is a part of a template string with interpolation
-                let mut parts = Vec::new();
-                let mut string_value = s.clone();
+                let string_value = s.clone();
                 self.advance();
                 
                 // Process all parts of the template string
@@ -1282,12 +1281,16 @@ impl Parser {
                     match self.peek() {
                         Some(Token::TemplateInterpolation(_)) => {
                             // Parse the interpolated expression
-                            if let Token::TemplateInterpolation(tokens) = self.peek().unwrap() {
-                                // Create a temporary parser for the interpolation tokens
-                                let mut interp_parser = Parser::new(tokens.clone());
-                                let expr = interp_parser.parse_expr()?;
-                                template_parts.push(expr);
-                            }
+                            let tokens = if let Some(Token::TemplateInterpolation(tokens)) = self.peek() {
+                                tokens.clone()
+                            } else {
+                                return Err(ParseError::new("Expected template interpolation", self.pos));
+                            };
+                            
+                            // Create a temporary parser for the interpolation tokens
+                            let mut interp_parser = Parser::new(tokens);
+                            let expr = interp_parser.parse_expr()?;
+                            template_parts.push(expr);
                             self.advance();
                         },
                         Some(Token::TemplateStringPart(s)) => {
@@ -1316,8 +1319,9 @@ impl Parser {
             },
             Some(Token::TemplateString(s)) => {
                 // This is a simple template string without interpolation
+                let value = s.clone();
                 self.advance();
-                Ok(AstNode::String(s.clone()))
+                Ok(AstNode::String(value))
             },
             Some(Token::Bool(value)) => {
                 let bool_value = *value;

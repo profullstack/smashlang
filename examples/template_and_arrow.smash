@@ -1,0 +1,28 @@
+// Test file for template literals and arrow functions
+
+// Basic template literal
+let name = "World";
+let greeting = `Hello, ${name}!`;
+print(greeting);
+
+// Arrow function with expression body
+let add = (a, b) => a + b;
+let result1 = add(5, 3);
+print(`5 + 3 = ${result1}`);
+
+// Arrow function with block body
+let greet = (name) => {
+  let message = `Welcome, ${name}!`;
+  return message;
+};
+let result2 = greet("SmashLang");
+print(result2);
+
+// Combining arrow functions and template literals
+let formatName = (first, last) => `${first} ${last}`;
+let getGreeting = (formatter, first, last) => {
+  let fullName = formatter(first, last);
+  return `Greetings, ${fullName}!`;
+};
+let result3 = getGreeting(formatName, "John", "Doe");
+print(result3);

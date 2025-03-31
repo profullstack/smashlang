@@ -368,15 +368,49 @@ impl Repl {
             },
             
             AstNode::LetDecl { name, value } => {
-                let evaluated_value = self.evaluate_ast_with_scope(value, scope)?;
-                scope.set(name, evaluated_value.clone());
-                Ok(evaluated_value)
+                // Special handling for arrow functions to associate them with a name
+                if let AstNode::ArrowFunction { params, body, expression } = &**value {
+                    // Create a named function value
+                    let function_value = Value::Function(name.clone(), params.clone(), Box::new(if *expression && body.len() == 1 {
+                        // For expression bodies, wrap in a return statement
+                        AstNode::Block(vec![AstNode::Return(Box::new(body[0].clone()))])
+                    } else {
+                        // For block bodies, use the block as is
+                        AstNode::Block(body.clone())
+                    }));
+                    
+                    // Store in scope
+                    scope.set(name, function_value.clone());
+                    Ok(function_value)
+                } else {
+                    // Regular variable declaration
+                    let evaluated_value = self.evaluate_ast_with_scope(value, scope)?;
+                    scope.set(name, evaluated_value.clone());
+                    Ok(evaluated_value)
+                }
             },
             
             AstNode::ConstDecl { name, value } => {
-                let evaluated_value = self.evaluate_ast_with_scope(value, scope)?;
-                scope.set(name, evaluated_value.clone());
-                Ok(evaluated_value)
+                // Special handling for arrow functions to associate them with a name
+                if let AstNode::ArrowFunction { params, body, expression } = &**value {
+                    // Create a named function value
+                    let function_value = Value::Function(name.clone(), params.clone(), Box::new(if *expression && body.len() == 1 {
+                        // For expression bodies, wrap in a return statement
+                        AstNode::Block(vec![AstNode::Return(Box::new(body[0].clone()))])
+                    } else {
+                        // For block bodies, use the block as is
+                        AstNode::Block(body.clone())
+                    }));
+                    
+                    // Store in scope
+                    scope.set(name, function_value.clone());
+                    Ok(function_value)
+                } else {
+                    // Regular constant declaration
+                    let evaluated_value = self.evaluate_ast_with_scope(value, scope)?;
+                    scope.set(name, evaluated_value.clone());
+                    Ok(evaluated_value)
+                }
             },
             
             // Handle increment/decrement operators
@@ -477,15 +511,16 @@ impl Repl {
             
             // Handle function calls
             AstNode::FunctionCall { name, args } => {
+                // Evaluate all arguments first
+                let mut evaluated_args = Vec::new();
+                for arg in args {
+                    let value = self.evaluate_ast_with_scope(arg, scope)?;
+                    evaluated_args.push(value);
+                }
+                
+                // Check if it's a built-in function
                 match name.as_str() {
                     "print" => {
-                        // Evaluate all arguments
-                        let mut evaluated_args = Vec::new();
-                        for arg in args {
-                            let value = self.evaluate_ast_with_scope(arg, scope)?;
-                            evaluated_args.push(value);
-                        }
-                        
                         // Print each argument
                         for (i, arg) in evaluated_args.iter().enumerate() {
                             if i > 0 {
@@ -498,7 +533,7 @@ impl Repl {
                                 Value::Boolean(b) => print!("{}", b),
                                 Value::Null => print!("null"),
                                 Value::Array(_) => print!("[Array]"),
-                                Value::Object(_) => print!("{{Object}}"),
+                                Value::Object(_) => print!("{{}}"),
                                 Value::Function(_, _, _) => print!("[Function]"),
                                 Value::Undefined => print!("undefined"),
                             }
@@ -512,8 +547,76 @@ impl Repl {
                             Ok(Value::Null)
                         }
                     },
-                    _ => Err(format!("Function '{}' not implemented", name))
+                    _ => {
+                        // Check if it's a user-defined function
+                        if let Some(Value::Function(_, param_names, body)) = scope.get(name) {
+                            // Create a new scope with the function's parameters
+                            let mut function_scope = Scope::with_parent(Box::new(scope.clone()));
+                            
+                            // Bind arguments to parameters
+                            for (i, param) in param_names.iter().enumerate() {
+                                let arg_value = if i < evaluated_args.len() {
+                                    evaluated_args[i].clone()
+                                } else {
+                                    Value::Undefined // Default value if argument is missing
+                                };
+                                function_scope.set(param, arg_value);
+                            }
+                            
+                            // Execute the function body
+                            self.evaluate_ast_with_scope(&body, &mut function_scope)
+                        } else {
+                            Err(format!("Function '{}' not found", name))
+                        }
+                    }
                 }
+            },
+            
+            // Handle template literals
+            AstNode::TemplateLiteral(parts) => {
+                let mut result = String::new();
+                
+                for part in parts {
+                    match part {
+                        AstNode::String(s) => {
+                            result.push_str(s);
+                        },
+                        // In the actual AST, interpolated expressions are already parsed
+                        // and included as regular expressions in the template parts list
+                        // So we just need to handle them in the default case below
+                        
+                        _ => {
+                            // Evaluate the expression and convert to string
+                            let value = self.evaluate_ast_with_scope(part, scope)?;
+                            match value {
+                                Value::Number(n) => result.push_str(&n.to_string()),
+                                Value::Float(f) => result.push_str(&f.to_string()),
+                                Value::String(s) => result.push_str(&s),
+                                Value::Boolean(b) => result.push_str(if b { "true" } else { "false" }),
+                                Value::Null => result.push_str("null"),
+                                Value::Array(_) => result.push_str("[Array]"),
+                                Value::Object(_) => result.push_str("{Object}"),
+                                Value::Function(_, _, _) => result.push_str("[Function]"),
+                                Value::Undefined => result.push_str("undefined"),
+                            }
+                        }
+                    }
+                }
+                
+                Ok(Value::String(result))
+            },
+            
+            // Handle arrow functions
+            AstNode::ArrowFunction { params, body, expression } => {
+                // Create a function value
+                // We'll use an empty name for anonymous functions
+                Ok(Value::Function(String::new(), params.clone(), Box::new(if *expression && body.len() == 1 {
+                    // For expression bodies, we wrap the expression in a return statement
+                    AstNode::Block(vec![AstNode::Return(Box::new(body[0].clone()))])
+                } else {
+                    // For block bodies, we use the block as is
+                    AstNode::Block(body.clone())
+                })))
             },
             
             // For simplicity, we'll just return a placeholder for other node types
