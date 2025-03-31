@@ -305,6 +305,31 @@ impl<'a> Module<'a> {
                 
                 format!("(strcmp({}, \"true\") == 0 ? {} : {})", cond_code, then_code, else_code)
             },
+            AstNode::TemplateLiteral(parts) => {
+                // For empty template literals, return an empty string
+                if parts.is_empty() {
+                    return "\"\"".to_string();
+                }
+                
+                // Start with an empty string if we need to concatenate multiple parts
+                let mut result = String::new();
+                let mut is_first = true;
+                
+                for part in parts {
+                    let part_code = self.generate_c_code_for_expr(part, indent_level);
+                    
+                    if is_first {
+                        // First part doesn't need concatenation
+                        result = part_code;
+                        is_first = false;
+                    } else {
+                        // Concatenate with previous parts
+                        result = format!("smash_string_concat({}, {})", result, part_code);
+                    }
+                }
+                
+                result
+            },
             AstNode::FunctionCall { name, args } => {
                 let mut call = format!("{name}(");
                 

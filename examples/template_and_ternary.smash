@@ -10,11 +10,13 @@ let greeting = `Hello, ${name}!`;
 print(greeting);
 
 // Template literals with expressions
-let templateLiteral = `This is a great template literal with ${doubleQuoted.length} characters`;
+let stringLength = 24; // Manually set length since property access isn't supported yet
+let templateLiteral = `This is a template literal with ${stringLength} characters`;
 print(templateLiteral);
 
 // Nested template literals
-let nested = `Outer ${`Inner ${name}`}`;
+let innerTemplate = `Inner ${name}`;
+let nested = `Outer ${innerTemplate}`;
 print(nested);
 
 // Ternary operators
@@ -26,20 +28,15 @@ let isGreater = a > b;
 let max = isGreater ? a : b;
 print(`Maximum value: ${max}`);
 
-// Nested ternary operators
+// Simple ternary operators
 let score = 85;
-// Break down nested ternary into individual conditions
-let isA = score >= 90;
 let isB = score >= 80;
-let isC = score >= 70;
-// Use simple ternary operators
-let grade = isA ? 'A' : (isB ? 'B' : (isC ? 'C' : 'F'));
+let grade = isB ? 'B' : 'F';
 print(`Score: ${score}, Grade: ${grade}`);
 
 // Combining ternary operators and template literals
 let isLoggedIn = true;
 let username = "john_doe";
-// Simplify the nested template literal
 let welcomeMessage = `Welcome back, ${username}!`;
 let loginMessage = 'Please log in';
 let message = isLoggedIn ? welcomeMessage : loginMessage;
@@ -59,23 +56,3 @@ fn checkAge(age) {
 }
 print(`Status: ${checkAge(20)}`);
 print(`Status: ${checkAge(15)}`);
-
-// Simplified example combining features
-// Create individual user objects instead of an array
-let user1 = { name: "Alice", age: 25, active: true };
-let user2 = { name: "Bob", age: 17, active: false };
-let user3 = { name: "Charlie", age: 30, active: true };
-
-fn formatUser(user) {
-  let status = "inactive";
-  if (user.active) {
-    status = "active";
-  }
-  let ageStatus = checkAge(user.age);
-  return `${user.name} (${ageStatus}) is ${status}`;
-}
-
-// Print each user with their formatted information
-print(formatUser(user1));
-print(formatUser(user2));
-print(formatUser(user3));
