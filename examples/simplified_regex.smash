@@ -1,0 +1,49 @@
+// SmashLang Regular Expression Examples (Simplified)
+
+// Basic regex patterns
+const simplePattern = /hello/;
+const patternWithFlags = /hello/i;  // Case-insensitive match
+
+// Testing regex patterns
+const text = "Hello, world! Hello again.";
+const result1 = simplePattern.test(text);  // false (case-sensitive)
+const result2 = patternWithFlags.test(text);  // true (case-insensitive)
+
+print("Simple pattern test:", result1);
+print("Pattern with flags test:", result2);
+
+// Finding matches
+const matches = text.match(/Hello/g);  // Global flag to find all matches
+print("All matches:", matches);  // ["Hello", "Hello"]
+
+// Email validation with simplified pattern
+const emailPattern = /\w+@\w+\.\w+/;
+const validEmail = "user@example.com";
+const invalidEmail = "invalid-email";
+
+print("Valid email test:", emailPattern.test(validEmail));  // true
+print("Invalid email test:", emailPattern.test(invalidEmail));  // false
+
+// URL validation with simplified pattern
+const urlPattern = /https?:\/\/\w+\.\w+/;
+const validUrl = "https://example.com";
+const invalidUrl = "not a url";
+
+print("Valid URL test:", urlPattern.test(validUrl));  // true
+print("Invalid URL test:", urlPattern.test(invalidUrl));  // false
+
+// Phone number validation with simplified pattern
+const phonePattern = /\d{3}-\d{3}-\d{4}/;
+const validPhone = "123-456-7890";
+const invalidPhone = "123-45-678";
+
+print("Valid phone test:", phonePattern.test(validPhone));  // true
+print("Invalid phone test:", phonePattern.test(invalidPhone));  // false
+
+// Date validation with simplified pattern
+const datePattern = /\d{4}-\d{2}-\d{2}/;
+const validDate = "2025-03-31";
+const invalidDate = "2025/03/31";
+
+print("Valid date test:", datePattern.test(validDate));  // true
+print("Invalid date test:", datePattern.test(invalidDate));  // false

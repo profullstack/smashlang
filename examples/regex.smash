@@ -19,7 +19,7 @@ print("All matches:", matches);  // ["Hello", "Hello"]
 // Common regex patterns
 
 // 1. Email validation
-const emailPattern = /^[\w.-]+@[\w.-]+\.[a-zA-Z]{2,}$/;
+const emailPattern = /\w+@\w+\.\w+/;
 const validEmail = "user@example.com";
 const invalidEmail = "invalid-email";
 
