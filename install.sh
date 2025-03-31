@@ -24,12 +24,18 @@ WINDOWS_INSTALL_DIR="$APPDATA\\smashlang"
 # Run tests for SmashLang
 run_tests() {
   local repo_dir="$1"
-  local log_file="$repo_dir/test_results.log"
+  
+  # Create logs directory if it doesn't exist
+  mkdir -p "$repo_dir/logs"
+  
+  # Create a log file with timestamp
+  local timestamp=$(date +"%Y%m%d_%H%M%S")
+  local log_file="$repo_dir/logs/test_results_$timestamp.log"
   
   echo -e "${BLUE}Running tests for SmashLang...${NC}"
   cd "$repo_dir"
   
-  # Create or clear the log file
+  # Create the log file
   echo "SmashLang Test Results" > "$log_file"
   echo "======================" >> "$log_file"
   echo "Date: $(date)" >> "$log_file"
@@ -83,7 +89,17 @@ run_tests() {
       echo -e "${BLUE}Running example tests...${NC}"
       echo "Example Tests" >> "$log_file"
       echo "-------------" >> "$log_file"
+      
+      # Make sure the script is executable
       chmod +x "docs/getting-started/run_all_examples.sh"
+      
+      # Create example files if they don't exist
+      if [ ! -f "docs/getting-started/01_hello_world.smash" ]; then
+        echo -e "${BLUE}Creating example files...${NC}"
+        echo 'console.log("Hello, SmashLang World!");' > "docs/getting-started/01_hello_world.smash"
+      fi
+      
+      # Run the examples
       ./docs/getting-started/run_all_examples.sh > "$log_file.tmp" 2>&1
       local example_test_result=$?
       cat "$log_file.tmp"
@@ -163,7 +179,10 @@ run_tests() {
       fi
     fi
     
-    # Copy the test results log to the installation directory
+    # Copy the test results log to both the installation directory and local logs directory
+    mkdir -p "./logs"
+    cp "$log_file" "./logs/"
+    
     if [ -n "$LINUX_INSTALL_DIR" ]; then
       mkdir -p "$LINUX_INSTALL_DIR/logs"
       cp "$log_file" "$LINUX_INSTALL_DIR/logs/"
@@ -185,8 +204,11 @@ run_tests() {
 
 # Display test results at the end of installation
 display_test_results() {
-  local log_file="$1/test_results.log"
-  if [ -f "$log_file" ]; then
+  local repo_dir="$1"
+  # Find the most recent log file
+  local log_file=$(find "$repo_dir/logs" -name "test_results_*.log" -type f -print0 | xargs -0 ls -t | head -n 1)
+  
+  if [ -n "$log_file" ] && [ -f "$log_file" ]; then
     echo -e "\n${BLUE}Test Results Summary${NC}"
     echo -e "${BLUE}-------------------${NC}"
     echo -e "A detailed test log has been saved to: $log_file"
@@ -352,7 +374,9 @@ install_linux() {
     
     # Create a temporary directory for cloning the repository
     local temp_dir=$(mktemp -d)
-    trap "rm -rf $temp_dir" EXIT
+    
+    # Set up cleanup trap, but preserve logs first
+    trap 'mkdir -p "./logs"; if ls "$temp_dir/logs/test_results_"*.log &>/dev/null; then cp "$temp_dir/logs/test_results_"*.log "./logs/"; echo -e "${BLUE}Test logs preserved in ./logs/ directory${NC}"; fi; rm -rf "$temp_dir"' EXIT
     
     # Clone the repository
     echo -e "${BLUE}Cloning SmashLang repository...${NC}"
@@ -460,7 +484,8 @@ if [ -z "$DOWNLOADED_INSTALLER" ] && [ "$1" = "--master" ]; then
   
   # Create a temporary directory for cloning the repository
   TEMP_DIR=$(mktemp -d)
-  trap "rm -rf $TEMP_DIR" EXIT
+  # Set up cleanup trap, but preserve logs first
+  trap 'mkdir -p "./logs"; if ls "$TEMP_DIR/logs/test_results_"*.log &>/dev/null; then cp "$TEMP_DIR/logs/test_results_"*.log "./logs/"; echo -e "${BLUE}Test logs preserved in ./logs/ directory${NC}"; fi; rm -rf "$TEMP_DIR"' EXIT
   
   # Clone the repository
   echo -e "${BLUE}Cloning SmashLang repository...${NC}"
