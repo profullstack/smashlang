@@ -1,0 +1,17 @@
+// SmashLang Simple Regular Expression Examples
+
+// Basic regex patterns
+const simplePattern = /hello/;
+const patternWithFlags = /hello/i;  // Case-insensitive match
+
+// Testing regex patterns
+const text = "Hello, world! Hello again.";
+const result1 = simplePattern.test(text);  // false (case-sensitive)
+const result2 = patternWithFlags.test(text);  // true (case-insensitive)
+
+print("Simple pattern test:", result1);
+print("Pattern with flags test:", result2);
+
+// Finding matches with a simple pattern
+const matches = text.match(/Hello/g);  // Global flag to find all matches
+print("All matches:", matches);  // ["Hello", "Hello"]

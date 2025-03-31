@@ -380,9 +380,8 @@ fn main() {
             }
 
             println!("{} {} to {}", "Compiling".bright_green(), input, output);
-            // Generate object file first (simplified for now)
-            let obj_file = format!("{}.o", output);
-            if let Err(e) = compile(output, &obj_file, target.as_deref()) {
+            // Pass the input file path to the compile function
+            if let Err(e) = compile(output, input, target.as_deref()) {
                 println!("{}: {}", "Error".red(), e);
                 process::exit(1);
             }

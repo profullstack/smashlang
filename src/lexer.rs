@@ -296,6 +296,8 @@ pub fn tokenize(input: &str) -> Vec<Token> {
                                     } else {
                                         pattern = format!(r"/{}/", pattern);
                                     }
+                                    // Debug output for regex pattern
+                                    println!("Parsed regex pattern: {}", pattern);
                                     
                                     tokens.push(Token::Regex(pattern));
                                     break;
