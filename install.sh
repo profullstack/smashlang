@@ -84,15 +84,61 @@ run_tests() {
       echo -e "${BLUE}Testing SmashLang packages...${NC}"
       echo "SmashLang Packages Tests" >> "$log_file"
       echo "----------------------" >> "$log_file"
-      for pkg_dir in smashlang_packages/*; do
-        if [ -d "$pkg_dir" ] && [ -f "$pkg_dir/Cargo.toml" ]; then
-          pkg_name=$(basename "$pkg_dir")
-          echo -e "${BLUE}Testing package: $pkg_name${NC}"
-          echo "Package: $pkg_name" >> "$log_file"
-          (cd "$pkg_dir" && cargo test) 2>&1 | tee -a "$log_file"
-          echo "" >> "$log_file"
+      
+      # First, run a combined test of all packages if possible
+      if [ -f "smashlang_packages/Cargo.toml" ]; then
+        echo -e "${BLUE}Running combined test of all packages...${NC}"
+        echo "Combined Package Tests" >> "$log_file"
+        echo "---------------------" >> "$log_file"
+        (cd "smashlang_packages" && cargo test --all) 2>&1 | tee -a "$log_file"
+        local combined_test_result=$?
+        if [ $combined_test_result -eq 0 ]; then
+          echo -e "${GREEN}Combined package tests passed!${NC}"
+        else
+          echo -e "${YELLOW}Some combined package tests failed. Running individual package tests...${NC}"
         fi
-      done
+        echo "" >> "$log_file"
+      fi
+      
+      # Find and test all packages, including those in subdirectories
+      local all_packages_passed=true
+      echo -e "${BLUE}Testing individual packages...${NC}"
+      echo "Individual Package Tests" >> "$log_file"
+      echo "----------------------" >> "$log_file"
+      
+      # Use find to locate all Cargo.toml files in the smashlang_packages directory
+      while IFS= read -r cargo_file; do
+        pkg_dir=$(dirname "$cargo_file")
+        pkg_name=$(basename "$pkg_dir")
+        rel_path="${pkg_dir#smashlang_packages/}"
+        
+        # Skip the root Cargo.toml if it exists (we already tested it)
+        if [ "$pkg_dir" = "smashlang_packages" ]; then
+          continue
+        fi
+        
+        echo -e "${BLUE}Testing package: $pkg_name ($rel_path)${NC}"
+        echo "Package: $pkg_name ($rel_path)" >> "$log_file"
+        (cd "$pkg_dir" && cargo test) 2>&1 | tee -a "$log_file"
+        local pkg_test_result=$?
+        
+        if [ $pkg_test_result -ne 0 ]; then
+          all_packages_passed=false
+          echo -e "${YELLOW}Tests for $pkg_name failed${NC}"
+        else
+          echo -e "${GREEN}Tests for $pkg_name passed${NC}"
+        fi
+        echo "" >> "$log_file"
+      done < <(find smashlang_packages -name Cargo.toml)
+      
+      # Record the overall result of package tests
+      if [ "$all_packages_passed" = true ]; then
+        echo -e "${GREEN}All package tests passed successfully!${NC}"
+        echo "PACKAGE TESTS SUMMARY: All package tests passed successfully!" >> "$log_file"
+      else
+        echo -e "${YELLOW}Some package tests failed. See the log for details.${NC}"
+        echo "PACKAGE TESTS SUMMARY: Some package tests failed. See details above." >> "$log_file"
+      fi
     fi
     
     # Copy the test results log to the installation directory
