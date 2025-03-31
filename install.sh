@@ -376,7 +376,7 @@ install_linux() {
     local temp_dir=$(mktemp -d)
     
     # Set up cleanup trap, but preserve logs first
-    trap 'mkdir -p "./logs"; if ls "$temp_dir/logs/test_results_"*.log &>/dev/null; then cp "$temp_dir/logs/test_results_"*.log "./logs/"; echo -e "${BLUE}Test logs preserved in ./logs/ directory${NC}"; fi; rm -rf "$temp_dir"' EXIT
+    trap 'mkdir -p "./logs"; find "$temp_dir" -name "test_results_*.log" -type f -exec cp {} "./logs/" \; 2>/dev/null; echo -e "${BLUE}Test logs preserved in ./logs/ directory${NC}"; rm -rf "$temp_dir"' EXIT
     
     # Clone the repository
     echo -e "${BLUE}Cloning SmashLang repository...${NC}"
@@ -485,7 +485,7 @@ if [ -z "$DOWNLOADED_INSTALLER" ] && [ "$1" = "--master" ]; then
   # Create a temporary directory for cloning the repository
   TEMP_DIR=$(mktemp -d)
   # Set up cleanup trap, but preserve logs first
-  trap 'mkdir -p "./logs"; if ls "$TEMP_DIR/logs/test_results_"*.log &>/dev/null; then cp "$TEMP_DIR/logs/test_results_"*.log "./logs/"; echo -e "${BLUE}Test logs preserved in ./logs/ directory${NC}"; fi; rm -rf "$TEMP_DIR"' EXIT
+  trap 'mkdir -p "./logs"; find "$TEMP_DIR" -name "test_results_*.log" -type f -exec cp {} "./logs/" \; 2>/dev/null; echo -e "${BLUE}Test logs preserved in ./logs/ directory${NC}"; rm -rf "$TEMP_DIR"' EXIT
   
   # Clone the repository
   echo -e "${BLUE}Cloning SmashLang repository...${NC}"
