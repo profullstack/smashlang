@@ -33,3 +33,4 @@ Cargo.lock
 *.smash.ll
 *.smash.o
 build/
+logs/
