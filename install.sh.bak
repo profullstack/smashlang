@@ -120,12 +120,6 @@ install_linux() {
     echo -e "${BLUE}Cloning SmashLang repository...${NC}"
     git clone --depth 1 "$REPO_URL" "$temp_dir"
     # Run tests when using master branch
-    run_tests "$temp_dir"
-    # Run tests when using master branch
-    run_tests "$temp_dir"
-      # Run tests when using master branch
-      run_tests "$temp_dir"
-    # Run tests when using master branch
       # Run tests when using master branch
       run_tests "$temp_dir"
     run_tests "$temp_dir"
@@ -561,12 +555,6 @@ install_macos() {
     run_tests "$temp_dir"
     # Run tests when using master branch
     run_tests "$temp_dir"
-      # Run tests when using master branch
-      run_tests "$temp_dir"
-    # Run tests when using master branch
-    run_tests "$temp_dir"
-    # Run tests when using master branch
-    run_tests "$temp_dir"
     
     # Copy binaries from the repository
     echo -e "${BLUE}Installing SmashLang binaries...${NC}"
@@ -655,12 +643,6 @@ install_windows() {
     rm -rf "$temp_dir"
     echo -e "${BLUE}Cloning SmashLang repository...${NC}"
     git clone --depth 1 "$REPO_URL" "$temp_dir"
-    # Run tests when using master branch
-    run_tests "$temp_dir"
-    # Run tests when using master branch
-    run_tests "$temp_dir"
-      # Run tests when using master branch
-      run_tests "$temp_dir"
     # Run tests when using master branch
     run_tests "$temp_dir"
     # Run tests when using master branch
@@ -1219,7 +1201,6 @@ fi
 # Run the main function
 main "$@"
 # Run tests for SmashLang
-# Run tests for SmashLang
 run_tests() {
   local repo_dir="$1"
   
@@ -1270,5 +1251,4 @@ run_tests() {
     echo -e "${YELLOW}Warning: Cargo not found, skipping tests.${NC}"
   fi
 }
-
 
