@@ -306,7 +306,7 @@ impl Repl {
                                 Value::Float(f) => result.push_str(&f.to_string()),
                                 Value::Boolean(b) => result.push_str(&b.to_string()),
                                 Value::Null => result.push_str("null"),
-                                Value::Regex(r) => result.push_str(&format!("/{}\\/, r)),
+                                Value::Regex(r) => result.push_str(&format!("/{}\\\\/, r))
                                 Value::Undefined => result.push_str("undefined"),
                                 _ => result.push_str(&format!("{:?}", value))
                             }
@@ -333,13 +333,13 @@ impl Repl {
                     (Value::Number(l), "*", Value::Number(r)) => Ok(Value::Number(l * r)),
                     (Value::Number(l), "/", Value::Number(r)) => {
                         if r == 0 {
-                            return Err("Division by zero".to_string());
+                            return Err("Division by zero ".to_string());
                         }
                         Ok(Value::Number(l / r))
                     },
                     (Value::Number(l), "%", Value::Number(r)) => {
                         if r == 0 {
-                            return Err("Modulo by zero".to_string());
+                            return Err("Modulo by zero ".to_string());
                         }
                         Ok(Value::Number(l % r))
                     },
@@ -380,7 +380,7 @@ impl Repl {
                 if let Some(value) = scope.get(name) {
                     Ok(value)
                 } else {
-                    Err(format!("Variable '{}' not found", name))
+                    Err(format!("Variable '{}' not found ", name))
                 }
             },
             
@@ -453,10 +453,10 @@ impl Repl {
                         scope.set(name, Value::Number(new_value));
                         Ok(Value::Number(new_value))
                     } else {
-                        Err("Can only increment numeric variables".to_string())
+                        Err("Can only increment numeric variables ".to_string())
                     }
                 } else {
-                    Err("Can only increment variables".to_string())
+                    Err("Can only increment variables ".to_string())
                 }
             },
             
@@ -467,10 +467,10 @@ impl Repl {
                         scope.set(name, Value::Number(old_value + 1));
                         Ok(Value::Number(old_value)) // Return the original value for post-increment
                     } else {
-                        Err("Can only increment numeric variables".to_string())
+                        Err("Can only increment numeric variables ".to_string())
                     }
                 } else {
-                    Err("Can only increment variables".to_string())
+                    Err("Can only increment variables ".to_string())
                 }
             },
             
@@ -484,7 +484,7 @@ impl Repl {
                         Err("Can only decrement numeric variables".to_string())
                     }
                 } else {
-                    Err("Can only decrement variables".to_string())
+                    Err("Can only decrement variables ".to_string())
                 }
             },
             
@@ -498,7 +498,7 @@ impl Repl {
                         Err("Can only decrement numeric variables".to_string())
                     }
                 } else {
-                    Err("Can only decrement variables".to_string())
+                    Err("Can only decrement variables ".to_string())
                 }
             },
             
@@ -524,7 +524,7 @@ impl Repl {
                             // Handle both / and /= for division
                             (Value::Number(left), Value::Number(right), op) if op == "/" || op == "/=" => {
                                 if *right == 0 {
-                                    return Err("Division by zero".to_string());
+                                    return Err("Division by zero ".to_string());
                                 }
                                 Value::Number(left / *right)
                             },
@@ -534,10 +534,10 @@ impl Repl {
                         scope.set(name, new_value.clone());
                         Ok(new_value)
                     } else {
-                        Err(format!("Variable '{}' not found", name))
+                        Err(format!("Variable '{}' not found ", name))
                     }
                 } else {
-                    Err("Left side of assignment must be a variable".to_string())
+                    Err("Left side of assignment must be a variable ".to_string())
                 }
             },
             
@@ -567,7 +567,7 @@ impl Repl {
                                 Value::Array(_) => print!("[Array]"),
                                 Value::Object(_) => print!("{{}}"),
                                 Value::Function(_, _, _) => print!("[Function]"),
-                                Value::Regex(r) => print!("/{}\\/, r),
+                                Value::Regex(r) => print!("/{}\\\\/, r),
                                 Value::Undefined => print!("undefined"),
                             }
                         }
@@ -783,6 +783,7 @@ impl Repl {
                             Value::Array(arr) => !arr.is_empty(),
                             Value::Object(obj) => !obj.is_empty(),
                             Value::Function(_, _, _) => true,
+                            Value::Regex(_) => true,
                         };
                         
                         if is_truthy {
@@ -1376,9 +1377,10 @@ impl Repl {
                                                 Value::String(s) => !s.is_empty(),
                                                 Value::Array(a) => !a.is_empty(),
                                                 Value::Object(_) => true,
+                                                Value::Function(_, _, _) => true,
+                                                Value::Regex(_) => true,
                                                 Value::Null => false,
                                                 Value::Undefined => false,
-                                                Value::Function(_, _, _) => true,
                                             };
                                             
                                             // If truthy, return this item
@@ -1580,6 +1582,7 @@ impl Repl {
                                         Value::Array(_) => "[Array]".to_string(),
                                         Value::Object(_) => "[Object]".to_string(),
                                         Value::Function(_, _, _) => "[Function]".to_string(),
+                                        Value::Regex(r) => format!("/{}\\\\/, r)
                                     };
                                     parts.push(format!("\"{}\":{}", key, value_str));
                                 }
