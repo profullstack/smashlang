@@ -1,0 +1,95 @@
+// stdio/package.smash - Template for creating a new SmashLang package
+// Replace all placeholders with your package's information
+{
+  "name": "package_name",  // Required: Package name (lowercase, underscores for multi-word)
+  "version": "0.1.0",      // Required: Package version (semantic versioning)
+  "description": "A brief description of what your package does",  // Required
+  "license": "MIT",        // Required: License identifier
+  "authors": [
+    "Your Name",           // Required: List of authors
+    "Another Contributor"
+  ],
+  "maintainers": [
+    "@github_username",    // Optional: GitHub usernames of maintainers
+    "@another_maintainer"
+  ],
+  "dependencies": [
+    // Optional: Other SmashLang packages required
+    // "http",
+    // "json"
+  ],
+  "url": "https://example.com/your-package-0.1.0.tar.gz",  // Required: Source URL
+  "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",  // Required: SHA256 checksum
+  
+  // Optional: System dependencies required
+  "native_dependencies": [
+    // {
+    //   "name": "dependency_name",
+    //   "version": ">=1.0.0",
+    //   "debian": "package-name",
+    //   "fedora": "package-name",
+    //   "arch": "package-name",
+    //   "macos": "package-name",
+    //   "windows": "package-name"
+    // }
+  ],
+  
+  // Optional: Build steps (for packages that need compilation)
+  "build": [
+    // "./configure --prefix=#{prefix}",
+    // "make",
+    // "make install"
+    "command -v pandoc >/dev/null 2>&1 || { echo \"WARNING: pandoc is not installed. Skipping index.html generation.\"; exit 0; }",
+    "FAVICON=\"./assets/favicon.svg\"; [ -f assets/favicon.light.svg ] && FAVICON=\"./assets/favicon.light.svg\"; [ -f assets/favicon.svg ] || FAVICON=\"./assets/favicon.png\"; [ -f assets/favicon.light.png ] && FAVICON=\"./assets/favicon.light.png\"",
+    "pandoc -s README.md -o index.html --metadata title=\"$(grep -m 1 '^# ' README.md | sed 's/^# //g')\" --css=https://cdn.jsdelivr.net/npm/water.css@2/out/water.css --self-contained --include-in-header=\"<link rel=\\\"icon\\\" href=\\\"$FAVICON\\\" type=\\\"image/svg+xml\\\">\" || { echo \"WARNING: Failed to generate index.html\"; exit 0; }",
+    "[ -f package_config.json ] && cp package_config.json #{prefix}/ || true"
+  ],
+  
+  // Optional: Pre-installation script
+  "preinstall": [
+    "[ -f preinstall.smash ] && smash preinstall.smash || true"
+  ],
+  
+  // Required: Installation steps
+  "install": [
+    "cp -r src/* #{prefix}/",
+    "[ -f index.html ] && cp index.html #{prefix}/ || true",
+    "[ -d assets ] && mkdir -p #{prefix}/assets && cp -r assets/* #{prefix}/assets/ || true",
+    "for file in favicon.*.svg favicon.*.png logo.*.svg logo.*.png; do [ -f $file ] && cp $file #{prefix}/ || true; done"
+  ],
+  
+  // Optional: Post-installation script
+  "postinstall": [
+    "[ -f postinstall.smash ] && smash postinstall.smash || true"
+  ],
+  
+  // Required: Validate package structure
+  "validate": [
+    "test -f assets/logo.light.svg || test -f assets/logo.svg || (test -f assets/logo.light.png || test -f assets/logo.png && echo \"WARNING: Using PNG logo instead of preferred SVG format\") || (echo \"ERROR: Missing required logo file (assets/logo.light.svg, assets/logo.svg, assets/logo.light.png, or assets/logo.png)\" && exit 1)",
+    "test -f assets/logo.dark.svg || (test -f assets/logo.dark.png && echo \"WARNING: Using PNG dark logo instead of preferred SVG format\") || echo \"WARNING: Missing dark theme logo file (assets/logo.dark.svg or assets/logo.dark.png). Will use light theme logo for dark theme.\"",
+    "test -f assets/favicon.light.svg || test -f assets/favicon.svg || (test -f assets/favicon.light.png || test -f assets/favicon.png && echo \"WARNING: Using PNG favicon instead of preferred SVG format\") || (echo \"ERROR: Missing required favicon file (assets/favicon.light.svg, assets/favicon.svg, assets/favicon.light.png, or assets/favicon.png)\" && exit 1)",
+    "test -f assets/favicon.dark.svg || (test -f assets/favicon.dark.png && echo \"WARNING: Using PNG dark favicon instead of preferred SVG format\") || echo \"WARNING: Missing dark theme favicon file (assets/favicon.dark.svg or assets/favicon.dark.png). Will use light theme favicon for dark theme.\"",
+    "test -f package_config.json || echo \"WARNING: Missing package_config.json file. Theme support will be limited.\""
+  ],
+  
+  // Optional but recommended: Test commands
+  "test": [
+    // "smash test/run.smash"
+  ],
+  
+  // Required: Exported functions, classes, and objects
+  "exports": {
+    "functionName": "fn functionName(param1, param2) { /* Implementation */ }",
+    "ClassName": "class ClassName { /* Implementation */ }",
+    "nestedObject": {
+      "nestedFunction": "fn nestedFunction() { /* Implementation */ }",
+      "anotherFunction": "fn anotherFunction() { /* Implementation */ }"
+    }
+  },
+  
+  // Optional: Example files
+  "examples": [
+    // "examples/example1.smash",
+    // "examples/example2.smash"
+  ]
+}
