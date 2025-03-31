@@ -1559,7 +1559,7 @@ impl Repl {
                             _ => Err(format!("Property '{}' not found on array", property))
                         }
                     },
-                    Value::Number(n) => {
+                    Value::Number(_n) => {
                         // Handle number properties
                         match property.as_str() {
                             "toString" => Ok(Value::Function("toString".to_string(), vec!["radix".to_string()], Box::new(AstNode::Block(vec![])))),
