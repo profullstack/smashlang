@@ -39,6 +39,8 @@ pub enum Token {
     String(String),
     SingleQuoteString(String), // Single-quoted strings
     TemplateString(String), // Template literals with backticks
+    TemplateStringPart(String), // Parts of template literals between interpolations
+    TemplateInterpolation(Vec<Token>), // Interpolated expressions in template literals
     Regex(String),
     Bool(bool),
     Null,
@@ -100,6 +102,9 @@ pub enum Token {
     // Modulo operator
     Modulo,     // %
     
+    // Arrow functions
+    FatArrow,    // =>
+    
     // Delimiters
     Colon,     // :
     LParen,    // (
@@ -119,6 +124,38 @@ pub enum Token {
     Backtick,  // `
     SingleQuote, // '
     At,        // @
+}
+
+// Helper function to tokenize interpolated expressions in template strings
+fn tokenize_interpolation<I>(start: I, end: I) -> Vec<Token>
+where
+    I: Iterator<Item = char> + Clone,
+{
+    // Extract the text between the iterators
+    let mut text = String::new();
+    let mut iter = start;
+    
+    // Find the position where the end iterator is
+    let mut brace_count = 1; // We start after the opening {
+    
+    while brace_count > 0 {
+        if let Some(ch) = iter.next() {
+            if ch == '{' {
+                brace_count += 1;
+            } else if ch == '}' {
+                brace_count -= 1;
+                if brace_count == 0 {
+                    break; // Don't include the closing brace
+                }
+            }
+            text.push(ch);
+        } else {
+            break; // End of input (shouldn't happen with valid input)
+        }
+    }
+    
+    // Tokenize the extracted text
+    tokenize(&text)
 }
 
 pub fn tokenize(input: &str) -> Vec<Token> {
@@ -228,24 +265,30 @@ pub fn tokenize(input: &str) -> Vec<Token> {
             '=' => {
                 chars.next(); // consume the '='
                 
-                // Check for == or ===
+                // Check for ==, === or => (fat arrow)
                 if let Some(&next_ch) = chars.peek() {
-                    if next_ch == '=' {
-                        chars.next(); // consume the second '='
-                        
-                        // Check for ===
-                        if let Some(&third_ch) = chars.peek() {
-                            if third_ch == '=' {
-                                tokens.push(Token::StrictEqual);
-                                chars.next(); // consume the third '='
+                    match next_ch {
+                        '=' => {
+                            chars.next(); // consume the second '='
+                            
+                            // Check for ===
+                            if let Some(&third_ch) = chars.peek() {
+                                if third_ch == '=' {
+                                    tokens.push(Token::StrictEqual);
+                                    chars.next(); // consume the third '='
+                                } else {
+                                    tokens.push(Token::EqualEqual);
+                                }
                             } else {
                                 tokens.push(Token::EqualEqual);
                             }
-                        } else {
-                            tokens.push(Token::EqualEqual);
-                        }
-                    } else {
-                        tokens.push(Token::Equal);
+                        },
+                        '>' => {
+                            // This is a fat arrow (=>)
+                            tokens.push(Token::FatArrow);
+                            chars.next(); // consume the '>'
+                        },
+                        _ => tokens.push(Token::Equal),
                     }
                 } else {
                     tokens.push(Token::Equal);
@@ -458,6 +501,7 @@ pub fn tokenize(input: &str) -> Vec<Token> {
                                 'r' => string.push('\r'),
                                 '\\' => string.push('\\'),
                                 '`' => string.push('`'),
+                                '$' => string.push('$'), // Allow escaping $ to prevent interpolation
                                 _ => string.push(next_ch),
                             }
                             chars.next(); // consume the escaped character
@@ -465,15 +509,48 @@ pub fn tokenize(input: &str) -> Vec<Token> {
                     } else if ch == '$' {
                         // Handle template interpolation ${...}
                         chars.next(); // consume the $
-                        string.push('$');
                         
                         if let Some(&next_ch) = chars.peek() {
                             if next_ch == '{' {
-                                // For now, just treat ${} as part of the string
-                                // In the future, we'll need to handle interpolation
-                                string.push('{');
+                                // We'll push a special token for the interpolation
+                                tokens.push(Token::TemplateStringPart(string));
+                                string = String::new();
+                                
                                 chars.next(); // consume the {
+                                
+                                // Now we need to find the matching closing brace
+                                let mut brace_count = 1;
+                                
+                                // Save the current position to parse the interpolation expression later
+                                let interp_start = chars.clone();
+                                
+                                while let Some(&interp_ch) = chars.peek() {
+                                    if interp_ch == '{' {
+                                        brace_count += 1;
+                                        chars.next();
+                                    } else if interp_ch == '}' {
+                                        brace_count -= 1;
+                                        if brace_count == 0 {
+                                            // End of interpolation
+                                            chars.next(); // consume the closing }
+                                            break;
+                                        }
+                                        chars.next();
+                                    } else {
+                                        chars.next();
+                                    }
+                                }
+                                
+                                // Parse the interpolation expression
+                                let interp_tokens = tokenize_interpolation(interp_start, chars.clone());
+                                tokens.push(Token::TemplateInterpolation(interp_tokens));
+                            } else {
+                                // Just a $ character without {}
+                                string.push('$');
                             }
+                        } else {
+                            // $ at the end of the string
+                            string.push('$');
                         }
                     } else {
                         string.push(ch);
@@ -481,7 +558,11 @@ pub fn tokenize(input: &str) -> Vec<Token> {
                     }
                 }
                 
-                tokens.push(Token::TemplateString(string));
+                // Push the final part of the template string
+                if !string.is_empty() {
+                    tokens.push(Token::TemplateStringPart(string));
+                }
+                tokens.push(Token::TemplateString(String::new())); // Mark the end of the template string
             }
             'a'..='z' | 'A'..='Z' | '_' => {
                 let mut ident = String::new();

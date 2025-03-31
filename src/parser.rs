@@ -8,6 +8,7 @@ pub enum AstNode {
     Number(i64),
     Float(f64),
     String(String),
+    TemplateLiteral(Vec<AstNode>), // Template literal with interpolation
     Boolean(bool),
     Null,
     Identifier(String),
@@ -63,6 +64,11 @@ pub enum AstNode {
         name: String,
         params: Vec<String>,
         body: Vec<AstNode>,
+    },
+    ArrowFunction {
+        params: Vec<String>,
+        body: Vec<AstNode>,
+        expression: bool, // true if it's an expression arrow function (x => x + 1), false if it has a block body (x => { return x + 1; })
     },
     FunctionCall {
         name: String,
@@ -214,6 +220,10 @@ impl Parser {
 
     fn peek(&self) -> Option<&Token> {
         self.tokens.get(self.pos)
+    }
+
+    fn peek_next(&self) -> Option<&Token> {
+        self.tokens.get(self.pos + 1)
     }
 
     fn advance(&mut self) -> Option<&Token> {
@@ -923,6 +933,12 @@ impl Parser {
     }
     
     fn parse_assignment(&mut self) -> ParseResult<AstNode> {
+        // Check for arrow function
+        if (matches!(self.peek(), Some(Token::Identifier(_))) && matches!(self.peek_next(), Some(Token::FatArrow))) ||
+           (matches!(self.peek(), Some(Token::LParen))) {
+            return self.parse_arrow_function();
+        }
+        
         let expr = self.parse_equality()?;
         
         // Handle regular assignment
@@ -1166,6 +1182,74 @@ impl Parser {
         Ok(expr)
     }
     
+    // Parse arrow function expressions
+    fn parse_arrow_function(&mut self) -> ParseResult<AstNode> {
+        // Parse parameter list
+        let mut params = Vec::new();
+        
+        if matches!(self.peek(), Some(Token::Identifier(_))) {
+            // Single parameter without parentheses: x => ...
+            if let Some(Token::Identifier(param)) = self.peek() {
+                params.push(param.clone());
+                self.advance();
+            }
+        } else if matches!(self.peek(), Some(Token::LParen)) {
+            // Multiple parameters with parentheses: (x, y) => ...
+            self.advance(); // Consume LParen
+            
+            if !matches!(self.peek(), Some(Token::RParen)) {
+                loop {
+                    if let Some(Token::Identifier(param)) = self.peek() {
+                        params.push(param.clone());
+                        self.advance();
+                    } else {
+                        return Err(ParseError::new("Expected parameter name", self.pos));
+                    }
+                    
+                    match self.peek() {
+                        Some(Token::Comma) => {
+                            self.advance();
+                        }
+                        Some(Token::RParen) => break,
+                        _ => return Err(ParseError::new("Expected comma or closing parenthesis", self.pos)),
+                    }
+                }
+            }
+            
+            self.expect(&Token::RParen)?;
+        } else {
+            return Err(ParseError::new("Expected parameter or parameter list", self.pos));
+        }
+        
+        // Expect fat arrow
+        self.expect(&Token::FatArrow)?;
+        
+        // Parse function body
+        let mut body = Vec::new();
+        let is_expression;
+        
+        if matches!(self.peek(), Some(Token::LBrace)) {
+            // Block body: => { ... }
+            is_expression = false;
+            self.advance(); // Consume LBrace
+            
+            while !matches!(self.peek(), Some(Token::RBrace) | None) {
+                if let Some(stmt) = self.parse_statement()? {
+                    body.push(stmt);
+                }
+            }
+            
+            self.expect(&Token::RBrace)?;
+        } else {
+            // Expression body: => expr
+            is_expression = true;
+            let expr = self.parse_expr()?;
+            body.push(expr);
+        }
+        
+        Ok(AstNode::ArrowFunction { params, body, expression: is_expression })
+    }
+
     fn parse_primary(&mut self) -> ParseResult<AstNode> {
         match self.peek() {
             Some(Token::Number(n)) => {
@@ -1183,12 +1267,57 @@ impl Parser {
                 self.advance();
                 Ok(AstNode::String(value))
             },
-            Some(Token::TemplateString(s)) => {
-                let value = s.clone();
+            Some(Token::TemplateStringPart(s)) => {
+                // This is a part of a template string with interpolation
+                let mut parts = Vec::new();
+                let mut string_value = s.clone();
                 self.advance();
-                // For now, treat template literals as regular strings
-                // In the future, we'll need to handle interpolation
-                Ok(AstNode::String(value))
+                
+                // Process all parts of the template string
+                let mut template_parts = Vec::new();
+                template_parts.push(AstNode::String(string_value));
+                
+                // Continue processing until we reach the end of the template string
+                while !matches!(self.peek(), Some(Token::TemplateString(_))) {
+                    match self.peek() {
+                        Some(Token::TemplateInterpolation(_)) => {
+                            // Parse the interpolated expression
+                            if let Token::TemplateInterpolation(tokens) = self.peek().unwrap() {
+                                // Create a temporary parser for the interpolation tokens
+                                let mut interp_parser = Parser::new(tokens.clone());
+                                let expr = interp_parser.parse_expr()?;
+                                template_parts.push(expr);
+                            }
+                            self.advance();
+                        },
+                        Some(Token::TemplateStringPart(s)) => {
+                            // Another string part after interpolation
+                            template_parts.push(AstNode::String(s.clone()));
+                            self.advance();
+                        },
+                        _ => {
+                            return Err(ParseError::new("Unexpected token in template string", self.pos));
+                        }
+                    }
+                }
+                
+                // Consume the final TemplateString token
+                self.advance();
+                
+                // If there's only one part and it's a string, just return that
+                if template_parts.len() == 1 {
+                    if let AstNode::String(s) = &template_parts[0] {
+                        return Ok(AstNode::String(s.clone()));
+                    }
+                }
+                
+                // Otherwise, return a template literal node
+                Ok(AstNode::TemplateLiteral(template_parts))
+            },
+            Some(Token::TemplateString(s)) => {
+                // This is a simple template string without interpolation
+                self.advance();
+                Ok(AstNode::String(s.clone()))
             },
             Some(Token::Bool(value)) => {
                 let bool_value = *value;

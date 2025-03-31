@@ -5,7 +5,7 @@ fn testLanguageFeatures() {
   // String literals
   const doubleQuoted = "This is a double-quoted string";
   const singleQuoted = 'This is a single-quoted string';
-  const templateLiteral = `This is a template literal with ${doubleQuoted.length} characters`;
+  const templateLiteral = `This is a great template literal with ${doubleQuoted.length} characters`;
   
   print(doubleQuoted);
   print(singleQuoted);
