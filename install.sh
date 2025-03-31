@@ -52,8 +52,15 @@ run_tests() {
     cargo test > "$log_file.tmp" 2>&1 || true
     local main_test_result=$?
     if [ -f "$log_file.tmp" ]; then
+      # Display output to console
       cat "$log_file.tmp"
+      # Save output to log file
       cat "$log_file.tmp" >> "$log_file"
+      # Extract and save test summary
+      if grep -q "test result:" "$log_file.tmp"; then
+        echo "\nTest Summary:" >> "$log_file"
+        grep "test result:" "$log_file.tmp" >> "$log_file"
+      fi
       rm "$log_file.tmp"
     else
       echo "Error: Test output file not created" >> "$log_file"
@@ -67,8 +74,15 @@ run_tests() {
     cargo test --all > "$log_file.tmp" 2>&1 || true
     local all_test_result=$?
     if [ -f "$log_file.tmp" ]; then
+      # Display output to console
       cat "$log_file.tmp"
+      # Save output to log file
       cat "$log_file.tmp" >> "$log_file"
+      # Extract and save test summary
+      if grep -q "test result:" "$log_file.tmp"; then
+        echo "\nTest Summary:" >> "$log_file"
+        grep "test result:" "$log_file.tmp" >> "$log_file"
+      fi
       rm "$log_file.tmp"
     else
       echo "Error: Test output file not created" >> "$log_file"
@@ -82,8 +96,15 @@ run_tests() {
     cargo test --all-features > "$log_file.tmp" 2>&1 || true
     local features_test_result=$?
     if [ -f "$log_file.tmp" ]; then
+      # Display output to console
       cat "$log_file.tmp"
+      # Save output to log file
       cat "$log_file.tmp" >> "$log_file"
+      # Extract and save test summary
+      if grep -q "test result:" "$log_file.tmp"; then
+        echo "\nTest Summary:" >> "$log_file"
+        grep "test result:" "$log_file.tmp" >> "$log_file"
+      fi
       rm "$log_file.tmp"
     else
       echo "Error: Test output file not created" >> "$log_file"
@@ -233,11 +254,11 @@ display_test_results() {
   
   if [ -n "$log_file" ] && [ -f "$log_file" ]; then
     echo -e "\n${BLUE}Test Results Summary${NC}"
-    echo -e "${BLUE}-------------------${NC}"
+    echo -e "-------------------"
     echo -e "A detailed test log has been saved to: $log_file"
     
     # Check if all tests passed
-    if grep -q "TEST SUMMARY: All tests passed successfully!" "$log_file"; then
+    if grep -q "test result: ok" "$log_file"; then
       echo -e "${GREEN}All tests passed successfully!${NC}"
     else
       echo -e "${YELLOW}Some tests failed. See the log file for details.${NC}"
@@ -245,36 +266,46 @@ display_test_results() {
     
     # Display important test information at the end
     echo -e "\n${BLUE}Important Test Information${NC}"
-    echo -e "${BLUE}------------------------${NC}"
+    echo -e "------------------------"
     
     # Extract and display test results
-    echo -e "${YELLOW}Main Crate Tests:${NC}"
-    if grep -q "Main Crate Tests" "$log_file"; then
-      grep -A 5 "Main Crate Tests" "$log_file" | grep -v "Main Crate Tests" | grep -v -- "---------------" | head -n 3
+    echo "Main Crate Tests:"
+    if grep -q "test result:" "$log_file"; then
+      grep -B 1 -A 1 "test result:" "$log_file" | head -3 | grep -v "Doc-tests"
+    elif grep -q "Running main crate tests" "$log_file"; then
+      grep -A 10 "Running main crate tests" "$log_file" | grep -E "Compiling|Running|warning:|error:|test result:" | head -5
     else
       echo "No main crate test results found"
     fi
     
-    echo -e "\n${YELLOW}All Packages Tests:${NC}"
-    if grep -q "All Packages Tests" "$log_file"; then
-      grep -A 5 "All Packages Tests" "$log_file" | grep -v "All Packages Tests" | grep -v -- "-----------------" | head -n 3
+    echo
+    
+    # Extract all packages test results
+    echo "All Packages Tests:"
+    if grep -q "Running tests for all packages" "$log_file"; then
+      grep -A 10 "Running tests for all packages" "$log_file" | grep -E "Compiling|Running|warning:|error:|test result:" | head -5
     else
       echo "No package test results found"
     fi
     
-    echo -e "\n${YELLOW}All Features Tests:${NC}"
-    if grep -q "All Features Tests" "$log_file"; then
-      grep -A 5 "All Features Tests" "$log_file" | grep -v "All Features Tests" | grep -v -- "-----------------" | head -n 3
+    echo
+    
+    # Extract all features test results
+    echo "All Features Tests:"
+    if grep -q "Running tests with all features enabled" "$log_file"; then
+      grep -A 10 "Running tests with all features enabled" "$log_file" | grep -E "Compiling|Running|warning:|error:|test result:" | head -5
     else
       echo "No feature test results found"
     fi
     
-    # Display any failures
-    echo -e "\n${YELLOW}Test Failures (if any):${NC}"
-    if grep -i "failed" "$log_file" | grep -v "0 failed" | grep -q "."; then
-      grep -i "failed" "$log_file" | grep -v "0 failed" | head -n 10
+    echo
+    
+    # Extract test failures if any
+    echo "Test Failures (if any):"
+    if grep -E "error:|failed|FAILED|panicked" "$log_file" | grep -v "0 failed" | grep -v "waiting for other jobs to finish" | grep -q "."; then
+      grep -B 1 -A 2 -E "error:|failed|FAILED|panicked" "$log_file" | grep -v "0 failed" | grep -v "waiting for other jobs to finish" | head -10
     else
-      echo -e "${GREEN}No test failures found${NC}"
+      echo "No test failures found"
     fi
     
     echo -e "\nTo view the full test results, run: cat $log_file"
