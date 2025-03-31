@@ -947,9 +947,54 @@ impl Parser {
     
     fn parse_assignment(&mut self) -> ParseResult<AstNode> {
         // Check for arrow function
-        if (matches!(self.peek(), Some(Token::Identifier(_))) && matches!(self.peek_next(), Some(Token::FatArrow))) ||
-           (matches!(self.peek(), Some(Token::LParen))) {
+        // Single parameter arrow function: x => ...
+        if matches!(self.peek(), Some(Token::Identifier(_))) && matches!(self.peek_next(), Some(Token::FatArrow)) {
             return self.parse_arrow_function();
+        }
+        
+        // Multiple parameters arrow function: (x, y) => ...
+        if matches!(self.peek(), Some(Token::LParen)) {
+            // Save current position to backtrack if needed
+            let current_pos = self.pos;
+            let tokens_clone = self.tokens.clone();
+            
+            // Try to parse as arrow function
+            self.advance(); // Consume LParen
+            let mut is_arrow_fn = true;
+            let mut param_count = 0;
+            
+            // Parse parameters until we find a closing parenthesis
+            while !matches!(self.peek(), Some(Token::RParen) | None) {
+                if matches!(self.peek(), Some(Token::Identifier(_))) {
+                    param_count += 1;
+                    self.advance();
+                    
+                    if matches!(self.peek(), Some(Token::Comma)) {
+                        self.advance();
+                    } else if !matches!(self.peek(), Some(Token::RParen)) {
+                        is_arrow_fn = false;
+                        break;
+                    }
+                } else {
+                    is_arrow_fn = false;
+                    break;
+                }
+            }
+            
+            // Check if we have a closing parenthesis followed by a fat arrow
+            if is_arrow_fn && matches!(self.peek(), Some(Token::RParen)) {
+                self.advance(); // Consume RParen
+                if matches!(self.peek(), Some(Token::FatArrow)) {
+                    // Reset position and parse as arrow function
+                    self.pos = current_pos;
+                    self.tokens = tokens_clone;
+                    return self.parse_arrow_function();
+                }
+            }
+            
+            // Reset position if not an arrow function
+            self.pos = current_pos;
+            self.tokens = tokens_clone;
         }
         
         let expr = self.parse_equality()?;

@@ -542,7 +542,15 @@ pub fn tokenize(input: &str) -> Vec<Token> {
                                 }
                                 
                                 // Parse the interpolation expression
-                                let interp_tokens = tokenize_interpolation(interp_start, chars.clone());
+                                let interp_text = interp_start.take_while(|&c| {
+                                    let end_reached = c == '}' && brace_count == 1;
+                                    if c == '{' { brace_count += 1; }
+                                    else if c == '}' { brace_count -= 1; }
+                                    !end_reached
+                                }).collect::<String>();
+                                
+                                // Tokenize the interpolation expression
+                                let interp_tokens = tokenize(&interp_text);
                                 tokens.push(Token::TemplateInterpolation(interp_tokens));
                             } else {
                                 // Just a $ character without {}
