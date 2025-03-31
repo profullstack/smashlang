@@ -115,8 +115,92 @@ run_tests() {
     fi
     echo "" >> "$log_file"
     
+    # Run SmashLang package tests
+    echo -e "${BLUE}Running SmashLang package tests...${NC}"
+    echo "SmashLang Package Tests" >> "$log_file"
+    echo "---------------------" >> "$log_file"
+    
+    # Check if smashlang_packages directory exists
+    if [ -d "$repo_dir/smashlang_packages" ]; then
+      echo "Testing SmashLang packages..." >> "$log_file"
+      # Find all .test.smash files in the smashlang_packages directory
+      local test_files=$(find "$repo_dir/smashlang_packages" -name "*.test.smash" -type f)
+      local package_test_result=0
+      
+      if [ -n "$test_files" ]; then
+        echo "Found SmashLang package tests:" >> "$log_file"
+        echo "$test_files" >> "$log_file"
+        echo "" >> "$log_file"
+        
+        # Run each test file using the smashtest binary
+        for test_file in $test_files; do
+          echo "Running test: $test_file" >> "$log_file"
+          (cd "$repo_dir" && ./target/release/smashtest "$test_file") > "$log_file.tmp" 2>&1 || package_test_result=1
+          
+          if [ -f "$log_file.tmp" ]; then
+            # Display output to console
+            cat "$log_file.tmp"
+            # Save output to log file
+            cat "$log_file.tmp" >> "$log_file"
+            rm "$log_file.tmp"
+          fi
+          echo "" >> "$log_file"
+        done
+      else
+        echo "No SmashLang package tests found." >> "$log_file"
+      fi
+    else
+      echo "smashlang_packages directory not found. Skipping package tests." >> "$log_file"
+      local package_test_result=0
+    fi
+    
+    # Run doc tests
+    echo -e "${BLUE}Running documentation tests...${NC}"
+    echo "Documentation Tests" >> "$log_file"
+    echo "------------------" >> "$log_file"
+    
+    # Check if docs directory exists
+    if [ -d "$repo_dir/docs" ]; then
+      echo "Testing documentation examples..." >> "$log_file"
+      # Find all .smash files in the docs directory
+      local doc_files=$(find "$repo_dir/docs" -name "*.smash" -type f)
+      local doc_test_result=0
+      
+      if [ -n "$doc_files" ]; then
+        echo "Found documentation examples:" >> "$log_file"
+        echo "$doc_files" >> "$log_file"
+        echo "" >> "$log_file"
+        
+        # Compile each example file to verify it works
+        for doc_file in $doc_files; do
+          echo "Compiling example: $doc_file" >> "$log_file"
+          local output_file="$(dirname "$doc_file")/$(basename "$doc_file" .smash)_compiled"
+          (cd "$repo_dir" && ./target/release/smashc "$doc_file" -o "$output_file") > "$log_file.tmp" 2>&1 || doc_test_result=1
+          
+          if [ -f "$log_file.tmp" ]; then
+            # Display output to console
+            cat "$log_file.tmp"
+            # Save output to log file
+            cat "$log_file.tmp" >> "$log_file"
+            rm "$log_file.tmp"
+          fi
+          echo "" >> "$log_file"
+          
+          # Remove compiled output file
+          if [ -f "$output_file" ]; then
+            rm "$output_file"
+          fi
+        done
+      else
+        echo "No documentation examples found." >> "$log_file"
+      fi
+    else
+      echo "docs directory not found. Skipping documentation tests." >> "$log_file"
+      local doc_test_result=0
+    fi
+    
     # Check if any tests failed
-    if [ $main_test_result -eq 0 ] && [ $all_test_result -eq 0 ] && [ $features_test_result -eq 0 ]; then
+    if [ $main_test_result -eq 0 ] && [ $all_test_result -eq 0 ] && [ $features_test_result -eq 0 ] && [ $package_test_result -eq 0 ] && [ $doc_test_result -eq 0 ]; then
       echo -e "${GREEN}All tests passed successfully!${NC}"
       echo "TEST SUMMARY: All tests passed successfully!" >> "$log_file"
     else
@@ -303,6 +387,34 @@ display_test_results() {
       grep -A 10 "Running tests with all features enabled" "$log_file" | grep -E "Compiling|Running|warning:|error:|test result:" | head -5
     else
       echo "No feature test results found"
+    fi
+    
+    echo
+    
+    # Extract SmashLang package test results
+    echo "SmashLang Package Tests:"
+    if grep -q "Running SmashLang package tests" "$log_file"; then
+      if grep -q "Found SmashLang package tests:" "$log_file"; then
+        grep -A 10 "Found SmashLang package tests:" "$log_file" | head -5
+      else
+        echo "No SmashLang package tests found"
+      fi
+    else
+      echo "SmashLang package tests were not run"
+    fi
+    
+    echo
+    
+    # Extract documentation test results
+    echo "Documentation Tests:"
+    if grep -q "Running documentation tests" "$log_file"; then
+      if grep -q "Found documentation examples:" "$log_file"; then
+        grep -A 10 "Found documentation examples:" "$log_file" | head -5
+      else
+        echo "No documentation examples found"
+      fi
+    else
+      echo "Documentation tests were not run"
     fi
     
     echo
