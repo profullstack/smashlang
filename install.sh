@@ -358,6 +358,13 @@ install_linux() {
     echo -e "${BLUE}Cloning SmashLang repository...${NC}"
     git clone --depth 1 "$REPO_URL" "$temp_dir"
     
+    # Check if docs/getting-started exists locally but not in the cloned repo
+    if [ -d "$(pwd)/docs/getting-started" ] && [ ! -d "$temp_dir/docs/getting-started" ]; then
+      echo -e "${BLUE}Copying docs/getting-started from local repository...${NC}"
+      mkdir -p "$temp_dir/docs/getting-started"
+      cp -r "$(pwd)/docs/getting-started/"* "$temp_dir/docs/getting-started/"
+    fi
+    
     # Copy binaries from the repository
     echo -e "${BLUE}Installing SmashLang binaries...${NC}"
     echo -e "${BLUE}Building SmashLang from source...${NC}"
