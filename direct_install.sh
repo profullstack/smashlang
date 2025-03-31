@@ -1,7 +1,8 @@
 #!/bin/bash
 
-# SmashLang Installer Script
-# This script installs SmashLang on Windows, macOS, and Linux systems
+# This script directly installs SmashLang without relying on the GitHub installer
+
+set -e
 
 # Set color variables
 RED="\033[0;31m"
@@ -95,28 +96,18 @@ run_tests() {
       done
     fi
     
-    # Save the log file path for later use
-    echo "$log_file" > "$repo_dir/test_log_path.txt"
+    # Display test summary
+    echo -e "\n${BLUE}Test Results Summary${NC}"
+    echo -e "${BLUE}-------------------${NC}"
+    echo -e "A detailed test log has been saved to: $log_file"
+    if [ $main_test_result -eq 0 ] && [ $all_test_result -eq 0 ] && [ $features_test_result -eq 0 ]; then
+      echo -e "${GREEN}All tests passed successfully!${NC}"
+    else
+      echo -e "${YELLOW}Some tests failed. See the log file for details.${NC}"
+    fi
   else
     echo -e "${YELLOW}Warning: Cargo not found, skipping tests.${NC}"
     echo "Cargo not found, tests were skipped." >> "$log_file"
-  fi
-}
-
-# Display test results at the end of installation
-display_test_results() {
-  if [ -f "$1/test_log_path.txt" ]; then
-    local log_file=$(cat "$1/test_log_path.txt")
-    if [ -f "$log_file" ]; then
-      echo -e "\n${BLUE}Test Results Summary${NC}"
-      echo -e "${BLUE}-------------------${NC}"
-      echo -e "A detailed test log has been saved to: $log_file"
-      if grep -q "TEST SUMMARY: All tests passed successfully!" "$log_file"; then
-        echo -e "${GREEN}All tests passed successfully!${NC}"
-      else
-        echo -e "${YELLOW}Some tests failed. See the log file for details.${NC}"
-      fi
-    fi
   fi
 }
 
@@ -173,21 +164,6 @@ check_requirements() {
   fi
 }
 
-# Download a file
-download() {
-  local url=$1
-  local output_file=$2
-  
-  if command -v curl &> /dev/null; then
-    curl -fsSL "$url" -o "$output_file"
-  elif command -v wget &> /dev/null; then
-    wget -q -O "$output_file" "$url"
-  else
-    echo -e "${RED}Error: Neither curl nor wget is installed. Please install one of them and try again.${NC}"
-    exit 1
-  fi
-}
-
 # Create directory if it doesn't exist
 create_dir() {
   local dir=$1
@@ -203,8 +179,6 @@ create_dir() {
 
 # Install SmashLang on Linux
 install_linux() {
-  local use_master=$1
-  
   echo -e "${BLUE}Installing SmashLang on Linux...${NC}"
   
   # Create installation directory
@@ -213,67 +187,46 @@ install_linux() {
   create_dir "$LINUX_INSTALL_DIR/src"
   create_dir "$LINUX_INSTALL_DIR/docs"
   
-  if [ "$use_master" == "true" ]; then
-    echo -e "${BLUE}Using GitHub master branch for installation...${NC}"
-    
-    # Create a temporary directory for cloning the repository
-    local temp_dir=$(mktemp -d)
-    trap "rm -rf $temp_dir" EXIT
-    
-    # Clone the repository
-    echo -e "${BLUE}Cloning SmashLang repository...${NC}"
-    git clone --depth 1 "$REPO_URL" "$temp_dir"
-    
-    # Run tests when using master branch
-    run_tests "$temp_dir"
-    
-    # Copy binaries from the repository
-    echo -e "${BLUE}Installing SmashLang binaries...${NC}"
-    echo -e "${BLUE}Building SmashLang from source...${NC}"
-    
-    # Capture git hash for version info
-    local GIT_HASH=$(cd "$temp_dir" && git rev-parse --short HEAD)
-    echo "$GIT_HASH" > "$temp_dir/src/git_hash.txt"
-    
-    # Make sure the git hash file gets copied to the installation directory
-    mkdir -p "$LINUX_INSTALL_DIR/src"
-    cp "$temp_dir/src/git_hash.txt" "$LINUX_INSTALL_DIR/git_hash.txt"
-    cp "$temp_dir/src/git_hash.txt" "$LINUX_INSTALL_DIR/src/git_hash.txt"
-    
-    # Build release version
-    cd "$temp_dir"
-    cargo build --release
-    
-    # Copy binaries
-    cp "$temp_dir/target/release/smash" "$LINUX_INSTALL_DIR/bin/"
-    cp "$temp_dir/target/release/smashc" "$LINUX_INSTALL_DIR/bin/"
-    cp "$temp_dir/target/release/smashpkg" "$LINUX_INSTALL_DIR/bin/"
-    
-    # Copy documentation
-    echo -e "${BLUE}Installing documentation...${NC}"
-    if [ -d "$temp_dir/docs" ]; then
-      cp -r "$temp_dir/docs" "$LINUX_INSTALL_DIR/"
-      echo -e "${BLUE}Documentation installed to $LINUX_INSTALL_DIR/docs${NC}"
-    fi
-    
-    # Display test results summary
-    display_test_results "$temp_dir"
-  else
-    echo -e "${BLUE}Using pre-built binaries for installation...${NC}"
-    
-    # Download pre-built binaries
-    local bin_url="https://github.com/profullstack/smashlang/releases/latest/download/smashlang-linux-x86_64.tar.gz"
-    local bin_file="/tmp/smashlang-linux-x86_64.tar.gz"
-    
-    echo -e "${BLUE}Downloading SmashLang binaries...${NC}"
-    download "$bin_url" "$bin_file"
-    
-    # Extract binaries
-    echo -e "${BLUE}Extracting SmashLang binaries...${NC}"
-    tar -xzf "$bin_file" -C "$LINUX_INSTALL_DIR"
-    
-    # Clean up
-    rm -f "$bin_file"
+  echo -e "${BLUE}Using GitHub master branch for installation...${NC}"
+  
+  # Create a temporary directory for cloning the repository
+  local temp_dir=$(mktemp -d)
+  trap "rm -rf $temp_dir" EXIT
+  
+  # Clone the repository
+  echo -e "${BLUE}Cloning SmashLang repository...${NC}"
+  git clone --depth 1 "$REPO_URL" "$temp_dir"
+  
+  # Run tests when using master branch
+  run_tests "$temp_dir"
+  
+  # Copy binaries from the repository
+  echo -e "${BLUE}Installing SmashLang binaries...${NC}"
+  echo -e "${BLUE}Building SmashLang from source...${NC}"
+  
+  # Capture git hash for version info
+  local GIT_HASH=$(cd "$temp_dir" && git rev-parse --short HEAD)
+  echo "$GIT_HASH" > "$temp_dir/src/git_hash.txt"
+  
+  # Make sure the git hash file gets copied to the installation directory
+  mkdir -p "$LINUX_INSTALL_DIR/src"
+  cp "$temp_dir/src/git_hash.txt" "$LINUX_INSTALL_DIR/git_hash.txt"
+  cp "$temp_dir/src/git_hash.txt" "$LINUX_INSTALL_DIR/src/git_hash.txt"
+  
+  # Build release version
+  cd "$temp_dir"
+  cargo build --release
+  
+  # Copy binaries
+  cp "$temp_dir/target/release/smash" "$LINUX_INSTALL_DIR/bin/"
+  cp "$temp_dir/target/release/smashc" "$LINUX_INSTALL_DIR/bin/"
+  cp "$temp_dir/target/release/smashpkg" "$LINUX_INSTALL_DIR/bin/"
+  
+  # Copy documentation
+  echo -e "${BLUE}Installing documentation...${NC}"
+  if [ -d "$temp_dir/docs" ]; then
+    cp -r "$temp_dir/docs" "$LINUX_INSTALL_DIR/"
+    echo -e "${BLUE}Documentation installed to $LINUX_INSTALL_DIR/docs${NC}"
   fi
   
   # Create symbolic links to binaries
@@ -308,3 +261,62 @@ create_config_linux() {
   "assets_dir": "$LINUX_INSTALL_DIR/assets",
   "packages_dir": "$HOME/.local/share/smashlang_packages"
 }
+EOF
+  
+  echo -e "${BLUE}Creating configuration file...${NC}"
+}
+
+# Display welcome message
+display_welcome() {
+  echo -e ""
+  echo -e "   _____                      _     _                       "
+  echo -e "  / ____|                    | |   | |                      "
+  echo -e " | (___  _ __ ___   __ _ ___| |__ | |     __ _ _ __   __ _ "
+  echo -e "  \___ \| '_ ' _ \ / _' / __| '_ \| |    / _' | '_ \ / _' |"
+  echo -e "  ____) | | | | | | (_| \__ \ | | | |___| (_| | | | | (_| |"
+  echo -e " |_____/|_| |_| |_|\__,_|___/_| |_|______|\__,_|_| |_|\__, |"
+  echo -e "                                                        __/ |"
+  echo -e "                                                       |___/ "
+  echo -e ""
+  echo -e "ud83dudcaa Welcome to SmashLang! ud83dudcaa"
+  echo -e "A bold, high-performance, JavaScript-inspired general-purpose programming language"
+  echo -e "that compiles to native binaries. Made for developers who want the power of C/Rust"
+  echo -e "but the clarity of JavaScript u2014 without the bloat."
+  echo -e ""
+  echo -e "Visit https://smashlang.com for documentation and community resources."
+  echo -e ""
+  echo -e ""
+  echo -e "SmashLang Installer v$VERSION"
+}
+
+# Main function
+main() {
+  # Display welcome message
+  display_welcome
+  
+  # Detect operating system
+  local os=$(detect_os)
+  echo -e "${BLUE}Detected operating system: $os${NC}"
+  
+  # Check for required tools
+  check_requirements "$os"
+  
+  # Install SmashLang based on the detected OS
+  if [ "$os" == "linux" ]; then
+    install_linux
+  elif [ "$os" == "macos" ]; then
+    echo -e "${YELLOW}macOS installation is not implemented in this script yet.${NC}"
+    echo -e "Please use the official installer or install manually."
+    exit 1
+  elif [ "$os" == "windows" ]; then
+    echo -e "${YELLOW}Windows installation is not implemented in this script yet.${NC}"
+    echo -e "Please use the official installer or install manually."
+    exit 1
+  else
+    echo -e "${RED}Error: Unsupported operating system.${NC}"
+    exit 1
+  fi
+}
+
+# Run the main function
+main

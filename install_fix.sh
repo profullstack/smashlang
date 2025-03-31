@@ -1,5 +1,13 @@
 #!/bin/bash
 
+# This script fixes the SmashLang installer
+
+set -e
+
+# Create a fixed version of the installer
+cat > fixed_install.sh << 'EOF'
+#!/bin/bash
+
 # SmashLang Installer Script
 # This script installs SmashLang on Windows, macOS, and Linux systems
 
@@ -308,3 +316,114 @@ create_config_linux() {
   "assets_dir": "$LINUX_INSTALL_DIR/assets",
   "packages_dir": "$HOME/.local/share/smashlang_packages"
 }
+EOF
+  
+  echo -e "${BLUE}Creating configuration file...${NC}"
+}
+
+# Display welcome message
+display_welcome() {
+  echo -e ""
+  echo -e "   _____                      _     _                       "
+  echo -e "  / ____|                    | |   | |                      "
+  echo -e " | (___  _ __ ___   __ _ ___| |__ | |     __ _ _ __   __ _ "
+  echo -e "  \___ \| '_ ' _ \ / _' / __| '_ \| |    / _' | '_ \ / _' |"
+  echo -e "  ____) | | | | | | (_| \__ \ | | | |___| (_| | | | | (_| |"
+  echo -e " |_____/|_| |_| |_|\__,_|___/_| |_|______|\__,_|_| |_|\__, |"
+  echo -e "                                                        __/ |"
+  echo -e "                                                       |___/ "
+  echo -e ""
+  echo -e "\ud83d\udcaa Welcome to SmashLang! \ud83d\udcaa"
+  echo -e "A bold, high-performance, JavaScript-inspired general-purpose programming language"
+  echo -e "that compiles to native binaries. Made for developers who want the power of C/Rust"
+  echo -e "but the clarity of JavaScript \u2014 without the bloat."
+  echo -e ""
+  echo -e "Visit https://smashlang.com for documentation and community resources."
+  echo -e ""
+  echo -e ""
+  echo -e "SmashLang Installer v$VERSION"
+}
+
+# Display help message
+display_help() {
+  echo -e "Usage: ./install.sh [OPTIONS]"
+  echo -e ""
+  echo -e "Options:"
+  echo -e "  --master   Install from the master branch (latest development version)"
+  echo -e "  --upgrade  Upgrade an existing installation"
+  echo -e "  --help     Display this help message"
+  echo -e ""
+  echo -e "Examples:"
+  echo -e "  ./install.sh              # Install the latest stable version"
+  echo -e "  ./install.sh --master     # Install the latest development version"
+  echo -e "  ./install.sh --upgrade    # Upgrade an existing installation"
+}
+
+# Main function
+main() {
+  # Display welcome message
+  display_welcome
+  
+  # Parse command-line arguments
+  local use_master=false
+  local upgrade=false
+  
+  while [[ $# -gt 0 ]]; do
+    case $1 in
+      --master)
+        use_master=true
+        shift
+        ;;
+      --upgrade)
+        upgrade=true
+        shift
+        ;;
+      --help)
+        display_help
+        exit 0
+        ;;
+      *)
+        echo -e "${RED}Error: Unknown option $1${NC}"
+        display_help
+        exit 1
+        ;;
+    esac
+  done
+  
+  # Detect operating system
+  local os=$(detect_os)
+  echo -e "${BLUE}Detected operating system: $os${NC}"
+  
+  # Check for required tools
+  check_requirements "$os"
+  
+  # Install or upgrade SmashLang based on the detected OS
+  if [ "$os" == "linux" ]; then
+    if [ "$upgrade" == "true" ]; then
+      echo -e "${YELLOW}Upgrade functionality is not implemented yet.${NC}"
+      exit 1
+    else
+      install_linux "$use_master"
+    fi
+  elif [ "$os" == "macos" ]; then
+    echo -e "${YELLOW}macOS installation is not implemented in this script yet.${NC}"
+    echo -e "Please use the official installer or install manually."
+    exit 1
+  elif [ "$os" == "windows" ]; then
+    echo -e "${YELLOW}Windows installation is not implemented in this script yet.${NC}"
+    echo -e "Please use the official installer or install manually."
+    exit 1
+  else
+    echo -e "${RED}Error: Unsupported operating system.${NC}"
+    exit 1
+  fi
+}
+
+# Run the main function
+main "$@"
+EOF
+
+chmod +x fixed_install.sh
+
+echo -e "\033[0;32mFixed installer script created as 'fixed_install.sh'\033[0m"
+echo -e "\033[0;34mYou can now run: ./fixed_install.sh --master\033[0m"
