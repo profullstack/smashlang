@@ -141,6 +141,12 @@ install_linux() {
       cp "$temp_dir/src/git_hash.txt" "$LINUX_INSTALL_DIR/git_hash.txt"
       cp "$temp_dir/src/git_hash.txt" "$LINUX_INSTALL_DIR/src/git_hash.txt"
       
+      # Run tests when using master branch
+      echo -e "${BLUE}Running tests...${NC}"
+      cargo test
+      
+      # If tests pass, build the release version
+      echo -e "${BLUE}Building SmashLang from source...${NC}"
       cargo build --release
       
       if [ -f "$temp_dir/target/release/smash" ]; then
