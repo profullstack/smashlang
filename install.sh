@@ -77,6 +77,9 @@ run_tests() {
       chmod +x "docs/getting-started/run_all_examples.sh"
       ./docs/getting-started/run_all_examples.sh 2>&1 | tee -a "$log_file"
       echo "" >> "$log_file"
+    else
+      echo -e "${YELLOW}Warning: Example tests directory not found, skipping example tests.${NC}"
+      echo "Example tests directory not found, tests were skipped." >> "$log_file"
     fi
     
     # Test all packages in smashlang_packages directory if it exists
@@ -215,10 +218,24 @@ check_requirements() {
       echo -e "${RED}Error: gcc is not installed. Please install gcc and try again.${NC}"
       missing_tools=true
     fi
+    
+    # Check for LLVM development files
+    if ! command -v llvm-config &> /dev/null; then
+      echo -e "${YELLOW}Warning: llvm-config not found. LLVM development files may be missing.${NC}"
+      echo -e "${YELLOW}To install LLVM development files on Ubuntu/Debian, run: sudo apt-get install llvm-dev${NC}"
+      echo -e "${YELLOW}To install LLVM development files on Fedora, run: sudo dnf install llvm-devel${NC}"
+      echo -e "${YELLOW}To install LLVM development files on Arch, run: sudo pacman -S llvm${NC}"
+    fi
   elif [ "$os" == "macos" ]; then
     if ! command -v clang &> /dev/null; then
       echo -e "${RED}Error: clang is not installed. Please install Xcode command line tools and try again.${NC}"
       missing_tools=true
+    fi
+    
+    # Check for LLVM development files
+    if ! command -v llvm-config &> /dev/null; then
+      echo -e "${YELLOW}Warning: llvm-config not found. LLVM development files may be missing.${NC}"
+      echo -e "${YELLOW}To install LLVM development files on macOS, run: brew install llvm${NC}"
     fi
   elif [ "$os" == "windows" ]; then
     if ! command -v cl &> /dev/null; then
@@ -259,6 +276,21 @@ create_dir() {
   fi
 }
 
+# Generate package assets
+generate_package_assets() {
+  echo -e "${BLUE}Generating package assets...${NC}"
+  
+  if [ -f "scripts/generate_package_logo.sh" ]; then
+    chmod +x "scripts/generate_package_logo.sh"
+    ./scripts/generate_package_logo.sh
+  fi
+  
+  if [ -f "scripts/generate_favicon.sh" ]; then
+    chmod +x "scripts/generate_favicon.sh"
+    ./scripts/generate_favicon.sh
+  fi
+}
+
 # Install SmashLang on Linux
 install_linux() {
   local use_master=$1
@@ -282,9 +314,6 @@ install_linux() {
     echo -e "${BLUE}Cloning SmashLang repository...${NC}"
     git clone --depth 1 "$REPO_URL" "$temp_dir"
     
-    # Run tests when using master branch
-    run_tests "$temp_dir"
-    
     # Copy binaries from the repository
     echo -e "${BLUE}Installing SmashLang binaries...${NC}"
     echo -e "${BLUE}Building SmashLang from source...${NC}"
@@ -301,6 +330,9 @@ install_linux() {
     # Build release version
     cd "$temp_dir"
     cargo build --release
+    
+    # Run tests after building
+    run_tests "$temp_dir"
     
     # Copy binaries
     cp "$temp_dir/target/release/smash" "$LINUX_INSTALL_DIR/bin/"
