@@ -834,9 +834,37 @@ impl Parser {
         self.parse_assignment()
     }
     
+    fn parse_unary(&mut self) -> ParseResult<AstNode> {
+        // Check for prefix increment/decrement
+        if matches!(self.peek(), Some(Token::Increment)) {
+            self.advance(); // Consume ++
+            let expr = self.parse_primary()?;
+            return Ok(AstNode::PreIncrement(Box::new(expr)));
+        } else if matches!(self.peek(), Some(Token::Decrement)) {
+            self.advance(); // Consume --
+            let expr = self.parse_primary()?;
+            return Ok(AstNode::PreDecrement(Box::new(expr)));
+        }
+        
+        // Otherwise, parse a primary expression
+        let expr = self.parse_primary()?;
+        
+        // Check for postfix increment/decrement
+        if matches!(self.peek(), Some(Token::Increment)) {
+            self.advance(); // Consume ++
+            return Ok(AstNode::PostIncrement(Box::new(expr)));
+        } else if matches!(self.peek(), Some(Token::Decrement)) {
+            self.advance(); // Consume --
+            return Ok(AstNode::PostDecrement(Box::new(expr)));
+        }
+        
+        Ok(expr)
+    }
+    
     fn parse_assignment(&mut self) -> ParseResult<AstNode> {
         let expr = self.parse_equality()?;
         
+        // Handle regular assignment
         if matches!(self.peek(), Some(Token::Equal)) {
             self.advance(); // Consume =
             let value = self.parse_assignment()?;
@@ -851,12 +879,43 @@ impl Parser {
             return Err(ParseError::new("Invalid assignment target", self.pos));
         }
         
+        // Handle compound assignments (+=, -=, *=, /=)
+        if let Some(token) = self.peek() {
+            let op = match token {
+                Token::PlusEqual => {
+                    self.advance(); // Consume +=
+                    String::from("+=")
+                },
+                Token::MinusEqual => {
+                    self.advance(); // Consume -=
+                    String::from("-=")
+                },
+                Token::StarEqual => {
+                    self.advance(); // Consume *=
+                    String::from("*=")
+                },
+                Token::SlashEqual => {
+                    self.advance(); // Consume /=
+                    String::from("/=")
+                },
+                _ => return Ok(expr),
+            };
+            
+            let value = self.parse_assignment()?;
+            
+            return Ok(AstNode::CompoundAssignment {
+                target: Box::new(expr),
+                op,
+                value: Box::new(value),
+            });
+        }
+        
         Ok(expr)
     }
     
     fn parse_equality(&mut self) -> ParseResult<AstNode> {
         // For now, just handle simple expressions
-        self.parse_primary()
+        self.parse_unary()
     }
     
     fn parse_primary(&mut self) -> ParseResult<AstNode> {
