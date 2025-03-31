@@ -9,10 +9,14 @@ let singleQuoted = 'Single quoted string';
 let greeting = `Hello, ${name}!`;
 print(greeting);
 
-// Template literals with expressions
-let stringLength = 24; // Manually set length since property access isn't supported yet
-let templateLiteral = `This is a template literal with ${stringLength} characters`;
+// Template literals with expressions and property access
+let doubleQuoted = "Double quoted string";
+let templateLiteral = `This is a template literal with ${doubleQuoted.length} characters`;
 print(templateLiteral);
+
+// Property access examples
+let str = "Hello, World!";
+print(`The length of '${str}' is ${str.length} characters`);
 
 // Nested template literals
 let innerTemplate = `Inner ${name}`;

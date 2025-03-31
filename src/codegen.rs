@@ -73,6 +73,19 @@ impl<'a> Module<'a> {
         code.push_str("    return result;\n");
         code.push_str("}\n\n");
         
+        // Add helper function for getting string length
+        code.push_str("// Helper function for getting string length\n");
+        code.push_str("char* smash_get_length(const char* str) {\n");
+        code.push_str("    size_t len = strlen(str);\n");
+        code.push_str("    char buffer[32];\n");
+        code.push_str("    snprintf(buffer, sizeof(buffer), \"%zu\", len);\n");
+        code.push_str("    char* result = (char*)malloc(strlen(buffer) + 1);\n");
+        code.push_str("    if (result) {\n");
+        code.push_str("        strcpy(result, buffer);\n");
+        code.push_str("    }\n");
+        code.push_str("    return result;\n");
+        code.push_str("}\n\n");
+        
         // Process each AST node
         let mut has_main_function = false;
         // We'll track if we have a main function
@@ -342,6 +355,19 @@ impl<'a> Module<'a> {
                 
                 call.push_str(")");
                 call
+            },
+            AstNode::PropertyAccess { object, property } => {
+                let obj_code = self.generate_c_code_for_expr(object, indent_level);
+                
+                // Handle common properties based on the object type
+                // For now, we'll only implement a few common properties like length
+                if property == "length" {
+                    // For strings, length is the string length
+                    format!("smash_get_length({})", obj_code)
+                } else {
+                    // For other properties, we'll just return a placeholder
+                    format!("\"Property {} not implemented\"", property)
+                }
             },
             _ => {
                 format!("\"Unsupported expression type\"" )

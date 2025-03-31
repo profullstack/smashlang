@@ -41,6 +41,12 @@ pub enum AstNode {
         false_expr: Box<AstNode>,
     },
     
+    // Property access (e.g., obj.property)
+    PropertyAccess {
+        object: Box<AstNode>,
+        property: String,
+    },
+    
     // Increment/Decrement
     PreIncrement(Box<AstNode>),  // ++x
     PostIncrement(Box<AstNode>), // x++
@@ -1336,8 +1342,30 @@ impl Parser {
                 let id = name.clone();
                 self.advance();
                 
+                // Check for property access (identifier followed by dot and another identifier)
+                let mut expr = AstNode::Identifier(id.clone());
+                
+                // Process property access chains (obj.prop1.prop2)
+                while let Some(Token::Dot) = self.peek() {
+                    self.advance(); // Consume the dot
+                    
+                    // Expect an identifier after the dot
+                    if let Some(Token::Identifier(prop)) = self.peek() {
+                        let property = prop.clone();
+                        self.advance(); // Consume the property identifier
+                        expr = AstNode::PropertyAccess {
+                            object: Box::new(expr),
+                            property,
+                        };
+                    } else {
+                        return Err(ParseError::new("Expected property name after dot", self.pos));
+                    }
+                }
+                
                 // Check if this is a function call (identifier followed by left parenthesis)
                 if let Some(Token::LParen) = self.peek() {
+                    // Save the current expression (which might be a property access)
+                    let func_expr = expr;
                     self.advance(); // Consume the left parenthesis
                     
                     // Parse arguments
@@ -1346,7 +1374,23 @@ impl Parser {
                     // Handle empty argument list
                     if let Some(Token::RParen) = self.peek() {
                         self.advance(); // Consume the right parenthesis
-                        return Ok(AstNode::FunctionCall { name: id, args });
+                        
+                        // Handle different types of function calls
+                        match &func_expr {
+                            AstNode::Identifier(id) => {
+                                return Ok(AstNode::FunctionCall { name: id.clone(), args });
+                            },
+                            AstNode::PropertyAccess { object, property } => {
+                                // For method calls (obj.method())
+                                return Ok(AstNode::FunctionCall { 
+                                    name: property.clone(), 
+                                    args: vec![*object.clone()]  // Pass object as 'this'
+                                });
+                            },
+                            _ => {
+                                return Err(ParseError::new("Invalid function call expression", self.pos));
+                            }
+                        }
                     }
                     
                     // Parse first argument
@@ -1361,11 +1405,28 @@ impl Parser {
                     // Expect closing parenthesis
                     self.expect(&Token::RParen)?;
                     
-                    return Ok(AstNode::FunctionCall { name: id, args });
+                    // Handle different types of function calls with arguments
+                    match &func_expr {
+                        AstNode::Identifier(id) => {
+                            return Ok(AstNode::FunctionCall { name: id.clone(), args });
+                        },
+                        AstNode::PropertyAccess { object, property } => {
+                            // For method calls with args (obj.method(arg1, arg2))
+                            let mut all_args = vec![*object.clone()];  // Pass object as 'this'
+                            all_args.extend(args);
+                            return Ok(AstNode::FunctionCall { 
+                                name: property.clone(), 
+                                args: all_args
+                            });
+                        },
+                        _ => {
+                            return Err(ParseError::new("Invalid function call expression", self.pos));
+                        }
+                    }
                 }
                 
-                // If not a function call, it's just an identifier
-                Ok(AstNode::Identifier(id))
+                // Return the expression (identifier or property access)
+                Ok(expr)
             },
             Some(Token::LParen) => {
                 self.advance();

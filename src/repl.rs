@@ -651,6 +651,44 @@ impl Repl {
                 }
             },
             
+            // Handle property access (obj.property)
+            AstNode::PropertyAccess { object, property } => {
+                // Evaluate the object first
+                let obj_value = self.evaluate_ast_with_scope(object, scope)?;
+                
+                // Handle different property accesses based on the object type
+                match obj_value {
+                    Value::String(s) => {
+                        // Handle string properties
+                        match property.as_str() {
+                            "length" => Ok(Value::Number(s.len() as i64)),
+                            "toUpperCase" => Ok(Value::Function("toUpperCase".to_string(), vec![], Box::new(AstNode::Block(vec![])))),
+                            "toLowerCase" => Ok(Value::Function("toLowerCase".to_string(), vec![], Box::new(AstNode::Block(vec![])))),
+                            "trim" => Ok(Value::Function("trim".to_string(), vec![], Box::new(AstNode::Block(vec![])))),
+                            _ => Err(format!("Property '{}' not found on string", property))
+                        }
+                    },
+                    Value::Array(arr) => {
+                        // Handle array properties
+                        match property.as_str() {
+                            "length" => Ok(Value::Number(arr.len() as i64)),
+                            "push" => Ok(Value::Function("push".to_string(), vec!["item".to_string()], Box::new(AstNode::Block(vec![])))),
+                            "pop" => Ok(Value::Function("pop".to_string(), vec![], Box::new(AstNode::Block(vec![])))),
+                            _ => Err(format!("Property '{}' not found on array", property))
+                        }
+                    },
+                    Value::Object(obj) => {
+                        // Handle object properties by looking them up in the object
+                        if let Some(value) = obj.get(property) {
+                            Ok(value.clone())
+                        } else {
+                            Err(format!("Property '{}' not found on object", property))
+                        }
+                    },
+                    _ => Err(format!("Cannot access property '{}' on this value type", property))
+                }
+            },
+            
             // For simplicity, we'll just return a placeholder for other node types
             _ => Err(format!("Evaluation not implemented for this AST node: {:?}", ast))
         }
