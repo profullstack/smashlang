@@ -1,0 +1,10 @@
+// Simple debug test program
+
+print("Debug test output");
+
+const test_var = 42;
+print(test_var);
+
+if (test_var > 0) {
+    print("Positive number");
+}
