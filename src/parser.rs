@@ -557,6 +557,113 @@ impl Parser {
         }))
     }
     
+    fn parse_do_while(&mut self) -> ParseResult<Option<AstNode>> {
+        self.advance(); // Consume Do token
+        
+        // Parse body
+        let body = if let Some(stmt) = self.parse_statement()? {
+            stmt
+        } else {
+            return Err(ParseError::new("Expected statement after do", self.pos));
+        };
+        
+        // Expect while keyword
+        self.expect(&Token::While)?;
+        
+        // Parse condition
+        self.expect(&Token::LParen)?;
+        let condition = self.parse_expr()?;
+        self.expect(&Token::RParen)?;
+        
+        // Expect semicolon
+        self.expect(&Token::Semicolon)?;
+        
+        Ok(Some(AstNode::DoWhile {
+            body: Box::new(body),
+            condition: Box::new(condition),
+        }))
+    }
+    
+    fn parse_switch(&mut self) -> ParseResult<Option<AstNode>> {
+        self.advance(); // Consume Switch token
+        
+        // Parse expression
+        self.expect(&Token::LParen)?;
+        let expression = self.parse_expr()?;
+        self.expect(&Token::RParen)?;
+        
+        // Parse switch body
+        self.expect(&Token::LBrace)?;
+        
+        let mut cases = Vec::new();
+        let mut default = None;
+        
+        while !matches!(self.peek(), Some(Token::RBrace) | None) {
+            match self.peek() {
+                Some(Token::Case) => {
+                    self.advance(); // Consume Case token
+                    
+                    // Parse case value
+                    let value = self.parse_expr()?;
+                    
+                    // Expect colon
+                    self.expect(&Token::Colon)?;
+                    
+                    // Parse case body
+                    let mut body = Vec::new();
+                    
+                    // Parse statements until we hit a break, case, default, or end of switch
+                    while !matches!(self.peek(), Some(Token::Break) | Some(Token::Case) | Some(Token::Default) | Some(Token::RBrace) | None) {
+                        if let Some(stmt) = self.parse_statement()? {
+                            body.push(stmt);
+                        }
+                    }
+                    
+                    // Skip the break statement if present
+                    if matches!(self.peek(), Some(Token::Break)) {
+                        self.advance(); // Consume Break token
+                        self.expect(&Token::Semicolon)?;
+                    }
+                    
+                    cases.push(SwitchCase { value, body });
+                },
+                Some(Token::Default) => {
+                    self.advance(); // Consume Default token
+                    
+                    // Expect colon
+                    self.expect(&Token::Colon)?;
+                    
+                    // Parse default body
+                    let mut body = Vec::new();
+                    
+                    // Parse statements until we hit a break or end of switch
+                    while !matches!(self.peek(), Some(Token::Break) | Some(Token::Case) | Some(Token::Default) | Some(Token::RBrace) | None) {
+                        if let Some(stmt) = self.parse_statement()? {
+                            body.push(stmt);
+                        }
+                    }
+                    
+                    // Skip the break statement if present
+                    if matches!(self.peek(), Some(Token::Break)) {
+                        self.advance(); // Consume Break token
+                        self.expect(&Token::Semicolon)?;
+                    }
+                    
+                    default = Some(body);
+                },
+                _ => return Err(ParseError::new("Expected case or default in switch statement", self.pos)),
+            }
+        }
+        
+        self.expect(&Token::RBrace)?;
+        
+        Ok(Some(AstNode::Switch {
+            expression: Box::new(expression),
+            cases,
+            default,
+        }))
+    }
+    
     fn parse_for(&mut self) -> ParseResult<Option<AstNode>> {
         // Consume the for keyword
         self.advance(); // for

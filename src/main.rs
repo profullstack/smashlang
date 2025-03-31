@@ -4,7 +4,7 @@ use std::fs;
 use std::path::Path;
 use colored::*;
 
-use smashlang::compiler::compile_file;
+use smashlang::compiler::compile;
 use smashlang::repl::Repl;
 
 const VERSION: &str = "0.1.0";
@@ -379,8 +379,13 @@ fn main() {
                 i += 1;
             }
 
-            println!("{} {} to {}.{}", "Compiling".bright_green(), input, output, emit);
-            compile_file(input, output, target, emit);
+            println!("{} {} to {}", "Compiling".bright_green(), input, output);
+            // Generate object file first (simplified for now)
+            let obj_file = format!("{}.o", output);
+            if let Err(e) = compile(output, &obj_file, target.as_deref()) {
+                println!("{}: {}", "Error".red(), e);
+                process::exit(1);
+            }
             println!("{}", "Compilation complete!".bright_green());
         }
     }
