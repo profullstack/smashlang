@@ -31,6 +31,10 @@ pub fn compile(output: &str, obj_file: &str, target: Option<&str>) -> std::io::R
     
     // Lex and parse the source code
     let tokens = lexer::tokenize(&source);
+    
+    // Debug: Print tokens
+    println!("Tokens: {:?}", tokens);
+    
     let mut parser = Parser::new(tokens);
     let ast = match parser.parse() {
         Ok(ast) => ast,

@@ -869,7 +869,10 @@ impl Parser {
     // Basic expression parsing
     fn parse_expr(&mut self) -> ParseResult<AstNode> {
         println!("parse_expr: Current token: {:?}", self.peek());
-        let result = self.parse_ternary();
+        println!("parse_expr: Current position: {}", self.pos);
+        
+        // Let parse_assignment (and eventually parse_primary) handle all expressions
+        let result = self.parse_assignment();
         println!("parse_expr result: {:?}", result.is_ok());
         result
     }
@@ -950,6 +953,7 @@ impl Parser {
     }
     
     fn parse_assignment(&mut self) -> ParseResult<AstNode> {
+        println!("parse_assignment: Current token: {:?}", self.peek());
         // Check for arrow function
         // Single parameter arrow function: x => ...
         if matches!(self.peek(), Some(Token::Identifier(_))) && matches!(self.peek_next(), Some(Token::FatArrow)) {
@@ -1313,6 +1317,7 @@ impl Parser {
     }
 
     fn parse_primary(&mut self) -> ParseResult<AstNode> {
+        println!("parse_primary: Current token: {:?}", self.peek());
         match self.peek() {
             Some(Token::Number(n)) => {
                 let value = *n;
@@ -1483,6 +1488,100 @@ impl Parser {
                 let expr = self.parse_expr()?;
                 self.expect(&Token::RParen)?;
                 Ok(expr)
+            },
+            Some(Token::LBracket) => {
+                // Parse array literal [elem1, elem2, ...]
+                self.advance(); // Consume the left bracket
+                
+                // Parse array elements
+                let mut elements = Vec::new();
+                
+                // Handle empty array
+                if let Some(Token::RBracket) = self.peek() {
+                    self.advance(); // Consume the right bracket
+                    return Ok(AstNode::ArrayLiteral(elements));
+                }
+                
+                // Parse comma-separated elements
+                loop {
+                    let element = self.parse_expr()?;
+                    elements.push(element);
+                    
+                    // Check for comma or closing bracket
+                    if let Some(Token::Comma) = self.peek() {
+                        self.advance(); // Consume the comma
+                    } else if let Some(Token::RBracket) = self.peek() {
+                        self.advance(); // Consume the right bracket
+                        break;
+                    } else {
+                        return Err(ParseError::new("Expected comma or closing bracket in array literal", self.pos));
+                    }
+                }
+                
+                Ok(AstNode::ArrayLiteral(elements))
+            },
+            Some(Token::LBrace) => {
+                // Parse object literal {key1: value1, key2: value2, ...}
+                self.advance(); // Consume the left brace
+                
+                // Parse object properties
+                let mut properties = HashMap::new();
+                
+                // Handle empty object
+                if let Some(Token::RBrace) = self.peek() {
+                    self.advance(); // Consume the right brace
+                    return Ok(AstNode::ObjectLiteral(properties));
+                }
+                
+                // Parse comma-separated key-value pairs
+                loop {
+                    // Parse the key (identifier or string)
+                    let key = match self.peek() {
+                        Some(Token::Identifier(name)) => {
+                            let key = name.clone();
+                            self.advance(); // Consume the identifier
+                            key
+                        },
+                        Some(Token::String(s)) => {
+                            let key = s.clone();
+                            self.advance(); // Consume the string
+                            key
+                        },
+                        Some(Token::SingleQuoteString(s)) => {
+                            let key = s.clone();
+                            self.advance(); // Consume the string
+                            key
+                        },
+                        _ => {
+                            return Err(ParseError::new("Expected property name in object literal", self.pos));
+                        }
+                    };
+                    
+                    // Expect colon after key
+                    if let Some(Token::Colon) = self.peek() {
+                        self.advance(); // Consume the colon
+                    } else {
+                        return Err(ParseError::new("Expected colon after property name in object literal", self.pos));
+                    }
+                    
+                    // Parse the value
+                    let value = self.parse_expr()?;
+                    
+                    // Add the key-value pair to the properties map
+                    properties.insert(key, value);
+                    
+                    // Check for comma or closing brace
+                    if let Some(Token::Comma) = self.peek() {
+                        self.advance(); // Consume the comma
+                    } else if let Some(Token::RBrace) = self.peek() {
+                        self.advance(); // Consume the right brace
+                        break;
+                    } else {
+                        return Err(ParseError::new("Expected comma or closing brace in object literal", self.pos));
+                    }
+                }
+                
+                Ok(AstNode::ObjectLiteral(properties))
             },
             _ => Err(ParseError::new("Expected expression", self.pos)),
         }

@@ -867,6 +867,7 @@ pub fn tokenize(input: &str) -> Vec<Token> {
                 chars.next(); // consume the '@'
                 tokens.push(Token::At);
             },
+            // Brackets and braces are handled earlier in the code
             // Caret is handled elsewhere
             
             // Tilde is handled elsewhere
