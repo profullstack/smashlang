@@ -315,7 +315,7 @@ impl<'a> Module<'a> {
         code.push_str("        if (match_count == 0) {\n");
         code.push_str("            // First match, replace empty array\n");
         code.push_str("            free(result);\n");
-        code.push_str("            result = (char*)malloc(match_len + 5);  // ["" + match + "]\n");
+        code.push_str("            result = (char*)malloc(match_len + 5);  // Array format\n");
         code.push_str("            if (!result) {\n");
         code.push_str("                free(match);\n");
         code.push_str("                return NULL;\n");
@@ -324,7 +324,7 @@ impl<'a> Module<'a> {
         code.push_str("        } else {\n");
         code.push_str("            // Append to existing array\n");
         code.push_str("            int old_len = strlen(result);\n");
-        code.push_str("            char* new_result = (char*)malloc(old_len + match_len + 5);  // old + ,"" + match + "\n");
+        code.push_str("            char* new_result = (char*)malloc(old_len + match_len + 5);  // For appending\n");
         code.push_str("            if (!new_result) {\n");
         code.push_str("                free(match);\n");
         code.push_str("                free(result);\n");

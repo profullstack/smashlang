@@ -306,6 +306,7 @@ impl Repl {
                                 Value::Float(f) => result.push_str(&f.to_string()),
                                 Value::Boolean(b) => result.push_str(&b.to_string()),
                                 Value::Null => result.push_str("null"),
+                                Value::Regex(r) => result.push_str(&format!("/{}\\/, r)),
                                 Value::Undefined => result.push_str("undefined"),
                                 _ => result.push_str(&format!("{:?}", value))
                             }
@@ -566,6 +567,7 @@ impl Repl {
                                 Value::Array(_) => print!("[Array]"),
                                 Value::Object(_) => print!("{{}}"),
                                 Value::Function(_, _, _) => print!("[Function]"),
+                                Value::Regex(r) => print!("/{}\\/, r),
                                 Value::Undefined => print!("undefined"),
                             }
                         }
@@ -672,6 +674,7 @@ impl Repl {
                                         Value::Array(arr) => !arr.is_empty(),
                                         Value::Object(obj) => !obj.is_empty(),
                                         Value::Function(_, _, _) => true,
+                                        Value::Regex(_) => true,
                                         Value::Null => false,
                                         Value::Undefined => false,
                                     };
@@ -1276,6 +1279,7 @@ impl Repl {
                                                 Value::Array(arr) => !arr.is_empty(),
                                                 Value::Object(obj) => !obj.is_empty(),
                                                 Value::Function(_, _, _) => true,
+                                                Value::Regex(_) => true,
                                                 Value::Null => false,
                                                 Value::Undefined => false,
                                             };
