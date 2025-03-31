@@ -14,6 +14,7 @@ serde_json = "1.0"   # For JSON serialization/deserialization
 
 [build-dependencies]
 cc = "1.0.79"      # For compiling C code
+pkg-config = "0.3.27"  # For finding system libraries like PCRE
 
 [dev-dependencies]
 tempfile = "3.5.0"  # For temporary file handling in tests

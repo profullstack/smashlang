@@ -1,53 +1,66 @@
-// SmashLang String Pattern Matching Example
+// SmashLang Regular Expression Example
 
-// Basic string pattern matching
-let text = "Hello, world! Hello again.";
+// Basic regex patterns
+let text = "Hello, world! Hello again. The price is $12.50.";
 print("Original text:", text);
 
-// Simple substring search
-let containsHello = text.includes("Hello");
-print("Contains 'Hello':", containsHello);
+// Create a regex pattern
+// Simple pattern matching
+let helloPattern = /Hello/;
+let hasHello = helloPattern.test(text);
+print("Contains 'Hello':", hasHello);
 
-// Case-insensitive search (convert to lowercase first)
-let lowerText = text.toLowerCase();
-let containsHelloLower = lowerText.includes("hello");
-print("Contains 'hello' (case-insensitive):", containsHelloLower);
+// Case-insensitive matching with 'i' flag
+let caseInsensitivePattern = /hello/i;
+let hasHelloInsensitive = caseInsensitivePattern.test(text);
+print("Contains 'hello' (case-insensitive):", hasHelloInsensitive);
 
-// String replacement
-let replaced = text.replace("Hello", "Hi");
+// Finding matches
+let matches = text.match(/Hello/g);
+print("All 'Hello' matches:", matches);
+
+// Capturing groups
+let pricePattern = /\$(\d+\.\d+)/;
+let priceMatch = text.match(pricePattern);
+print("Price match:", priceMatch);
+print("Extracted price:", priceMatch[1]);
+
+// String replacement with regex
+let replaced = text.replace(/Hello/, "Hi");
 print("After single replacement:", replaced);
 
-// Global replacement (need to implement manually)
-let globalReplaced = text;
-let searchTerm = "Hello";
-let replacement = "Hi";
-
-// Simple manual implementation of global replace
-while (globalReplaced.includes(searchTerm)) {
-    globalReplaced = globalReplaced.replace(searchTerm, replacement);
-}
-
+// Global replacement with regex 'g' flag
+let globalReplaced = text.replace(/Hello/g, "Hi");
 print("After global replacement:", globalReplaced);
 
-// String splitting
+// Word boundary matching
+let wordPattern = /\bworld\b/;
+let hasWorldWord = wordPattern.test(text);
+print("Contains 'world' as a whole word:", hasWorldWord);
+
+// String splitting with regex
 let sentence = "This is a test sentence with multiple words.";
-let words = sentence.split(" ");
+let words = sentence.split(/\s+/);  // Split on whitespace
 print("Words in sentence:", words);
 
-// Email validation using string methods
+// Email validation using regex
 let emailText = "Contact us at info@example.com or support@example.org";
 print("Email text:", emailText);
 
-// Simple email validation (contains @ and .)
-let hasAtSign = emailText.includes("@");
-let hasDot = emailText.includes(".");
-let atBeforeDot = emailText.indexOf("@") < emailText.lastIndexOf(".");
-let isValid = hasAtSign && hasDot && atBeforeDot;
+// Email validation with regex pattern
+let emailPattern = /[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/g;
+let emails = emailText.match(emailPattern);
+print("Extracted emails:", emails);
 
-print("Email contains @:", hasAtSign);
-print("Email contains .:", hasDot);
-print("@ is before last .:", atBeforeDot);
-print("Is potentially valid email format:", isValid);
+// More complex pattern matching
+let dateText = "Meeting scheduled for 2023-05-15 and follow-up on 2023-06-30";
+let datePattern = /(\d{4})-(\d{2})-(\d{2})/g;
+let dates = dateText.match(datePattern);
+print("Dates found:", dates);
+
+// Replacing dates with formatted version
+let formattedText = dateText.replace(/(\d{4})-(\d{2})-(\d{2})/g, "$2/$3/$1");
+print("Formatted dates:", formattedText);
 
 // Extract part of the email text
 let atPos = emailText.indexOf("@");

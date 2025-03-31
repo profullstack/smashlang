@@ -62,6 +62,7 @@ pub enum Value {
     Array(Vec<Value>),
     Object(HashMap<String, Value>),
     Function(String, Vec<String>, Box<AstNode>), // name, params, body
+    Regex(String), // Regular expression pattern
     Undefined,
 }
 
@@ -284,6 +285,7 @@ impl Repl {
             AstNode::String(s) => Ok(Value::String(s.clone())),
             AstNode::Boolean(b) => Ok(Value::Boolean(*b)),
             AstNode::Null => Ok(Value::Null),
+            AstNode::Regex(pattern) => Ok(Value::Regex(pattern.clone())),
             
             // Binary operations
             AstNode::BinaryOp { left, op, right } => {
@@ -878,21 +880,183 @@ impl Repl {
                             },
                             "split" => {
                                 // Split string into array
-                                let separator = if evaluated_args.len() > 0 {
-                                    if let Value::String(sep) = &evaluated_args[0] {
-                                        sep.as_str()
-                                    } else {
-                                        return Err("split separator must be a string".to_string());
+                                if evaluated_args.len() > 0 {
+                                    match &evaluated_args[0] {
+                                        Value::String(sep) => {
+                                            let parts: Vec<Value> = s.split(sep.as_str())
+                                                .map(|part| Value::String(part.to_string()))
+                                                .collect();
+                                            
+                                            Ok(Value::Array(parts))
+                                        },
+                                        Value::Regex(pattern) => {
+                                            // Split using regex
+                                            let pattern_parts = pattern.trim_matches('/').split('/').collect::<Vec<_>>();
+                                            let pattern_str = pattern_parts[0];
+                                            
+                                            let parts: Vec<Value> = s.split(pattern_str)
+                                                .map(|part| Value::String(part.to_string()))
+                                                .collect();
+                                            
+                                            Ok(Value::Array(parts))
+                                        },
+                                        _ => Err("split separator must be a string or regex".to_string())
                                     }
                                 } else {
-                                    ""
+                                    // Default empty separator
+                                    let parts: Vec<Value> = s.split("")
+                                        .map(|part| Value::String(part.to_string()))
+                                        .collect();
+                                    
+                                    Ok(Value::Array(parts))
+                                }
+                            },
+                            "match" => {
+                                // Match string against regex
+                                if evaluated_args.len() < 1 {
+                                    return Err("match requires a regex argument".to_string());
+                                }
+                                
+                                match &evaluated_args[0] {
+                                    Value::Regex(pattern) => {
+                                        let pattern_parts = pattern.trim_matches('/').split('/').collect::<Vec<_>>();
+                                        let pattern_str = pattern_parts[0];
+                                        let flags = if pattern_parts.len() > 1 { pattern_parts[1] } else { "" };
+                                        
+                                        // Check if string contains the pattern
+                                        let found = if flags.contains('i') {
+                                            s.to_lowercase().contains(&pattern_str.to_lowercase())
+                                        } else {
+                                            s.contains(pattern_str)
+                                        };
+                                        
+                                        if found {
+                                            // Create a match array
+                                            let mut matches = Vec::new();
+                                            // Find the actual match
+                                            let matched_text = if flags.contains('i') {
+                                                // This is a simplification - in a real implementation we'd use the regex engine
+                                                s.chars().collect::<Vec<_>>().windows(pattern_str.len())
+                                                    .find(|window| {
+                                                        let window_str: String = window.iter().collect();
+                                                        window_str.to_lowercase() == pattern_str.to_lowercase()
+                                                    })
+                                                    .map(|window| window.iter().collect::<String>())
+                                                    .unwrap_or_else(|| pattern_str.to_string())
+                                            } else {
+                                                pattern_str.to_string()
+                                            };
+                                            matches.push(Value::String(matched_text));
+                                            Ok(Value::Array(matches))
+                                        } else {
+                                            Ok(Value::Null)
+                                        }
+                                    },
+                                    Value::String(pattern) => {
+                                        // Treat string as literal pattern
+                                        if s.contains(pattern) {
+                                            let mut matches = Vec::new();
+                                            matches.push(Value::String(pattern.clone()));
+                                            Ok(Value::Array(matches))
+                                        } else {
+                                            Ok(Value::Null)
+                                        }
+                                    },
+                                    _ => Err("match requires a regex or string argument".to_string())
+                                }
+                            },
+                            "replace" => {
+                                // Replace pattern with replacement string
+                                if evaluated_args.len() < 2 {
+                                    return Err("replace requires pattern and replacement arguments".to_string());
+                                }
+                                
+                                let replacement = match &evaluated_args[1] {
+                                    Value::String(repl) => repl.clone(),
+                                    _ => return Err("replacement must be a string".to_string())
                                 };
                                 
-                                let parts: Vec<Value> = s.split(separator)
-                                    .map(|part| Value::String(part.to_string()))
-                                    .collect();
+                                match &evaluated_args[0] {
+                                    Value::Regex(pattern) => {
+                                        let pattern_parts = pattern.trim_matches('/').split('/').collect::<Vec<_>>();
+                                        let pattern_str = pattern_parts[0];
+                                        let flags = if pattern_parts.len() > 1 { pattern_parts[1] } else { "" };
+                                        
+                                        // Handle global flag
+                                        let result = if flags.contains('g') {
+                                            // Replace all occurrences
+                                            if flags.contains('i') {
+                                                // Case-insensitive replacement (simplified)
+                                                s.replace(&pattern_str.to_lowercase(), &replacement)
+                                                 .replace(&pattern_str.to_uppercase(), &replacement)
+                                            } else {
+                                                s.replace(pattern_str, &replacement)
+                                            }
+                                        } else {
+                                            // Replace first occurrence only
+                                            if flags.contains('i') {
+                                                // This is a simplification - in a real implementation we'd use the regex engine
+                                                let pos = s.to_lowercase().find(&pattern_str.to_lowercase());
+                                                if let Some(idx) = pos {
+                                                    let mut result = s.clone();
+                                                    let end_idx = idx + pattern_str.len();
+                                                    if idx < result.len() && end_idx <= result.len() {
+                                                        result.replace_range(idx..end_idx, &replacement);
+                                                    }
+                                                    result
+                                                } else {
+                                                    s.clone()
+                                                }
+                                            } else {
+                                                s.replacen(pattern_str, &replacement, 1)
+                                            }
+                                        };
+                                        
+                                        Ok(Value::String(result))
+                                    },
+                                    Value::String(pattern) => {
+                                        // Replace first occurrence of string
+                                        let result = s.replacen(pattern, &replacement, 1);
+                                        Ok(Value::String(result))
+                                    },
+                                    _ => Err("replace requires a regex or string pattern".to_string())
+                                }
+                            },
+                            "search" => {
+                                // Search for pattern in string, return index
+                                if evaluated_args.len() < 1 {
+                                    return Err("search requires a pattern argument".to_string());
+                                }
                                 
-                                Ok(Value::Array(parts))
+                                match &evaluated_args[0] {
+                                    Value::Regex(pattern) => {
+                                        let pattern_parts = pattern.trim_matches('/').split('/').collect::<Vec<_>>();
+                                        let pattern_str = pattern_parts[0];
+                                        let flags = if pattern_parts.len() > 1 { pattern_parts[1] } else { "" };
+                                        
+                                        // Find index of pattern
+                                        let index = if flags.contains('i') {
+                                            s.to_lowercase().find(&pattern_str.to_lowercase())
+                                        } else {
+                                            s.find(pattern_str)
+                                        };
+                                        
+                                        if let Some(idx) = index {
+                                            Ok(Value::Number(idx as i64))
+                                        } else {
+                                            Ok(Value::Number(-1))
+                                        }
+                                    },
+                                    Value::String(pattern) => {
+                                        // Find index of string
+                                        if let Some(idx) = s.find(pattern) {
+                                            Ok(Value::Number(idx as i64))
+                                        } else {
+                                            Ok(Value::Number(-1))
+                                        }
+                                    },
+                                    _ => Err("search requires a regex or string pattern".to_string())
+                                }
                             },
                             "toString" => {
                                 // Return the string itself
@@ -1259,6 +1423,72 @@ impl Repl {
                                 }
                             },
                             _ => Err(format!("Method '{}' not found on array", method))
+                        }
+                    },
+                    Value::Regex(pattern) => {
+                        // Handle regex methods
+                        match method.as_str() {
+                            "test" => {
+                                // Test if string matches regex pattern
+                                if evaluated_args.len() < 1 {
+                                    return Err("test requires a string argument".to_string());
+                                }
+                                
+                                if let Value::String(text) = &evaluated_args[0] {
+                                    // Simple implementation using contains for now
+                                    // In a real implementation, this would use the regex engine
+                                    let pattern_parts = pattern.trim_matches('/').split('/').collect::<Vec<_>>();
+                                    let pattern_str = pattern_parts[0];
+                                    let flags = if pattern_parts.len() > 1 { pattern_parts[1] } else { "" };
+                                    
+                                    // Case-insensitive search if 'i' flag is present
+                                    let result = if flags.contains('i') {
+                                        text.to_lowercase().contains(&pattern_str.to_lowercase())
+                                    } else {
+                                        text.contains(pattern_str)
+                                    };
+                                    
+                                    Ok(Value::Boolean(result))
+                                } else {
+                                    Err("test requires a string argument".to_string())
+                                }
+                            },
+                            "exec" => {
+                                // Execute regex and return matches
+                                if evaluated_args.len() < 1 {
+                                    return Err("exec requires a string argument".to_string());
+                                }
+                                
+                                if let Value::String(text) = &evaluated_args[0] {
+                                    // Simple implementation for now
+                                    let pattern_parts = pattern.trim_matches('/').split('/').collect::<Vec<_>>();
+                                    let pattern_str = pattern_parts[0];
+                                    let flags = if pattern_parts.len() > 1 { pattern_parts[1] } else { "" };
+                                    
+                                    // Case-insensitive search if 'i' flag is present
+                                    let found = if flags.contains('i') {
+                                        text.to_lowercase().contains(&pattern_str.to_lowercase())
+                                    } else {
+                                        text.contains(pattern_str)
+                                    };
+                                    
+                                    if found {
+                                        // Create a match array
+                                        let mut matches = Vec::new();
+                                        matches.push(Value::String(pattern_str.to_string()));
+                                        Ok(Value::Array(matches))
+                                    } else {
+                                        Ok(Value::Null)
+                                    }
+                                } else {
+                                    Err("exec requires a string argument".to_string())
+                                }
+                            },
+                            "toString" => {
+                                // Return the regex pattern as a string
+                                Ok(Value::String(pattern.clone()))
+                            },
+                            _ => Err(format!("Method '{}' not found on regex", method))
                         }
                     },
                     Value::Object(obj) => {
