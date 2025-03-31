@@ -49,8 +49,8 @@ run_tests() {
     echo -e "${BLUE}Running main crate tests...${NC}"
     echo "Main Crate Tests" >> "$log_file"
     echo "---------------" >> "$log_file"
-    # Use --lib to ensure we're testing the library code, not just the binaries
-    cargo test --lib > "$log_file.tmp" 2>&1 || true
+    # Run tests in the tests directory
+    cargo test --test compiler_tests --test lexer_parser_tests --test codegen_tests > "$log_file.tmp" 2>&1 || true
     local main_test_result=$?
     if [ -f "$log_file.tmp" ]; then
       # Display output to console
@@ -72,8 +72,8 @@ run_tests() {
     echo -e "${BLUE}Running tests for all packages...${NC}"
     echo "All Packages Tests" >> "$log_file"
     echo "-----------------" >> "$log_file"
-    # Use --workspace instead of --all (which is deprecated)
-    cargo test --workspace > "$log_file.tmp" 2>&1 || true
+    # Run tests in src directory
+    cargo test --lib --bins > "$log_file.tmp" 2>&1 || true
     local all_test_result=$?
     if [ -f "$log_file.tmp" ]; then
       # Display output to console
@@ -95,8 +95,8 @@ run_tests() {
     echo -e "${BLUE}Running tests with all features enabled...${NC}"
     echo "All Features Tests" >> "$log_file"
     echo "-----------------" >> "$log_file"
-    # Run tests with all features enabled and include test binaries
-    cargo test --all-features --tests > "$log_file.tmp" 2>&1 || true
+    # Run all tests with all features enabled
+    cargo test --all-features --tests --bins --lib > "$log_file.tmp" 2>&1 || true
     local features_test_result=$?
     if [ -f "$log_file.tmp" ]; then
       # Display output to console
