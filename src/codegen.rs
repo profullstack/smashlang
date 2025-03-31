@@ -58,7 +58,8 @@ impl<'a> Module<'a> {
         code.push_str("#include <stdio.h>\n");
         code.push_str("#include <stdlib.h>\n");
         code.push_str("#include <string.h>\n");
-        code.push_str("#include <stdbool.h>\n\n");
+        code.push_str("#include <stdbool.h>\n");
+        code.push_str("#include <ctype.h>\n\n");
         
         // Add helper function for string concatenation
         code.push_str("// Helper function for string concatenation\n");
@@ -84,6 +85,90 @@ impl<'a> Module<'a> {
         code.push_str("        strcpy(result, buffer);\n");
         code.push_str("    }\n");
         code.push_str("    return result;\n");
+        code.push_str("}\n\n");
+        
+        // Add helper functions for string methods
+        code.push_str("// Helper function for converting string to uppercase\n");
+        code.push_str("char* smash_string_to_upper(const char* str) {\n");
+        code.push_str("    size_t len = strlen(str);\n");
+        code.push_str("    char* result = (char*)malloc(len + 1);\n");
+        code.push_str("    if (result) {\n");
+        code.push_str("        for (size_t i = 0; i < len; i++) {\n");
+        code.push_str("            result[i] = toupper(str[i]);\n");
+        code.push_str("        }\n");
+        code.push_str("        result[len] = '\0';\n");
+        code.push_str("    }\n");
+        code.push_str("    return result;\n");
+        code.push_str("}\n\n");
+        
+        code.push_str("// Helper function for converting string to lowercase\n");
+        code.push_str("char* smash_string_to_lower(const char* str) {\n");
+        code.push_str("    size_t len = strlen(str);\n");
+        code.push_str("    char* result = (char*)malloc(len + 1);\n");
+        code.push_str("    if (result) {\n");
+        code.push_str("        for (size_t i = 0; i < len; i++) {\n");
+        code.push_str("            result[i] = tolower(str[i]);\n");
+        code.push_str("        }\n");
+        code.push_str("        result[len] = '\0';\n");
+        code.push_str("    }\n");
+        code.push_str("    return result;\n");
+        code.push_str("}\n\n");
+        
+        code.push_str("// Helper function for trimming whitespace from a string\n");
+        code.push_str("char* smash_string_trim(const char* str) {\n");
+        code.push_str("    size_t len = strlen(str);\n");
+        code.push_str("    size_t start = 0, end = len;\n");
+        code.push_str("    \n");
+        code.push_str("    // Find start index (first non-whitespace)\n");
+        code.push_str("    while (start < len && isspace(str[start])) {\n");
+        code.push_str("        start++;\n");
+        code.push_str("    }\n");
+        code.push_str("    \n");
+        code.push_str("    // Find end index (last non-whitespace)\n");
+        code.push_str("    while (end > start && isspace(str[end - 1])) {\n");
+        code.push_str("        end--;\n");
+        code.push_str("    }\n");
+        code.push_str("    \n");
+        code.push_str("    // Create result string\n");
+        code.push_str("    size_t result_len = end - start;\n");
+        code.push_str("    char* result = (char*)malloc(result_len + 1);\n");
+        code.push_str("    if (result) {\n");
+        code.push_str("        strncpy(result, str + start, result_len);\n");
+        code.push_str("        result[result_len] = '\0';\n");
+        code.push_str("    }\n");
+        code.push_str("    return result;\n");
+        code.push_str("}\n\n");
+        
+        // Add helper functions for array methods
+        code.push_str("// Note: These are simplified implementations for demonstration purposes\n");
+        code.push_str("// In a real implementation, we would need proper array handling\n");
+        
+        code.push_str("// Helper function for array map operation\n");
+        code.push_str("char* smash_array_map(const char* array, const char* callback) {\n");
+        code.push_str("    // In a real implementation, this would parse the array, apply the callback to each element,\n");
+        code.push_str("    // and return a new array. For now, we'll just return a placeholder.\n");
+        code.push_str("    return strdup(\"[Mapped Array]\");\n");
+        code.push_str("}\n\n");
+        
+        code.push_str("// Helper function for array filter operation\n");
+        code.push_str("char* smash_array_filter(const char* array, const char* callback) {\n");
+        code.push_str("    // In a real implementation, this would parse the array, apply the callback to each element,\n");
+        code.push_str("    // and return a new array with elements that pass the test. For now, we'll just return a placeholder.\n");
+        code.push_str("    return strdup(\"[Filtered Array]\");\n");
+        code.push_str("}\n\n");
+        
+        code.push_str("// Helper function for array push operation\n");
+        code.push_str("char* smash_array_push(const char* array, const char* item) {\n");
+        code.push_str("    // In a real implementation, this would parse the array, add the item, and return the new array.\n");
+        code.push_str("    // For now, we'll just return a placeholder.\n");
+        code.push_str("    return strdup(\"[Array with pushed item]\");\n");
+        code.push_str("}\n\n");
+        
+        code.push_str("// Helper function for array pop operation\n");
+        code.push_str("char* smash_array_pop(const char* array) {\n");
+        code.push_str("    // In a real implementation, this would parse the array, remove the last item, and return that item.\n");
+        code.push_str("    // For now, we'll just return a placeholder.\n");
+        code.push_str("    return strdup(\"[Popped item]\");\n");
         code.push_str("}\n\n");
         
         // Process each AST node
@@ -367,6 +452,209 @@ impl<'a> Module<'a> {
                 } else {
                     // For other properties, we'll just return a placeholder
                     format!("\"Property {} not implemented\"", property)
+                }
+            },
+            AstNode::MethodCall { object, method, args } => {
+                let obj_code = self.generate_c_code_for_expr(object, indent_level);
+                
+                // Generate code for the arguments
+                let mut arg_codes = Vec::new();
+                for arg in args {
+                    arg_codes.push(self.generate_c_code_for_expr(arg, indent_level));
+                }
+                
+                // Handle common methods based on the object type and method name
+                match method.as_str() {
+                    "map" => {
+                        // For array.map, we need to implement a map function in C
+                        // This is a simplified implementation that assumes the first argument is a function
+                        if arg_codes.len() < 1 {
+                            format!("\"Error: map requires a callback function\"")
+                        } else {
+                            format!("smash_array_map({}, {})", obj_code, arg_codes[0])
+                        }
+                    },
+                    "filter" => {
+                        // For array.filter, we need to implement a filter function in C
+                        // This is a simplified implementation that assumes the first argument is a function
+                        if arg_codes.len() < 1 {
+                            format!("\"Error: filter requires a callback function\"")
+                        } else {
+                            format!("smash_array_filter({}, {})", obj_code, arg_codes[0])
+                        }
+                    },
+                    "push" => {
+                        // For array.push, add an element to the array
+                        if arg_codes.len() < 1 {
+                            format!("\"Error: push requires at least one argument\"")
+                        } else {
+                            let args_str = arg_codes.join(", ");
+                            format!("smash_array_push({}, {})", obj_code, args_str)
+                        }
+                    },
+                    "pop" => {
+                        // For array.pop, remove the last element from the array
+                        format!("smash_array_pop({})", obj_code)
+                    },
+                    // String methods
+                    "toUpperCase" => {
+                        format!("smash_string_to_upper({})", obj_code)
+                    },
+                    "toLowerCase" => {
+                        format!("smash_string_to_lower({})", obj_code)
+                    },
+                    "trim" => {
+                        format!("smash_string_trim({})", obj_code)
+                    },
+                    "trimStart" => {
+                        format!("smash_string_trim_start({})", obj_code)
+                    },
+                    "trimEnd" => {
+                        format!("smash_string_trim_end({})", obj_code)
+                    },
+                    "charAt" => {
+                        if arg_codes.len() < 1 {
+                            format!("\"Error: charAt requires an index\"")
+                        } else {
+                            format!("smash_string_char_at({}, {})", obj_code, arg_codes[0])
+                        }
+                    },
+                    "concat" => {
+                        if arg_codes.len() < 1 {
+                            format!("\"Error: concat requires a string\"")
+                        } else {
+                            format!("smash_string_concat({}, {})", obj_code, arg_codes[0])
+                        }
+                    },
+                    "includes" => {
+                        if arg_codes.len() < 1 {
+                            format!("\"Error: includes requires a search string\"")
+                        } else {
+                            format!("smash_string_includes({}, {})", obj_code, arg_codes[0])
+                        }
+                    },
+                    "indexOf" => {
+                        if arg_codes.len() < 1 {
+                            format!("\"Error: indexOf requires a search string\"")
+                        } else {
+                            format!("smash_string_index_of({}, {})", obj_code, arg_codes[0])
+                        }
+                    },
+                    "slice" => {
+                        if arg_codes.len() < 2 {
+                            format!("\"Error: slice requires start and end indices\"")
+                        } else {
+                            format!("smash_string_slice({}, {}, {})", obj_code, arg_codes[0], arg_codes[1])
+                        }
+                    },
+                    "split" => {
+                        if arg_codes.len() < 1 {
+                            format!("\"Error: split requires a delimiter\"")
+                        } else {
+                            format!("smash_string_split({}, {})", obj_code, arg_codes[0])
+                        }
+                    },
+                    "repeat" => {
+                        if arg_codes.len() < 1 {
+                            format!("\"Error: repeat requires a count\"")
+                        } else {
+                            format!("smash_string_repeat({}, {})", obj_code, arg_codes[0])
+                        }
+                    },
+                    "toString" => {
+                        // For string.toString, just return the string itself
+                        obj_code
+                    },
+                    "valueOf" => {
+                        // For string.valueOf, just return the string itself
+                        obj_code
+                    },
+                    
+                    // Number methods
+                    "toString" => {
+                        // For number.toString, convert to string
+                        format!("smash_number_to_string({})", obj_code)
+                    },
+                    "toFixed" => {
+                        if arg_codes.len() < 1 {
+                            format!("\"Error: toFixed requires decimal places\"")
+                        } else {
+                            format!("smash_number_to_fixed({}, {})", obj_code, arg_codes[0])
+                        }
+                    },
+                    "toPrecision" => {
+                        if arg_codes.len() < 1 {
+                            format!("\"Error: toPrecision requires precision\"")
+                        } else {
+                            format!("smash_number_to_precision({}, {})", obj_code, arg_codes[0])
+                        }
+                    },
+                    "toExponential" => {
+                        if arg_codes.len() < 1 {
+                            format!("\"Error: toExponential requires decimal places\"")
+                        } else {
+                            format!("smash_number_to_exponential({}, {})", obj_code, arg_codes[0])
+                        }
+                    },
+                    "valueOf" => {
+                        // For number.valueOf, just return the number itself
+                        obj_code
+                    },
+                    
+                    // Array methods (some already implemented above)
+                    "forEach" => {
+                        if arg_codes.len() < 1 {
+                            format!("\"Error: forEach requires a callback function\"")
+                        } else {
+                            format!("smash_array_for_each({}, {})", obj_code, arg_codes[0])
+                        }
+                    },
+                    "find" => {
+                        if arg_codes.len() < 1 {
+                            format!("\"Error: find requires a callback function\"")
+                        } else {
+                            format!("smash_array_find({}, {})", obj_code, arg_codes[0])
+                        }
+                    },
+                    "join" => {
+                        let separator = if arg_codes.len() > 0 { arg_codes[0].clone() } else { "\",\"" .to_string() };
+                        format!("smash_array_join({}, {})", obj_code, separator)
+                    },
+                    "reverse" => {
+                        format!("smash_array_reverse({})", obj_code)
+                    },
+                    "slice" => {
+                        if arg_codes.len() < 2 {
+                            format!("\"Error: slice requires start and end indices\"")
+                        } else {
+                            format!("smash_array_slice({}, {}, {})", obj_code, arg_codes[0], arg_codes[1])
+                        }
+                    },
+                    
+                    // Object methods
+                    "hasOwnProperty" => {
+                        if arg_codes.len() < 1 {
+                            format!("\"Error: hasOwnProperty requires a property name\"")
+                        } else {
+                            format!("smash_object_has_own_property({}, {})", obj_code, arg_codes[0])
+                        }
+                    },
+                    "keys" => {
+                        format!("smash_object_keys({})", obj_code)
+                    },
+                    "values" => {
+                        format!("smash_object_values({})", obj_code)
+                    },
+                    "entries" => {
+                        format!("smash_object_entries({})", obj_code)
+                    },
+                    "toString" => {
+                        format!("smash_object_to_string({})", obj_code)
+                    },
+                    _ => {
+                        // For other methods, we'll just return a placeholder
+                        format!("\"Method {} not implemented\"", method)
+                    }
                 }
             },
             _ => {

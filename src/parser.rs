@@ -47,6 +47,13 @@ pub enum AstNode {
         property: String,
     },
     
+    // Method call (e.g., obj.method())
+    MethodCall {
+        object: Box<AstNode>,
+        method: String,
+        args: Vec<AstNode>,
+    },
+    
     // Increment/Decrement
     PreIncrement(Box<AstNode>),  // ++x
     PostIncrement(Box<AstNode>), // x++
@@ -1371,52 +1378,39 @@ impl Parser {
                     // Parse arguments
                     let mut args = Vec::new();
                     
-                    // Handle empty argument list
+                    // Parse arguments list
                     if let Some(Token::RParen) = self.peek() {
+                        // Empty argument list
                         self.advance(); // Consume the right parenthesis
-                        
-                        // Handle different types of function calls
-                        match &func_expr {
-                            AstNode::Identifier(id) => {
-                                return Ok(AstNode::FunctionCall { name: id.clone(), args });
-                            },
-                            AstNode::PropertyAccess { object, property } => {
-                                // For method calls (obj.method())
-                                return Ok(AstNode::FunctionCall { 
-                                    name: property.clone(), 
-                                    args: vec![*object.clone()]  // Pass object as 'this'
-                                });
-                            },
-                            _ => {
-                                return Err(ParseError::new("Invalid function call expression", self.pos));
+                    } else {
+                        // Parse comma-separated arguments
+                        loop {
+                            let arg = self.parse_expr()?;
+                            args.push(arg);
+                            
+                            // Check for comma or closing parenthesis
+                            if let Some(Token::Comma) = self.peek() {
+                                self.advance(); // Consume the comma
+                            } else if let Some(Token::RParen) = self.peek() {
+                                self.advance(); // Consume the right parenthesis
+                                break;
+                            } else {
+                                return Err(ParseError::new("Expected comma or closing parenthesis in argument list", self.pos));
                             }
                         }
                     }
                     
-                    // Parse first argument
-                    args.push(self.parse_expr()?);
-                    
-                    // Parse additional arguments separated by commas
-                    while let Some(Token::Comma) = self.peek() {
-                        self.advance(); // Consume the comma
-                        args.push(self.parse_expr()?);
-                    }
-                    
-                    // Expect closing parenthesis
-                    self.expect(&Token::RParen)?;
-                    
-                    // Handle different types of function calls with arguments
+                    // Handle different types of function calls
                     match &func_expr {
                         AstNode::Identifier(id) => {
                             return Ok(AstNode::FunctionCall { name: id.clone(), args });
                         },
                         AstNode::PropertyAccess { object, property } => {
-                            // For method calls with args (obj.method(arg1, arg2))
-                            let mut all_args = vec![*object.clone()];  // Pass object as 'this'
-                            all_args.extend(args);
-                            return Ok(AstNode::FunctionCall { 
-                                name: property.clone(), 
-                                args: all_args
+                            // For method calls (obj.method())
+                            return Ok(AstNode::MethodCall { 
+                                object: object.clone(), 
+                                method: property.clone(),
+                                args
                             });
                         },
                         _ => {

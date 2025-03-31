@@ -15,4 +15,17 @@ fn main() {
     
     // Make the build rerun if the git HEAD changes
     println!("cargo:rerun-if-changed=.git/HEAD");
+    
+    // Compile the runtime.c file
+    println!("cargo:rerun-if-changed=src/runtime.c");
+    
+    #[cfg(feature = "compiler")]
+    {
+        // Build the runtime library
+        cc::Build::new()
+            .file("src/runtime.c")
+            .compile("smash_runtime");
+        
+        println!("cargo:rustc-link-lib=smash_runtime");
+    }
 }

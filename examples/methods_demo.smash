@@ -1,0 +1,86 @@
+// SmashLang Methods Demo
+// This file demonstrates the various methods available for strings, numbers, arrays, and objects
+
+// String Methods
+let str = "Hello, World!";
+print("Original string: " + str);
+print("toUpperCase(): " + str.toUpperCase());
+print("toLowerCase(): " + str.toLowerCase());
+print("trim(): " + "  trimmed  ".trim());
+print("trimStart(): " + "  trimmed  ".trimStart());
+print("trimEnd(): " + "  trimmed  ".trimEnd());
+print("charAt(1): " + str.charAt(1));
+print("concat(): " + str.concat(" More text"));
+print("includes('World'): " + str.includes("World"));
+print("indexOf('o'): " + str.indexOf("o"));
+print("slice(0, 5): " + str.slice(0, 5));
+print("split(','): " + str.split(","));
+print("length: " + str.length);
+print("");
+
+// Number Methods
+let num = 123.456;
+print("Original number: " + num);
+print("toString(): " + num.toString());
+print("toFixed(2): " + num.toFixed(2));
+print("toExponential(2): " + num.toExponential(2));
+print("toPrecision(4): " + num.toPrecision(4));
+print("");
+
+// Array Methods
+let arr = [1, 2, 3, 4, 5];
+print("Original array: " + arr);
+
+// map
+let doubled = arr.map(x => x * 2);
+print("map(x => x * 2): " + doubled);
+
+// filter
+let evens = arr.filter(x => x % 2 == 0);
+print("filter(x => x % 2 == 0): " + evens);
+
+// forEach
+print("forEach(x => print(x)): ");
+arr.forEach(x => print("  Item: " + x));
+
+// find
+let found = arr.find(x => x > 3);
+print("find(x => x > 3): " + found);
+
+// join
+print("join('-'): " + arr.join("-"));
+
+// push and pop
+let newArr = [1, 2, 3];
+print("Original: " + newArr);
+newArr.push(4);
+print("After push(4): " + newArr);
+let popped = newArr.pop();
+print("After pop(): " + newArr + ", popped: " + popped);
+
+// reverse
+print("reverse(): " + arr.reverse());
+
+// slice
+print("slice(1, 3): " + arr.slice(1, 3));
+print("");
+
+// Object Methods
+let obj = { name: "John", age: 30, city: "New York" };
+print("Original object: " + obj);
+
+// keys
+print("keys(): " + obj.keys());
+
+// values
+print("values(): " + obj.values());
+
+// entries
+print("entries(): " + obj.entries());
+
+// hasOwnProperty
+print("hasOwnProperty('name'): " + obj.hasOwnProperty("name"));
+print("hasOwnProperty('country'): " + obj.hasOwnProperty("country"));
+
+// toString
+print("toString(): " + obj.toString());

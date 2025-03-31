@@ -547,6 +547,115 @@ impl Repl {
                             Ok(Value::Null)
                         }
                     },
+                    "map" => {
+                        // Handle array.map(callback)
+                        // First argument should be the array (this)
+                        // Second argument should be the callback function
+                        if evaluated_args.len() < 2 {
+                            return Err("map requires an array and a callback function".to_string());
+                        }
+                        
+                        let array = &evaluated_args[0];
+                        let callback = &evaluated_args[1];
+                        
+                        match (array, callback) {
+                            (Value::Array(arr), Value::Function(_, param_names, body)) => {
+                                // Create a new array to hold the mapped values
+                                let mut result = Vec::new();
+                                
+                                // Apply the callback to each element
+                                for (i, item) in arr.iter().enumerate() {
+                                    // Create a new scope for each callback invocation
+                                    let mut callback_scope = Scope::with_parent(Box::new(scope.clone()));
+                                    
+                                    // Bind the current item as the first parameter
+                                    if param_names.len() > 0 {
+                                        callback_scope.set(&param_names[0], item.clone());
+                                    }
+                                    
+                                    // Bind the index as the second parameter if it exists
+                                    if param_names.len() > 1 {
+                                        callback_scope.set(&param_names[1], Value::Number(i as i64));
+                                    }
+                                    
+                                    // Bind the array as the third parameter if it exists
+                                    if param_names.len() > 2 {
+                                        callback_scope.set(&param_names[2], Value::Array(arr.clone()));
+                                    }
+                                    
+                                    // Call the callback function
+                                    let mapped_value = self.evaluate_ast_with_scope(body, &mut callback_scope)?;
+                                    result.push(mapped_value);
+                                }
+                                
+                                Ok(Value::Array(result))
+                            },
+                            _ => Err("map requires an array and a callback function".to_string())
+                        }
+                    },
+                    "filter" => {
+                        // Handle array.filter(callback)
+                        // First argument should be the array (this)
+                        // Second argument should be the callback function
+                        if evaluated_args.len() < 2 {
+                            return Err("filter requires an array and a callback function".to_string());
+                        }
+                        
+                        let array = &evaluated_args[0];
+                        let callback = &evaluated_args[1];
+                        
+                        match (array, callback) {
+                            (Value::Array(arr), Value::Function(_, param_names, body)) => {
+                                // Create a new array to hold the filtered values
+                                let mut result = Vec::new();
+                                
+                                // Apply the callback to each element
+                                for (i, item) in arr.iter().enumerate() {
+                                    // Create a new scope for each callback invocation
+                                    let mut callback_scope = Scope::with_parent(Box::new(scope.clone()));
+                                    
+                                    // Bind the current item as the first parameter
+                                    if param_names.len() > 0 {
+                                        callback_scope.set(&param_names[0], item.clone());
+                                    }
+                                    
+                                    // Bind the index as the second parameter if it exists
+                                    if param_names.len() > 1 {
+                                        callback_scope.set(&param_names[1], Value::Number(i as i64));
+                                    }
+                                    
+                                    // Bind the array as the third parameter if it exists
+                                    if param_names.len() > 2 {
+                                        callback_scope.set(&param_names[2], Value::Array(arr.clone()));
+                                    }
+                                    
+                                    // Call the callback function
+                                    let result_value = self.evaluate_ast_with_scope(body, &mut callback_scope)?;
+                                    
+                                    // Check if the result is truthy
+                                    let is_truthy = match result_value {
+                                        Value::Boolean(b) => b,
+                                        Value::Number(n) => n != 0,
+                                        Value::Float(f) => f != 0.0,
+                                        Value::String(s) => !s.is_empty(),
+                                        Value::Array(arr) => !arr.is_empty(),
+                                        Value::Object(obj) => !obj.is_empty(),
+                                        Value::Function(_, _, _) => true,
+                                        Value::Null => false,
+                                        Value::Undefined => false,
+                                    };
+                                    
+                                    // If the result is truthy, include the item in the result
+                                    if is_truthy {
+                                        result.push(item.clone());
+                                    }
+                                }
+                                
+                                Ok(Value::Array(result))
+                            },
+                            _ => Err("filter requires an array and a callback function".to_string())
+                        }
+                    },
                     _ => {
                         // Check if it's a user-defined function
                         if let Some(Value::Function(_, param_names, body)) = scope.get(name) {
@@ -651,6 +760,595 @@ impl Repl {
                 }
             },
             
+            // Handle method calls (obj.method())
+            AstNode::MethodCall { object, method, args } => {
+                // Evaluate the object first
+                let obj_value = self.evaluate_ast_with_scope(object, scope)?;
+                
+                // Evaluate all arguments
+                let mut evaluated_args = Vec::new();
+                for arg in args {
+                    let value = self.evaluate_ast_with_scope(arg, scope)?;
+                    evaluated_args.push(value);
+                }
+                
+                // Handle different method calls based on the object type
+                match obj_value {
+                    Value::String(s) => {
+                        // Handle string methods
+                        match method.as_str() {
+                            "toUpperCase" => Ok(Value::String(s.to_uppercase())),
+                            "toLowerCase" => Ok(Value::String(s.to_lowercase())),
+                            "trim" => Ok(Value::String(s.trim().to_string())),
+                            "trimStart" => Ok(Value::String(s.trim_start().to_string())),
+                            "trimEnd" => Ok(Value::String(s.trim_end().to_string())),
+                            "charAt" => {
+                                // Get character at index
+                                if evaluated_args.len() < 1 {
+                                    return Err("charAt requires an index argument".to_string());
+                                }
+                                if let Value::Number(idx) = &evaluated_args[0] {
+                                    let idx = *idx as usize;
+                                    if idx < s.len() {
+                                        let ch = s.chars().nth(idx).unwrap();
+                                        Ok(Value::String(ch.to_string()))
+                                    } else {
+                                        Ok(Value::String("".to_string()))
+                                    }
+                                } else {
+                                    Err("charAt requires a number index".to_string())
+                                }
+                            },
+                            "concat" => {
+                                // Concatenate strings
+                                let mut result = s.clone();
+                                for arg in &evaluated_args {
+                                    if let Value::String(arg_str) = arg {
+                                        result.push_str(arg_str);
+                                    } else {
+                                        // Convert non-string args to string
+                                        result.push_str(&format!("{:?}", arg));
+                                    }
+                                }
+                                Ok(Value::String(result))
+                            },
+                            "includes" => {
+                                // Check if string includes substring
+                                if evaluated_args.len() < 1 {
+                                    return Err("includes requires a search string argument".to_string());
+                                }
+                                if let Value::String(search) = &evaluated_args[0] {
+                                    Ok(Value::Boolean(s.contains(search)))
+                                } else {
+                                    Err("includes requires a string argument".to_string())
+                                }
+                            },
+                            "indexOf" => {
+                                // Find index of substring
+                                if evaluated_args.len() < 1 {
+                                    return Err("indexOf requires a search string argument".to_string());
+                                }
+                                if let Value::String(search) = &evaluated_args[0] {
+                                    if let Some(idx) = s.find(search) {
+                                        Ok(Value::Number(idx as i64))
+                                    } else {
+                                        Ok(Value::Number(-1))
+                                    }
+                                } else {
+                                    Err("indexOf requires a string argument".to_string())
+                                }
+                            },
+                            "repeat" => {
+                                // Repeat string n times
+                                if evaluated_args.len() < 1 {
+                                    return Err("repeat requires a count argument".to_string());
+                                }
+                                if let Value::Number(count) = &evaluated_args[0] {
+                                    let count = *count as usize;
+                                    Ok(Value::String(s.repeat(count)))
+                                } else {
+                                    Err("repeat requires a number argument".to_string())
+                                }
+                            },
+                            "slice" => {
+                                // Get substring
+                                if evaluated_args.len() < 1 {
+                                    return Err("slice requires a start index argument".to_string());
+                                }
+                                if let Value::Number(start) = &evaluated_args[0] {
+                                    let start = *start as usize;
+                                    let end = if evaluated_args.len() > 1 {
+                                        if let Value::Number(end) = &evaluated_args[1] {
+                                            *end as usize
+                                        } else {
+                                            return Err("slice end index must be a number".to_string());
+                                        }
+                                    } else {
+                                        s.len()
+                                    };
+                                    
+                                    if start <= s.len() && end <= s.len() && start <= end {
+                                        Ok(Value::String(s[start..end].to_string()))
+                                    } else {
+                                        Ok(Value::String("".to_string()))
+                                    }
+                                } else {
+                                    Err("slice requires number indices".to_string())
+                                }
+                            },
+                            "split" => {
+                                // Split string into array
+                                let separator = if evaluated_args.len() > 0 {
+                                    if let Value::String(sep) = &evaluated_args[0] {
+                                        sep.as_str()
+                                    } else {
+                                        return Err("split separator must be a string".to_string());
+                                    }
+                                } else {
+                                    ""
+                                };
+                                
+                                let parts: Vec<Value> = s.split(separator)
+                                    .map(|part| Value::String(part.to_string()))
+                                    .collect();
+                                
+                                Ok(Value::Array(parts))
+                            },
+                            "toString" => {
+                                // Return the string itself
+                                Ok(Value::String(s.clone()))
+                            },
+                            "valueOf" => {
+                                // Return the string itself
+                                Ok(Value::String(s.clone()))
+                            },
+                            _ => Err(format!("Method '{}' not found on string", method))
+                        }
+                    },
+                    Value::Number(n) => {
+                        // Handle number methods
+                        match method.as_str() {
+                            "toString" => {
+                                // Convert number to string, optionally with a radix
+                                let radix = if evaluated_args.len() > 0 {
+                                    if let Value::Number(r) = &evaluated_args[0] {
+                                        *r as u32
+                                    } else {
+                                        return Err("toString radix must be a number".to_string());
+                                    }
+                                } else {
+                                    10 // Default to base 10
+                                };
+                                
+                                if radix < 2 || radix > 36 {
+                                    return Err("toString radix must be between 2 and 36".to_string());
+                                }
+                                
+                                // For now, just convert to base 10 string since Rust doesn't have a built-in
+                                // for arbitrary base conversion
+                                Ok(Value::String(n.to_string()))
+                            },
+                            "toFixed" => {
+                                // Format number with fixed decimal places
+                                let digits = if evaluated_args.len() > 0 {
+                                    if let Value::Number(d) = &evaluated_args[0] {
+                                        *d as usize
+                                    } else {
+                                        return Err("toFixed digits must be a number".to_string());
+                                    }
+                                } else {
+                                    0 // Default to 0 decimal places
+                                };
+                                
+                                // Format with specified number of decimal places
+                                Ok(Value::String(format!("{:.1$}", n as f64, digits)))
+                            },
+                            "toPrecision" => {
+                                // Format number with specified precision
+                                if evaluated_args.len() < 1 {
+                                    return Err("toPrecision requires a precision argument".to_string());
+                                }
+                                if let Value::Number(precision) = &evaluated_args[0] {
+                                    // Simple implementation for now
+                                    Ok(Value::String(format!("{:.1$e}", n as f64, *precision as usize)))
+                                } else {
+                                    Err("toPrecision requires a number argument".to_string())
+                                }
+                            },
+                            "toExponential" => {
+                                // Format number in exponential notation
+                                let frac_digits = if evaluated_args.len() > 0 {
+                                    if let Value::Number(d) = &evaluated_args[0] {
+                                        *d as usize
+                                    } else {
+                                        return Err("toExponential digits must be a number".to_string());
+                                    }
+                                } else {
+                                    6 // Default to 6 decimal places
+                                };
+                                
+                                // Format in exponential notation
+                                Ok(Value::String(format!("{:.1$e}", n as f64, frac_digits)))
+                            },
+                            "valueOf" => {
+                                // Return the number itself
+                                Ok(Value::Number(*n))
+                            },
+                            _ => Err(format!("Method '{}' not found on number", method))
+                        }
+                    },
+                    Value::Array(arr) => {
+                        // Handle array methods
+                        match method.as_str() {
+                            "push" => {
+                                let mut new_arr = arr.clone();
+                                for arg in evaluated_args {
+                                    new_arr.push(arg);
+                                }
+                                Ok(Value::Array(new_arr))
+                            },
+                            "pop" => {
+                                let mut new_arr = arr.clone();
+                                if let Some(item) = new_arr.pop() {
+                                    Ok(item)
+                                } else {
+                                    Ok(Value::Undefined)
+                                }
+                            },
+                            "map" => {
+                                // Handle array.map(callback)
+                                if evaluated_args.len() < 1 {
+                                    return Err("map requires a callback function".to_string());
+                                }
+                                
+                                let callback = &evaluated_args[0];
+                                
+                                match callback {
+                                    Value::Function(_, param_names, body) => {
+                                        // Create a new array to hold the mapped values
+                                        let mut result = Vec::new();
+                                        
+                                        // Apply the callback to each element
+                                        for (i, item) in arr.iter().enumerate() {
+                                            // Create a new scope for each callback invocation
+                                            let mut callback_scope = Scope::with_parent(Box::new(scope.clone()));
+                                            
+                                            // Bind the current item as the first parameter
+                                            if param_names.len() > 0 {
+                                                callback_scope.set(&param_names[0], item.clone());
+                                            }
+                                            
+                                            // Bind the index as the second parameter if it exists
+                                            if param_names.len() > 1 {
+                                                callback_scope.set(&param_names[1], Value::Number(i as i64));
+                                            }
+                                            
+                                            // Bind the array as the third parameter if it exists
+                                            if param_names.len() > 2 {
+                                                callback_scope.set(&param_names[2], Value::Array(arr.clone()));
+                                            }
+                                            
+                                            // Call the callback function
+                                            let mapped_value = self.evaluate_ast_with_scope(body, &mut callback_scope)?;
+                                            result.push(mapped_value);
+                                        }
+                                        
+                                        Ok(Value::Array(result))
+                                    },
+                                    _ => Err("map requires a callback function".to_string())
+                                }
+                            },
+                            "filter" => {
+                                // Handle array.filter(callback)
+                                if evaluated_args.len() < 1 {
+                                    return Err("filter requires a callback function".to_string());
+                                }
+                                
+                                let callback = &evaluated_args[0];
+                                
+                                match callback {
+                                    Value::Function(_, param_names, body) => {
+                                        // Create a new array to hold the filtered values
+                                        let mut result = Vec::new();
+                                        
+                                        // Apply the callback to each element
+                                        for (i, item) in arr.iter().enumerate() {
+                                            // Create a new scope for each callback invocation
+                                            let mut callback_scope = Scope::with_parent(Box::new(scope.clone()));
+                                            
+                                            // Bind the current item as the first parameter
+                                            if param_names.len() > 0 {
+                                                callback_scope.set(&param_names[0], item.clone());
+                                            }
+                                            
+                                            // Bind the index as the second parameter if it exists
+                                            if param_names.len() > 1 {
+                                                callback_scope.set(&param_names[1], Value::Number(i as i64));
+                                            }
+                                            
+                                            // Bind the array as the third parameter if it exists
+                                            if param_names.len() > 2 {
+                                                callback_scope.set(&param_names[2], Value::Array(arr.clone()));
+                                            }
+                                            
+                                            // Call the callback function
+                                            let result_value = self.evaluate_ast_with_scope(body, &mut callback_scope)?;
+                                            
+                                            // Check if the result is truthy
+                                            let is_truthy = match result_value {
+                                                Value::Boolean(b) => b,
+                                                Value::Number(n) => n != 0,
+                                                Value::Float(f) => f != 0.0,
+                                                Value::String(s) => !s.is_empty(),
+                                                Value::Array(arr) => !arr.is_empty(),
+                                                Value::Object(obj) => !obj.is_empty(),
+                                                Value::Function(_, _, _) => true,
+                                                Value::Null => false,
+                                                Value::Undefined => false,
+                                            };
+                                            
+                                            // If the result is truthy, include the item in the result
+                                            if is_truthy {
+                                                result.push(item.clone());
+                                            }
+                                        }
+                                        
+                                        Ok(Value::Array(result))
+                                    },
+                                    _ => Err("filter requires a callback function".to_string())
+                                }
+                            },
+                            "forEach" => {
+                                // Handle array.forEach(callback)
+                                if evaluated_args.len() < 1 {
+                                    return Err("forEach requires a callback function".to_string());
+                                }
+                                
+                                let callback = &evaluated_args[0];
+                                
+                                match callback {
+                                    Value::Function(_, param_names, body) => {
+                                        // Apply the callback to each element
+                                        for (i, item) in arr.iter().enumerate() {
+                                            // Create a new scope for each callback invocation
+                                            let mut callback_scope = Scope::with_parent(Box::new(scope.clone()));
+                                            
+                                            // Bind the current item as the first parameter
+                                            if param_names.len() > 0 {
+                                                callback_scope.set(&param_names[0], item.clone());
+                                            }
+                                            
+                                            // Bind the index as the second parameter if it exists
+                                            if param_names.len() > 1 {
+                                                callback_scope.set(&param_names[1], Value::Number(i as i64));
+                                            }
+                                            
+                                            // Bind the array as the third parameter if it exists
+                                            if param_names.len() > 2 {
+                                                callback_scope.set(&param_names[2], Value::Array(arr.clone()));
+                                            }
+                                            
+                                            // Call the callback function and ignore the result
+                                            let _ = self.evaluate_ast_with_scope(body, &mut callback_scope)?;
+                                        }
+                                        
+                                        // forEach returns undefined
+                                        Ok(Value::Undefined)
+                                    },
+                                    _ => Err("forEach requires a callback function".to_string())
+                                }
+                            },
+                            "find" => {
+                                // Handle array.find(callback)
+                                if evaluated_args.len() < 1 {
+                                    return Err("find requires a callback function".to_string());
+                                }
+                                
+                                let callback = &evaluated_args[0];
+                                
+                                match callback {
+                                    Value::Function(_, param_names, body) => {
+                                        // Apply the callback to each element
+                                        for (i, item) in arr.iter().enumerate() {
+                                            // Create a new scope for each callback invocation
+                                            let mut callback_scope = Scope::with_parent(Box::new(scope.clone()));
+                                            
+                                            // Bind the current item as the first parameter
+                                            if param_names.len() > 0 {
+                                                callback_scope.set(&param_names[0], item.clone());
+                                            }
+                                            
+                                            // Bind the index as the second parameter if it exists
+                                            if param_names.len() > 1 {
+                                                callback_scope.set(&param_names[1], Value::Number(i as i64));
+                                            }
+                                            
+                                            // Bind the array as the third parameter if it exists
+                                            if param_names.len() > 2 {
+                                                callback_scope.set(&param_names[2], Value::Array(arr.clone()));
+                                            }
+                                            
+                                            // Call the callback function
+                                            let result_value = self.evaluate_ast_with_scope(body, &mut callback_scope)?;
+                                            
+                                            // Check if the result is truthy
+                                            let is_truthy = match result_value {
+                                                Value::Boolean(b) => b,
+                                                Value::Number(n) => n != 0,
+                                                Value::String(s) => !s.is_empty(),
+                                                Value::Array(a) => !a.is_empty(),
+                                                Value::Object(_) => true,
+                                                Value::Null => false,
+                                                Value::Undefined => false,
+                                                Value::Function(_, _, _) => true,
+                                            };
+                                            
+                                            // If truthy, return this item
+                                            if is_truthy {
+                                                return Ok(item.clone());
+                                            }
+                                        }
+                                        
+                                        // If no item was found, return undefined
+                                        Ok(Value::Undefined)
+                                    },
+                                    _ => Err("find requires a callback function".to_string())
+                                }
+                            },
+                            "join" => {
+                                // Handle array.join(separator)
+                                let separator = if evaluated_args.len() > 0 {
+                                    if let Value::String(sep) = &evaluated_args[0] {
+                                        sep.clone()
+                                    } else {
+                                        format!("{:?}", evaluated_args[0])
+                                    }
+                                } else {
+                                    ",".to_string() // Default separator is comma
+                                };
+                                
+                                // Convert array elements to strings and join them
+                                let strings: Vec<String> = arr.iter().map(|item| {
+                                    match item {
+                                        Value::String(s) => s.clone(),
+                                        Value::Number(n) => n.to_string(),
+                                        Value::Boolean(b) => b.to_string(),
+                                        Value::Null => "null".to_string(),
+                                        Value::Undefined => "undefined".to_string(),
+                                        _ => format!("{:?}", item)
+                                    }
+                                }).collect();
+                                
+                                Ok(Value::String(strings.join(&separator)))
+                            },
+                            "reverse" => {
+                                // Handle array.reverse()
+                                let mut new_arr = arr.clone();
+                                new_arr.reverse();
+                                Ok(Value::Array(new_arr))
+                            },
+                            "slice" => {
+                                // Handle array.slice(start, end)
+                                let start = if evaluated_args.len() > 0 {
+                                    if let Value::Number(s) = &evaluated_args[0] {
+                                        *s as usize
+                                    } else {
+                                        return Err("slice start index must be a number".to_string());
+                                    }
+                                } else {
+                                    0 // Default start is 0
+                                };
+                                
+                                let end = if evaluated_args.len() > 1 {
+                                    if let Value::Number(e) = &evaluated_args[1] {
+                                        *e as usize
+                                    } else {
+                                        return Err("slice end index must be a number".to_string());
+                                    }
+                                } else {
+                                    arr.len() // Default end is array length
+                                };
+                                
+                                // Create a new array with the sliced elements
+                                if start <= arr.len() && end <= arr.len() && start <= end {
+                                    let sliced: Vec<Value> = arr[start..end].to_vec();
+                                    Ok(Value::Array(sliced))
+                                } else {
+                                    Ok(Value::Array(vec![]))
+                                }
+                            },
+                            _ => Err(format!("Method '{}' not found on array", method))
+                        }
+                    },
+                    Value::Object(obj) => {
+                        // First check for built-in object methods
+                        match method.as_str() {
+                            "hasOwnProperty" => {
+                                // Check if object has own property
+                                if evaluated_args.len() < 1 {
+                                    return Err("hasOwnProperty requires a property name".to_string());
+                                }
+                                
+                                if let Value::String(prop) = &evaluated_args[0] {
+                                    Ok(Value::Boolean(obj.contains_key(prop)))
+                                } else {
+                                    Err("hasOwnProperty requires a string argument".to_string())
+                                }
+                            },
+                            "keys" => {
+                                // Get object keys as array
+                                let keys: Vec<Value> = obj.keys()
+                                    .map(|k| Value::String(k.clone()))
+                                    .collect();
+                                
+                                Ok(Value::Array(keys))
+                            },
+                            "values" => {
+                                // Get object values as array
+                                let values: Vec<Value> = obj.values()
+                                    .cloned()
+                                    .collect();
+                                
+                                Ok(Value::Array(values))
+                            },
+                            "entries" => {
+                                // Get object entries as array of [key, value] arrays
+                                let entries: Vec<Value> = obj.iter()
+                                    .map(|(k, v)| {
+                                        let entry = vec![Value::String(k.clone()), v.clone()];
+                                        Value::Array(entry)
+                                    })
+                                    .collect();
+                                
+                                Ok(Value::Array(entries))
+                            },
+                            "toString" => {
+                                // Convert object to string representation
+                                let mut parts = Vec::new();
+                                for (key, value) in obj.iter() {
+                                    let value_str = match value {
+                                        Value::String(s) => format!("\"{}\"" , s),
+                                        Value::Number(n) => n.to_string(),
+                                        Value::Boolean(b) => b.to_string(),
+                                        Value::Null => "null".to_string(),
+                                        Value::Undefined => "undefined".to_string(),
+                                        Value::Array(_) => "[Array]".to_string(),
+                                        Value::Object(_) => "[Object]".to_string(),
+                                        Value::Function(_, _, _) => "[Function]".to_string(),
+                                    };
+                                    parts.push(format!("\"{}\":{}", key, value_str));
+                                }
+                                
+                                Ok(Value::String(format!("{{{}}}", parts.join(","))))
+                            },
+                            _ => {
+                                // Then check for user-defined methods
+                                if let Some(Value::Function(_, param_names, body)) = obj.get(method) {
+                                    // Create a new scope with the function's parameters
+                                    let mut function_scope = Scope::with_parent(Box::new(scope.clone()));
+                                    
+                                    // Bind arguments to parameters
+                                    for (i, param) in param_names.iter().enumerate() {
+                                        let arg_value = if i < evaluated_args.len() {
+                                            evaluated_args[i].clone()
+                                        } else {
+                                            Value::Undefined // Default value if argument is missing
+                                        };
+                                        function_scope.set(param, arg_value);
+                                    }
+                                    
+                                    // Execute the function body
+                                    self.evaluate_ast_with_scope(body, &mut function_scope)
+                                } else {
+                                    Err(format!("Method '{}' not found on object", method))
+                                }
+                            }
+                        }
+                    },
+                    _ => Err(format!("Cannot call method '{}' on this value type", method))
+                }
+            },
+            
             // Handle property access (obj.property)
             AstNode::PropertyAccess { object, property } => {
                 // Evaluate the object first
@@ -665,6 +1363,25 @@ impl Repl {
                             "toUpperCase" => Ok(Value::Function("toUpperCase".to_string(), vec![], Box::new(AstNode::Block(vec![])))),
                             "toLowerCase" => Ok(Value::Function("toLowerCase".to_string(), vec![], Box::new(AstNode::Block(vec![])))),
                             "trim" => Ok(Value::Function("trim".to_string(), vec![], Box::new(AstNode::Block(vec![])))),
+                            "trimStart" => Ok(Value::Function("trimStart".to_string(), vec![], Box::new(AstNode::Block(vec![])))),
+                            "trimEnd" => Ok(Value::Function("trimEnd".to_string(), vec![], Box::new(AstNode::Block(vec![])))),
+                            "charAt" => Ok(Value::Function("charAt".to_string(), vec!["index".to_string()], Box::new(AstNode::Block(vec![])))),
+                            "charCodeAt" => Ok(Value::Function("charCodeAt".to_string(), vec!["index".to_string()], Box::new(AstNode::Block(vec![])))),
+                            "concat" => Ok(Value::Function("concat".to_string(), vec!["str".to_string()], Box::new(AstNode::Block(vec![])))),
+                            "includes" => Ok(Value::Function("includes".to_string(), vec!["searchString".to_string(), "position".to_string()], Box::new(AstNode::Block(vec![])))),
+                            "indexOf" => Ok(Value::Function("indexOf".to_string(), vec!["searchValue".to_string(), "fromIndex".to_string()], Box::new(AstNode::Block(vec![])))),
+                            "lastIndexOf" => Ok(Value::Function("lastIndexOf".to_string(), vec!["searchValue".to_string(), "fromIndex".to_string()], Box::new(AstNode::Block(vec![])))),
+                            "padStart" => Ok(Value::Function("padStart".to_string(), vec!["targetLength".to_string(), "padString".to_string()], Box::new(AstNode::Block(vec![])))),
+                            "padEnd" => Ok(Value::Function("padEnd".to_string(), vec!["targetLength".to_string(), "padString".to_string()], Box::new(AstNode::Block(vec![])))),
+                            "repeat" => Ok(Value::Function("repeat".to_string(), vec!["count".to_string()], Box::new(AstNode::Block(vec![])))),
+                            "replace" => Ok(Value::Function("replace".to_string(), vec!["searchValue".to_string(), "replaceValue".to_string()], Box::new(AstNode::Block(vec![])))),
+                            "slice" => Ok(Value::Function("slice".to_string(), vec!["start".to_string(), "end".to_string()], Box::new(AstNode::Block(vec![])))),
+                            "split" => Ok(Value::Function("split".to_string(), vec!["separator".to_string(), "limit".to_string()], Box::new(AstNode::Block(vec![])))),
+                            "startsWith" => Ok(Value::Function("startsWith".to_string(), vec!["searchString".to_string(), "position".to_string()], Box::new(AstNode::Block(vec![])))),
+                            "endsWith" => Ok(Value::Function("endsWith".to_string(), vec!["searchString".to_string(), "length".to_string()], Box::new(AstNode::Block(vec![])))),
+                            "substring" => Ok(Value::Function("substring".to_string(), vec!["start".to_string(), "end".to_string()], Box::new(AstNode::Block(vec![])))),
+                            "toString" => Ok(Value::Function("toString".to_string(), vec![], Box::new(AstNode::Block(vec![])))),
+                            "valueOf" => Ok(Value::Function("valueOf".to_string(), vec![], Box::new(AstNode::Block(vec![])))),
                             _ => Err(format!("Property '{}' not found on string", property))
                         }
                     },
@@ -674,7 +1391,181 @@ impl Repl {
                             "length" => Ok(Value::Number(arr.len() as i64)),
                             "push" => Ok(Value::Function("push".to_string(), vec!["item".to_string()], Box::new(AstNode::Block(vec![])))),
                             "pop" => Ok(Value::Function("pop".to_string(), vec![], Box::new(AstNode::Block(vec![])))),
+                            "map" => {
+                                // Create a map function that takes a callback function
+                                Ok(Value::Function(
+                                    "map".to_string(), 
+                                    vec!["callback".to_string()], 
+                                    Box::new(AstNode::Block(vec![]))
+                                ))
+                            },
+                            "filter" => {
+                                // Create a filter function that takes a callback function
+                                Ok(Value::Function(
+                                    "filter".to_string(), 
+                                    vec!["callback".to_string()], 
+                                    Box::new(AstNode::Block(vec![]))
+                                ))
+                            },
+                            "forEach" => {
+                                Ok(Value::Function(
+                                    "forEach".to_string(), 
+                                    vec!["callback".to_string()], 
+                                    Box::new(AstNode::Block(vec![]))
+                                ))
+                            },
+                            "reduce" => {
+                                Ok(Value::Function(
+                                    "reduce".to_string(), 
+                                    vec!["callback".to_string(), "initialValue".to_string()], 
+                                    Box::new(AstNode::Block(vec![]))
+                                ))
+                            },
+                            "reduceRight" => {
+                                Ok(Value::Function(
+                                    "reduceRight".to_string(), 
+                                    vec!["callback".to_string(), "initialValue".to_string()], 
+                                    Box::new(AstNode::Block(vec![]))
+                                ))
+                            },
+                            "find" => {
+                                Ok(Value::Function(
+                                    "find".to_string(), 
+                                    vec!["callback".to_string()], 
+                                    Box::new(AstNode::Block(vec![]))
+                                ))
+                            },
+                            "findIndex" => {
+                                Ok(Value::Function(
+                                    "findIndex".to_string(), 
+                                    vec!["callback".to_string()], 
+                                    Box::new(AstNode::Block(vec![]))
+                                ))
+                            },
+                            "every" => {
+                                Ok(Value::Function(
+                                    "every".to_string(), 
+                                    vec!["callback".to_string()], 
+                                    Box::new(AstNode::Block(vec![]))
+                                ))
+                            },
+                            "some" => {
+                                Ok(Value::Function(
+                                    "some".to_string(), 
+                                    vec!["callback".to_string()], 
+                                    Box::new(AstNode::Block(vec![]))
+                                ))
+                            },
+                            "includes" => {
+                                Ok(Value::Function(
+                                    "includes".to_string(), 
+                                    vec!["element".to_string(), "fromIndex".to_string()], 
+                                    Box::new(AstNode::Block(vec![]))
+                                ))
+                            },
+                            "indexOf" => {
+                                Ok(Value::Function(
+                                    "indexOf".to_string(), 
+                                    vec!["element".to_string(), "fromIndex".to_string()], 
+                                    Box::new(AstNode::Block(vec![]))
+                                ))
+                            },
+                            "lastIndexOf" => {
+                                Ok(Value::Function(
+                                    "lastIndexOf".to_string(), 
+                                    vec!["element".to_string(), "fromIndex".to_string()], 
+                                    Box::new(AstNode::Block(vec![]))
+                                ))
+                            },
+                            "join" => {
+                                Ok(Value::Function(
+                                    "join".to_string(), 
+                                    vec!["separator".to_string()], 
+                                    Box::new(AstNode::Block(vec![]))
+                                ))
+                            },
+                            "slice" => {
+                                Ok(Value::Function(
+                                    "slice".to_string(), 
+                                    vec!["start".to_string(), "end".to_string()], 
+                                    Box::new(AstNode::Block(vec![]))
+                                ))
+                            },
+                            "concat" => {
+                                Ok(Value::Function(
+                                    "concat".to_string(), 
+                                    vec!["array".to_string()], 
+                                    Box::new(AstNode::Block(vec![]))
+                                ))
+                            },
+                            "shift" => {
+                                Ok(Value::Function(
+                                    "shift".to_string(), 
+                                    vec![], 
+                                    Box::new(AstNode::Block(vec![]))
+                                ))
+                            },
+                            "unshift" => {
+                                Ok(Value::Function(
+                                    "unshift".to_string(), 
+                                    vec!["element".to_string()], 
+                                    Box::new(AstNode::Block(vec![]))
+                                ))
+                            },
+                            "reverse" => {
+                                Ok(Value::Function(
+                                    "reverse".to_string(), 
+                                    vec![], 
+                                    Box::new(AstNode::Block(vec![]))
+                                ))
+                            },
+                            "sort" => {
+                                Ok(Value::Function(
+                                    "sort".to_string(), 
+                                    vec!["compareFunction".to_string()], 
+                                    Box::new(AstNode::Block(vec![]))
+                                ))
+                            },
+                            "fill" => {
+                                Ok(Value::Function(
+                                    "fill".to_string(), 
+                                    vec!["value".to_string(), "start".to_string(), "end".to_string()], 
+                                    Box::new(AstNode::Block(vec![]))
+                                ))
+                            },
+                            "flat" => {
+                                Ok(Value::Function(
+                                    "flat".to_string(), 
+                                    vec!["depth".to_string()], 
+                                    Box::new(AstNode::Block(vec![]))
+                                ))
+                            },
+                            "flatMap" => {
+                                Ok(Value::Function(
+                                    "flatMap".to_string(), 
+                                    vec!["callback".to_string()], 
+                                    Box::new(AstNode::Block(vec![]))
+                                ))
+                            },
+                            "toString" => {
+                                Ok(Value::Function(
+                                    "toString".to_string(), 
+                                    vec![], 
+                                    Box::new(AstNode::Block(vec![]))
+                                ))
+                            },
                             _ => Err(format!("Property '{}' not found on array", property))
+                        }
+                    },
+                    Value::Number(n) => {
+                        // Handle number properties
+                        match property.as_str() {
+                            "toString" => Ok(Value::Function("toString".to_string(), vec!["radix".to_string()], Box::new(AstNode::Block(vec![])))),
+                            "toFixed" => Ok(Value::Function("toFixed".to_string(), vec!["digits".to_string()], Box::new(AstNode::Block(vec![])))),
+                            "toPrecision" => Ok(Value::Function("toPrecision".to_string(), vec!["precision".to_string()], Box::new(AstNode::Block(vec![])))),
+                            "toExponential" => Ok(Value::Function("toExponential".to_string(), vec!["fractionDigits".to_string()], Box::new(AstNode::Block(vec![])))),
+                            "valueOf" => Ok(Value::Function("valueOf".to_string(), vec![], Box::new(AstNode::Block(vec![])))),
+                            _ => Err(format!("Property '{}' not found on number", property))
                         }
                     },
                     Value::Object(obj) => {
@@ -682,7 +1573,16 @@ impl Repl {
                         if let Some(value) = obj.get(property) {
                             Ok(value.clone())
                         } else {
-                            Err(format!("Property '{}' not found on object", property))
+                            // Check for common object methods
+                            match property.as_str() {
+                                "toString" => Ok(Value::Function("toString".to_string(), vec![], Box::new(AstNode::Block(vec![])))),
+                                "valueOf" => Ok(Value::Function("valueOf".to_string(), vec![], Box::new(AstNode::Block(vec![])))),
+                                "hasOwnProperty" => Ok(Value::Function("hasOwnProperty".to_string(), vec!["property".to_string()], Box::new(AstNode::Block(vec![])))),
+                                "keys" => Ok(Value::Function("keys".to_string(), vec![], Box::new(AstNode::Block(vec![])))),
+                                "values" => Ok(Value::Function("values".to_string(), vec![], Box::new(AstNode::Block(vec![])))),
+                                "entries" => Ok(Value::Function("entries".to_string(), vec![], Box::new(AstNode::Block(vec![])))),
+                                _ => Err(format!("Property '{}' not found on object", property))
+                            }
                         }
                     },
                     _ => Err(format!("Cannot access property '{}' on this value type", property))
