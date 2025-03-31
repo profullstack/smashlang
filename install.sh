@@ -367,7 +367,7 @@ install_linux() {
     # Run tests after installation is complete
     echo -e "${BLUE}Running tests for SmashLang...${NC}"
     echo -e "${BLUE}(Test output will be saved and summarized at the end)${NC}"
-    run_tests "$temp_dir" > /dev/null 2>&1
+    run_tests "$temp_dir"
     
     # Copy documentation
     echo -e "${BLUE}Installing documentation...${NC}"
@@ -418,9 +418,7 @@ install_linux() {
   # and will not be performed during installation
   
   # Display test results summary
-  if [ "$use_master" == "true" ]; then
-    display_test_results "$temp_dir"
-  fi
+  display_test_results "$temp_dir"
   
   echo -e "\n${GREEN}SmashLang has been successfully installed on Linux!${NC}"
   echo -e "Run 'smash --version' to verify the installation."
