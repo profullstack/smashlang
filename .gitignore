@@ -32,3 +32,4 @@ Cargo.lock
 # SmashLang specific
 *.smash.ll
 *.smash.o
+build/
