@@ -4,8 +4,9 @@
 # This script installs SmashLang on Windows, macOS, and Linux systems
 
 # Create and clear logs directory at the beginning
-mkdir -p "./logs"
-rm -f "./logs/"*
+BASE_DIR="$(pwd)"
+mkdir -p "$BASE_DIR/logs"
+rm -f "$BASE_DIR/logs/"*
 
 # Set color variables
 RED="\033[0;31m"
@@ -28,12 +29,11 @@ WINDOWS_INSTALL_DIR="$APPDATA\\smashlang"
 # Run tests for SmashLang
 run_tests() {
   local repo_dir="$1"
-  local original_dir="$(pwd)"
   
-  # Use the logs directory in the current working directory, not in the repo
+  # Use the logs directory in the BASE_DIR, not in the repo
   # Create a log file with timestamp
   local timestamp=$(date +"%Y%m%d_%H%M%S")
-  local log_file="$original_dir/logs/test_results_$timestamp.log"
+  local log_file="$BASE_DIR/logs/test_results_$timestamp.log"
   
   echo -e "${BLUE}Running tests for SmashLang...${NC}"
   cd "$repo_dir" || { echo -e "${RED}Error: Could not change to directory $repo_dir${NC}"; return 1; }
@@ -228,9 +228,8 @@ run_tests() {
 
 # Display test results at the end of installation
 display_test_results() {
-  local logs_dir="$(pwd)/logs"
   # Find the most recent log file in the logs directory
-  local log_file=$(find "$logs_dir" -name "test_results_*.log" -type f -print0 2>/dev/null | xargs -0 ls -t 2>/dev/null | head -n 1)
+  local log_file=$(find "$BASE_DIR/logs" -name "test_results_*.log" -type f -print0 2>/dev/null | xargs -0 ls -t 2>/dev/null | head -n 1)
   
   if [ -n "$log_file" ] && [ -f "$log_file" ]; then
     echo -e "\n${BLUE}Test Results Summary${NC}"
@@ -396,8 +395,8 @@ install_linux() {
   if [ "$use_master" == "true" ]; then
     echo -e "${BLUE}Using GitHub master branch for installation...${NC}"
     
-    # Create a directory for cloning the repository in the current working directory
-    local temp_dir="$(pwd)/build/temp_$(date +"%Y%m%d_%H%M%S")"
+    # Create a directory for cloning the repository in the BASE_DIR
+    local temp_dir="$BASE_DIR/build/temp_$(date +"%Y%m%d_%H%M%S")"
     mkdir -p "$temp_dir"
     
     # Set up cleanup trap
@@ -507,8 +506,8 @@ if [ -z "$DOWNLOADED_INSTALLER" ] && [ "$1" = "--master" ]; then
   # Clone the repository directly and run tests
   echo -e "${BLUE}Using GitHub master branch for installation...${NC}"
   
-  # Create a directory for cloning the repository in the current working directory
-  TEMP_DIR="$(pwd)/build/temp_$(date +"%Y%m%d_%H%M%S")"
+  # Create a directory for cloning the repository in the BASE_DIR
+  TEMP_DIR="$BASE_DIR/build/temp_$(date +"%Y%m%d_%H%M%S")"
   mkdir -p "$TEMP_DIR"
   
   # Set up cleanup trap
