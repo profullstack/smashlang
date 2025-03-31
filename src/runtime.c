@@ -406,3 +406,49 @@ char* smash_object_to_string(const char* object_str) {
     // In a real implementation, you would parse the object and convert it to a string representation
     return strdup("[Object]");
 }
+
+// Generic helper functions for common methods
+
+// Generic toString method that works for any type
+char* smash_to_string(const char* value) {
+    if (value == NULL) return strdup("undefined");
+    
+    // Try to determine the type of the value and call the appropriate toString method
+    // This is a simplified implementation
+    if (value[0] == '[' && value[1] == 'O' && value[2] == 'b') {
+        // Looks like an object
+        return smash_object_to_string(value);
+    } else if (value[0] == '[' && value[1] == 'A' && value[2] == 'r') {
+        // Looks like an array
+        return strdup(value); // Just return the array representation for now
+    } else if ((value[0] >= '0' && value[0] <= '9') || value[0] == '-' || value[0] == '+') {
+        // Looks like a number
+        return smash_number_to_string(value);
+    } else {
+        // Assume it's a string or other type, just return it
+        return strdup(value);
+    }
+}
+
+// Generic valueOf method that works for any type
+char* smash_value_of(const char* value) {
+    if (value == NULL) return strdup("undefined");
+    
+    // Similar to toString, but returns the primitive value if possible
+    // This is a simplified implementation
+    return strdup(value);
+}
+
+// Generic slice method that works for strings and arrays
+char* smash_slice(const char* value, const char* start_str, const char* end_str) {
+    if (value == NULL) return strdup("");
+    
+    // Try to determine if this is a string or an array
+    if (value[0] == '[' && value[1] == 'A' && value[2] == 'r') {
+        // Looks like an array
+        return smash_array_slice(value, start_str, end_str);
+    } else {
+        // Assume it's a string
+        return smash_string_slice(value, start_str, end_str);
+    }
+}

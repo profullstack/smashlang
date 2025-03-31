@@ -972,7 +972,7 @@ impl Repl {
                             },
                             "valueOf" => {
                                 // Return the number itself
-                                Ok(Value::Number(*n))
+                                Ok(Value::Number(n.clone()))
                             },
                             _ => Err(format!("Method '{}' not found on number", method))
                         }
@@ -1175,6 +1175,7 @@ impl Repl {
                                             let is_truthy = match result_value {
                                                 Value::Boolean(b) => b,
                                                 Value::Number(n) => n != 0,
+                                                Value::Float(f) => f != 0.0,
                                                 Value::String(s) => !s.is_empty(),
                                                 Value::Array(a) => !a.is_empty(),
                                                 Value::Object(_) => true,
@@ -1309,6 +1310,7 @@ impl Repl {
                                     let value_str = match value {
                                         Value::String(s) => format!("\"{}\"" , s),
                                         Value::Number(n) => n.to_string(),
+                                        Value::Float(f) => f.to_string(),
                                         Value::Boolean(b) => b.to_string(),
                                         Value::Null => "null".to_string(),
                                         Value::Undefined => "undefined".to_string(),

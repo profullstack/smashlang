@@ -540,13 +540,6 @@ impl<'a> Module<'a> {
                             format!("smash_string_index_of({}, {})", obj_code, arg_codes[0])
                         }
                     },
-                    "slice" => {
-                        if arg_codes.len() < 2 {
-                            format!("\"Error: slice requires start and end indices\"")
-                        } else {
-                            format!("smash_string_slice({}, {}, {})", obj_code, arg_codes[0], arg_codes[1])
-                        }
-                    },
                     "split" => {
                         if arg_codes.len() < 1 {
                             format!("\"Error: split requires a delimiter\"")
@@ -561,20 +554,8 @@ impl<'a> Module<'a> {
                             format!("smash_string_repeat({}, {})", obj_code, arg_codes[0])
                         }
                     },
-                    "toString" => {
-                        // For string.toString, just return the string itself
-                        obj_code
-                    },
-                    "valueOf" => {
-                        // For string.valueOf, just return the string itself
-                        obj_code
-                    },
                     
                     // Number methods
-                    "toString" => {
-                        // For number.toString, convert to string
-                        format!("smash_number_to_string({})", obj_code)
-                    },
                     "toFixed" => {
                         if arg_codes.len() < 1 {
                             format!("\"Error: toFixed requires decimal places\"")
@@ -595,10 +576,6 @@ impl<'a> Module<'a> {
                         } else {
                             format!("smash_number_to_exponential({}, {})", obj_code, arg_codes[0])
                         }
-                    },
-                    "valueOf" => {
-                        // For number.valueOf, just return the number itself
-                        obj_code
                     },
                     
                     // Array methods (some already implemented above)
@@ -623,13 +600,6 @@ impl<'a> Module<'a> {
                     "reverse" => {
                         format!("smash_array_reverse({})", obj_code)
                     },
-                    "slice" => {
-                        if arg_codes.len() < 2 {
-                            format!("\"Error: slice requires start and end indices\"")
-                        } else {
-                            format!("smash_array_slice({}, {}, {})", obj_code, arg_codes[0], arg_codes[1])
-                        }
-                    },
                     
                     // Object methods
                     "hasOwnProperty" => {
@@ -648,8 +618,23 @@ impl<'a> Module<'a> {
                     "entries" => {
                         format!("smash_object_entries({})", obj_code)
                     },
+                    
+                    // Common methods that might be used by different types
                     "toString" => {
-                        format!("smash_object_to_string({})", obj_code)
+                        // Handle toString based on object type
+                        format!("smash_to_string({})", obj_code)
+                    },
+                    "valueOf" => {
+                        // Handle valueOf based on object type
+                        format!("smash_value_of({})", obj_code)
+                    },
+                    "slice" => {
+                        // Handle slice based on object type (string or array)
+                        if arg_codes.len() < 2 {
+                            format!("\"Error: slice requires start and end indices\"")
+                        } else {
+                            format!("smash_slice({}, {}, {})", obj_code, arg_codes[0], arg_codes[1])
+                        }
                     },
                     _ => {
                         // For other methods, we'll just return a placeholder

@@ -40,4 +40,9 @@ char* smash_object_values(const char* object_str);
 char* smash_object_entries(const char* object_str);
 char* smash_object_to_string(const char* object_str);
 
+// Generic helper functions for common methods
+char* smash_to_string(const char* value);
+char* smash_value_of(const char* value);
+char* smash_slice(const char* value, const char* start_str, const char* end_str);
+
 #endif // SMASH_RUNTIME_H
