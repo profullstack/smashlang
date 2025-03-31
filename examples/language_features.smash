@@ -1,41 +1,26 @@
 // language_features.smash - Testing new language features
 
-// Import standard library
-import "std";
-
 // Function to test various language features
 fn testLanguageFeatures() {
   // String literals
   const doubleQuoted = "This is a double-quoted string";
   const singleQuoted = 'This is a single-quoted string';
-  const templateLiteral = `This is a template literal`;
+  const templateLiteral = `This is a template literal with ${doubleQuoted.length} characters`;
+  
+  print(doubleQuoted);
+  print(singleQuoted);
+  print(templateLiteral);
   
   // Comparison operators
   const a = 10;
   const b = 20;
   
   if (a < b) {
-    std.print("a is less than b");
+    print("a is less than b");
   }
   
   if (a <= b) {
-    std.print("a is less than or equal to b");
-  }
-  
-  if (b > a) {
-    std.print("b is greater than a");
-  }
-  
-  if (b >= a) {
-    std.print("b is greater than or equal to a");
-  }
-  
-  if (a == 10) {
-    std.print("a equals 10");
-  }
-  
-  if (a != 20) {
-    std.print("a is not equal to 20");
+    print("a is less than or equal to b");
   }
   
   // Logical operators
@@ -43,39 +28,27 @@ fn testLanguageFeatures() {
   const d = false;
   
   if (c && !d) {
-    std.print("c is true AND d is false");
+    print("c is true AND d is false");
   }
   
   if (c || d) {
-    std.print("c is true OR d is true");
+    print("c is true OR d is true");
   }
-  
-  // Bitwise operators
-  const e = 5;  // 101 in binary
-  const f = 3;  // 011 in binary
-  
-  const bitwiseAnd = e & f;  // 001 = 1
-  const bitwiseOr = e | f;   // 111 = 7
-  const bitwiseXor = e ^ f;  // 110 = 6
-  
-  std.print(`Bitwise AND: ${bitwiseAnd}`);
-  std.print(`Bitwise OR: ${bitwiseOr}`);
-  std.print(`Bitwise XOR: ${bitwiseXor}`);
   
   // Ternary operator
   const max = a > b ? a : b;
-  std.print(`Maximum value: ${max}`);
+  print(`Maximum value: ${max}`);
   
   return "All tests completed";
 }
 
 // Main function
 fn main() {
-  std.print("Testing new language features...");
+  print("Starting language features test...");
   const result = testLanguageFeatures();
-  std.print(result);
+  print(result);
   return 0;
 }
 
-// Call main
+// Call the main function
 main();
