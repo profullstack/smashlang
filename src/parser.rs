@@ -33,6 +33,11 @@ pub enum AstNode {
     PreDecrement(Box<AstNode>),  // --x
     PostDecrement(Box<AstNode>), // x--
     
+    // Assignments
+    Assignment {
+        name: String,
+        value: Box<AstNode>,
+    },
     // Compound assignments
     CompoundAssignment {
         target: Box<AstNode>,
@@ -824,9 +829,69 @@ impl Parser {
         }))
     }
     
-    // Placeholder for expression parsing
+    // Basic expression parsing
     fn parse_expr(&mut self) -> ParseResult<AstNode> {
-        // This would be implemented based on the existing expression parsing logic
-        Ok(AstNode::Null)
+        self.parse_assignment()
+    }
+    
+    fn parse_assignment(&mut self) -> ParseResult<AstNode> {
+        let expr = self.parse_equality()?;
+        
+        if matches!(self.peek(), Some(Token::Equal)) {
+            self.advance(); // Consume =
+            let value = self.parse_assignment()?;
+            
+            if let AstNode::Identifier(name) = expr {
+                return Ok(AstNode::Assignment {
+                    name,
+                    value: Box::new(value),
+                });
+            }
+            
+            return Err(ParseError::new("Invalid assignment target", self.pos));
+        }
+        
+        Ok(expr)
+    }
+    
+    fn parse_equality(&mut self) -> ParseResult<AstNode> {
+        // For now, just handle simple expressions
+        self.parse_primary()
+    }
+    
+    fn parse_primary(&mut self) -> ParseResult<AstNode> {
+        match self.peek() {
+            Some(Token::Number(n)) => {
+                let value = *n;
+                self.advance();
+                Ok(AstNode::Number(value))
+            },
+            Some(Token::String(s)) => {
+                let value = s.clone();
+                self.advance();
+                Ok(AstNode::String(value))
+            },
+            Some(Token::Bool(value)) => {
+                let bool_value = *value;
+                self.advance();
+                Ok(AstNode::Boolean(bool_value))
+            },
+            Some(Token::Null) => {
+                self.advance();
+                Ok(AstNode::Null)
+            },
+            Some(Token::Identifier(name)) => {
+                let id = name.clone();
+                self.advance();
+                Ok(AstNode::Identifier(id))
+            },
+            Some(Token::LParen) => {
+                self.advance();
+                let expr = self.parse_expr()?;
+                self.expect(&Token::RParen)?;
+                Ok(expr)
+            },
+            _ => Err(ParseError::new("Expected expression", self.pos)),
+        }
     }
 }
