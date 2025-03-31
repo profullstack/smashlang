@@ -371,23 +371,18 @@ install_linux() {
   echo -e "${BLUE}Copying assets directory...${NC}"
   create_dir "$LINUX_INSTALL_DIR/assets"
   
-  # Define and call the function to generate package assets
-  generate_package_assets() {
-    echo -e "${BLUE}Generating package assets...${NC}"
-    
-    if [ -f "scripts/generate_package_logo.sh" ]; then
-      chmod +x "scripts/generate_package_logo.sh"
-      ./scripts/generate_package_logo.sh
-    fi
-    
-    if [ -f "scripts/generate_favicon.sh" ]; then
-      chmod +x "scripts/generate_favicon.sh"
-      ./scripts/generate_favicon.sh
-    fi
-  }
-  
   # Generate package assets if needed
-  generate_package_assets
+  echo -e "${BLUE}Generating package assets...${NC}"
+  
+  if [ -f "scripts/generate_package_logo.sh" ]; then
+    chmod +x "scripts/generate_package_logo.sh"
+    ./scripts/generate_package_logo.sh
+  fi
+  
+  if [ -f "scripts/generate_favicon.sh" ]; then
+    chmod +x "scripts/generate_favicon.sh"
+    ./scripts/generate_favicon.sh
+  fi
   
   echo -e "${GREEN}SmashLang has been successfully installed on Linux!${NC}"
   echo -e "Run 'smash --version' to verify the installation."
