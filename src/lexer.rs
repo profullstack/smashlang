@@ -127,6 +127,7 @@ pub enum Token {
 }
 
 // Helper function to tokenize interpolated expressions in template strings
+#[allow(dead_code)]
 fn tokenize_interpolation<I>(start: I, _end: I) -> Vec<Token>
 where
     I: Iterator<Item = char> + Clone,
@@ -291,9 +292,9 @@ pub fn tokenize(input: &str) -> Vec<Token> {
                                     
                                     // Store the complete regex pattern with flags
                                     if !flags.is_empty() {
-                                        pattern = format!("/{}\/{}", pattern, flags);
+                                        pattern = format!(r"/{}\/{}", pattern, flags);
                                     } else {
-                                        pattern = format!("/{}/", pattern);
+                                        pattern = format!(r"/{}/", pattern);
                                     }
                                     
                                     tokens.push(Token::Regex(pattern));

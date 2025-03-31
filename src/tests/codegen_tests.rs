@@ -1,8 +1,11 @@
+#[cfg(feature = "compiler")]
 use crate::lexer::tokenize;
+#[cfg(feature = "compiler")]
 use crate::parser::Parser;
+#[cfg(feature = "compiler")]
 use crate::codegen::generate_llvm_ir;
 
-#[cfg(test)]
+#[cfg(all(test, feature = "compiler"))]
 mod tests {
     use super::*;
     use inkwell::context::Context;
@@ -157,13 +160,11 @@ mod tests {
         assert!(ret_count >= 3); // One for each case and default
     }
 }
-# Merged from codegen_tests.rs
-use smashlang::codegen::{generate_llvm_ir, TargetMachine, FileType, Module};
-use smashlang::lexer::tokenize;
-use smashlang::parser::Parser;
+// Merged from codegen_tests.rs
 use std::fs;
 use tempfile::tempdir;
 
+#[cfg(feature = "compiler")]
 #[test]
 fn test_codegen_basic_program() {
     // Test code generation for a basic program

@@ -1,4 +1,4 @@
-use crate::lexer::{tokenize, Token};
+use crate::lexer::tokenize;
 use crate::parser::{Parser, AstNode};
 
 #[cfg(test)]

@@ -962,12 +962,12 @@ impl Parser {
             // Try to parse as arrow function
             self.advance(); // Consume LParen
             let mut is_arrow_fn = true;
-            let mut param_count = 0;
+            let mut _param_count = 0;
             
             // Parse parameters until we find a closing parenthesis
             while !matches!(self.peek(), Some(Token::RParen) | None) {
                 if matches!(self.peek(), Some(Token::Identifier(_))) {
-                    param_count += 1;
+                    _param_count += 1;
                     self.advance();
                     
                     if matches!(self.peek(), Some(Token::Comma)) {
