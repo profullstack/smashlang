@@ -596,7 +596,7 @@ impl Repl {
                                 Value::Null => result.push_str("null"),
                                 Value::Array(_) => result.push_str("[Array]"),
                                 Value::Object(_) => result.push_str("{Object}"),
-                                Value::Function(_, _, _) => result.push_str("[Function]"),
+                                Value::Function(name, _, _) => result.push_str(&format!("[Function: {}]", if name.is_empty() { "anonymous" } else { &name })),
                                 Value::Undefined => result.push_str("undefined"),
                             }
                         }
@@ -617,6 +617,38 @@ impl Repl {
                     // For block bodies, we use the block as is
                     AstNode::Block(body.clone())
                 })))
+            },
+            
+            // Handle ternary operator
+            AstNode::TernaryOp { condition, true_expr, false_expr } => {
+                // Evaluate the condition
+                let cond_value = self.evaluate_ast_with_scope(condition, scope)?;
+                
+                // Determine which branch to evaluate based on the condition
+                match cond_value {
+                    Value::Boolean(true) => self.evaluate_ast_with_scope(true_expr, scope),
+                    Value::Boolean(false) => self.evaluate_ast_with_scope(false_expr, scope),
+                    _ => {
+                        // For non-boolean conditions, do a truthy/falsy check
+                        let is_truthy = match cond_value {
+                            Value::Number(n) => n != 0,
+                            Value::Float(f) => f != 0.0,
+                            Value::String(s) => !s.is_empty(),
+                            Value::Boolean(b) => b,
+                            Value::Null => false,
+                            Value::Undefined => false,
+                            Value::Array(arr) => !arr.is_empty(),
+                            Value::Object(obj) => !obj.is_empty(),
+                            Value::Function(_, _, _) => true,
+                        };
+                        
+                        if is_truthy {
+                            self.evaluate_ast_with_scope(true_expr, scope)
+                        } else {
+                            self.evaluate_ast_with_scope(false_expr, scope)
+                        }
+                    }
+                }
             },
             
             // For simplicity, we'll just return a placeholder for other node types

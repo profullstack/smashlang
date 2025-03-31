@@ -1,0 +1,81 @@
+// Test file for template literals and ternary operators in SmashLang
+
+// Basic variables for testing
+let name = "World";
+let doubleQuoted = "Double quoted string";
+let singleQuoted = 'Single quoted string';
+
+// Template literals
+let greeting = `Hello, ${name}!`;
+print(greeting);
+
+// Template literals with expressions
+let templateLiteral = `This is a great template literal with ${doubleQuoted.length} characters`;
+print(templateLiteral);
+
+// Nested template literals
+let nested = `Outer ${`Inner ${name}`}`;
+print(nested);
+
+// Ternary operators
+let a = 10;
+let b = 5;
+// First let's assign the comparison result to a variable
+let isGreater = a > b;
+// Then use the ternary operator
+let max = isGreater ? a : b;
+print(`Maximum value: ${max}`);
+
+// Nested ternary operators
+let score = 85;
+// Break down nested ternary into individual conditions
+let isA = score >= 90;
+let isB = score >= 80;
+let isC = score >= 70;
+// Use simple ternary operators
+let grade = isA ? 'A' : (isB ? 'B' : (isC ? 'C' : 'F'));
+print(`Score: ${score}, Grade: ${grade}`);
+
+// Combining ternary operators and template literals
+let isLoggedIn = true;
+let username = "john_doe";
+// Simplify the nested template literal
+let welcomeMessage = `Welcome back, ${username}!`;
+let loginMessage = 'Please log in';
+let message = isLoggedIn ? welcomeMessage : loginMessage;
+print(message);
+
+// Functions with template literals
+fn formatName(first, last) {
+  return `${first} ${last}`;
+}
+let fullName = formatName("John", "Doe");
+print(fullName);
+
+// Functions with ternary operators
+fn checkAge(age) {
+  let isAdult = age >= 18;
+  return isAdult ? "Adult" : "Minor";
+}
+print(`Status: ${checkAge(20)}`);
+print(`Status: ${checkAge(15)}`);
+
+// Simplified example combining features
+// Create individual user objects instead of an array
+let user1 = { name: "Alice", age: 25, active: true };
+let user2 = { name: "Bob", age: 17, active: false };
+let user3 = { name: "Charlie", age: 30, active: true };
+
+fn formatUser(user) {
+  let status = "inactive";
+  if (user.active) {
+    status = "active";
+  }
+  let ageStatus = checkAge(user.age);
+  return `${user.name} (${ageStatus}) is ${status}`;
+}
+
+// Print each user with their formatted information
+print(formatUser(user1));
+print(formatUser(user2));
+print(formatUser(user3));
