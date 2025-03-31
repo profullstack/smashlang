@@ -766,6 +766,16 @@ install_linux() {
       fi
     fi
     
+    # Copy local .test.rs files to the cloned repository if they exist
+    if [ -d "$(pwd)/tests" ]; then
+      local_test_files=$(find "$(pwd)/tests" -type f -name "*.test.rs" 2>/dev/null)
+      if [ -n "$local_test_files" ]; then
+        echo -e "${BLUE}Copying local .test.rs files to cloned repository...${NC}"
+        mkdir -p "$temp_dir/tests"
+        cp "$(pwd)/tests"/*.test.rs "$temp_dir/tests/" 2>/dev/null || true
+      fi
+    fi
+    
     # Copy binaries from the repository
     echo -e "${BLUE}Installing SmashLang binaries...${NC}"
     echo -e "${BLUE}Building SmashLang from source...${NC}"
