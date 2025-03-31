@@ -557,7 +557,7 @@ impl Parser {
         }))
     }
     
-    fn parse_do_while(&mut self) -> ParseResult<Option<AstNode>> {
+    pub fn parse_do_while(&mut self) -> ParseResult<Option<AstNode>> {
         self.advance(); // Consume Do token
         
         // Parse body
@@ -584,7 +584,7 @@ impl Parser {
         }))
     }
     
-    fn parse_switch(&mut self) -> ParseResult<Option<AstNode>> {
+    pub fn parse_switch(&mut self) -> ParseResult<Option<AstNode>> {
         self.advance(); // Consume Switch token
         
         // Parse expression

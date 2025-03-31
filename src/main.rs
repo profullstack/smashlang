@@ -333,7 +333,7 @@ fn main() {
             let input = &args[1];
             let mut output = "out";
             let mut target = None;
-            let mut emit = "exe";
+            let mut _emit = "exe";
 
             let mut i = 2;
             while i < args.len() {
@@ -370,7 +370,7 @@ fn main() {
                             println!("{}: Invalid emit format '{}'. Must be one of: ir, obj, exe", "Error".red(), emit_value);
                             process::exit(1);
                         }
-                        emit = emit_value;
+                        _emit = emit_value;
                     }
                     _ => {
                         println!("{}: Unknown option: {}", "Warning".yellow(), args[i]);
