@@ -28,14 +28,15 @@ WINDOWS_INSTALL_DIR="$APPDATA\\smashlang"
 # Run tests for SmashLang
 run_tests() {
   local repo_dir="$1"
+  local original_dir="$(pwd)"
   
   # Use the logs directory in the current working directory, not in the repo
   # Create a log file with timestamp
   local timestamp=$(date +"%Y%m%d_%H%M%S")
-  local log_file="./logs/test_results_$timestamp.log"
+  local log_file="$original_dir/logs/test_results_$timestamp.log"
   
   echo -e "${BLUE}Running tests for SmashLang...${NC}"
-  cd "$repo_dir"
+  cd "$repo_dir" || { echo -e "${RED}Error: Could not change to directory $repo_dir${NC}"; return 1; }
   
   # Create the log file
   echo "SmashLang Test Results" > "$log_file"
@@ -48,33 +49,45 @@ run_tests() {
     echo -e "${BLUE}Running main crate tests...${NC}"
     echo "Main Crate Tests" >> "$log_file"
     echo "---------------" >> "$log_file"
-    cargo test > "$log_file.tmp" 2>&1
+    cargo test > "$log_file.tmp" 2>&1 || true
     local main_test_result=$?
-    cat "$log_file.tmp"
-    cat "$log_file.tmp" >> "$log_file"
-    rm "$log_file.tmp"
+    if [ -f "$log_file.tmp" ]; then
+      cat "$log_file.tmp"
+      cat "$log_file.tmp" >> "$log_file"
+      rm "$log_file.tmp"
+    else
+      echo "Error: Test output file not created" >> "$log_file"
+    fi
     echo "" >> "$log_file"
     
     # Run tests for all workspace packages
     echo -e "${BLUE}Running tests for all packages...${NC}"
     echo "All Packages Tests" >> "$log_file"
     echo "-----------------" >> "$log_file"
-    cargo test --all > "$log_file.tmp" 2>&1
+    cargo test --all > "$log_file.tmp" 2>&1 || true
     local all_test_result=$?
-    cat "$log_file.tmp"
-    cat "$log_file.tmp" >> "$log_file"
-    rm "$log_file.tmp"
+    if [ -f "$log_file.tmp" ]; then
+      cat "$log_file.tmp"
+      cat "$log_file.tmp" >> "$log_file"
+      rm "$log_file.tmp"
+    else
+      echo "Error: Test output file not created" >> "$log_file"
+    fi
     echo "" >> "$log_file"
     
     # Run tests with all features enabled
     echo -e "${BLUE}Running tests with all features enabled...${NC}"
     echo "All Features Tests" >> "$log_file"
     echo "-----------------" >> "$log_file"
-    cargo test --all-features > "$log_file.tmp" 2>&1
+    cargo test --all-features > "$log_file.tmp" 2>&1 || true
     local features_test_result=$?
-    cat "$log_file.tmp"
-    cat "$log_file.tmp" >> "$log_file"
-    rm "$log_file.tmp"
+    if [ -f "$log_file.tmp" ]; then
+      cat "$log_file.tmp"
+      cat "$log_file.tmp" >> "$log_file"
+      rm "$log_file.tmp"
+    else
+      echo "Error: Test output file not created" >> "$log_file"
+    fi
     echo "" >> "$log_file"
     
     # Check if any tests failed
@@ -102,11 +115,15 @@ run_tests() {
       fi
       
       # Run the examples
-      ./docs/getting-started/run_all_examples.sh > "$log_file.tmp" 2>&1
+      ./docs/getting-started/run_all_examples.sh > "$log_file.tmp" 2>&1 || true
       local example_test_result=$?
-      cat "$log_file.tmp"
-      cat "$log_file.tmp" >> "$log_file"
-      rm "$log_file.tmp"
+      if [ -f "$log_file.tmp" ]; then
+        cat "$log_file.tmp"
+        cat "$log_file.tmp" >> "$log_file"
+        rm "$log_file.tmp"
+      else
+        echo "Error: Example test output file not created" >> "$log_file"
+      fi
       echo "" >> "$log_file"
     else
       echo -e "${YELLOW}Warning: Example tests directory not found, skipping example tests.${NC}"
@@ -124,11 +141,15 @@ run_tests() {
         echo -e "${BLUE}Running combined test of all packages...${NC}"
         echo "Combined Package Tests" >> "$log_file"
         echo "---------------------" >> "$log_file"
-        (cd "smashlang_packages" && cargo test --all > "$repo_dir/pkg_test.tmp" 2>&1)
+        (cd "smashlang_packages" && cargo test --all > "$repo_dir/pkg_test.tmp" 2>&1) || true
         local combined_test_result=$?
-        cat "$repo_dir/pkg_test.tmp"
-        cat "$repo_dir/pkg_test.tmp" >> "$log_file"
-        rm "$repo_dir/pkg_test.tmp"
+        if [ -f "$repo_dir/pkg_test.tmp" ]; then
+          cat "$repo_dir/pkg_test.tmp"
+          cat "$repo_dir/pkg_test.tmp" >> "$log_file"
+          rm "$repo_dir/pkg_test.tmp"
+        else
+          echo "Error: Package test output file not created" >> "$log_file"
+        fi
         if [ $combined_test_result -eq 0 ]; then
           echo -e "${GREEN}Combined package tests passed!${NC}"
         else
@@ -156,11 +177,15 @@ run_tests() {
         
         echo -e "${BLUE}Testing package: $pkg_name ($rel_path)${NC}"
         echo "Package: $pkg_name ($rel_path)" >> "$log_file"
-        (cd "$pkg_dir" && cargo test > "$repo_dir/pkg_test.tmp" 2>&1)
+        (cd "$pkg_dir" && cargo test > "$repo_dir/pkg_test.tmp" 2>&1) || true
         local pkg_test_result=$?
-        cat "$repo_dir/pkg_test.tmp"
-        cat "$repo_dir/pkg_test.tmp" >> "$log_file"
-        rm "$repo_dir/pkg_test.tmp"
+        if [ -f "$repo_dir/pkg_test.tmp" ]; then
+          cat "$repo_dir/pkg_test.tmp"
+          cat "$repo_dir/pkg_test.tmp" >> "$log_file"
+          rm "$repo_dir/pkg_test.tmp"
+        else
+          echo "Error: Package test output file not created" >> "$log_file"
+        fi
         
         if [ $pkg_test_result -ne 0 ]; then
           all_packages_passed=false
@@ -203,8 +228,9 @@ run_tests() {
 
 # Display test results at the end of installation
 display_test_results() {
+  local logs_dir="$(pwd)/logs"
   # Find the most recent log file in the logs directory
-  local log_file=$(find "./logs" -name "test_results_*.log" -type f -print0 | xargs -0 ls -t | head -n 1)
+  local log_file=$(find "$logs_dir" -name "test_results_*.log" -type f -print0 2>/dev/null | xargs -0 ls -t 2>/dev/null | head -n 1)
   
   if [ -n "$log_file" ] && [ -f "$log_file" ]; then
     echo -e "\n${BLUE}Test Results Summary${NC}"
@@ -371,7 +397,7 @@ install_linux() {
     echo -e "${BLUE}Using GitHub master branch for installation...${NC}"
     
     # Create a directory for cloning the repository in the current working directory
-    local temp_dir="./build/temp_$(date +"%Y%m%d_%H%M%S")"
+    local temp_dir="$(pwd)/build/temp_$(date +"%Y%m%d_%H%M%S")"
     mkdir -p "$temp_dir"
     
     # Set up cleanup trap
@@ -482,7 +508,7 @@ if [ -z "$DOWNLOADED_INSTALLER" ] && [ "$1" = "--master" ]; then
   echo -e "${BLUE}Using GitHub master branch for installation...${NC}"
   
   # Create a directory for cloning the repository in the current working directory
-  TEMP_DIR="./build/temp_$(date +"%Y%m%d_%H%M%S")"
+  TEMP_DIR="$(pwd)/build/temp_$(date +"%Y%m%d_%H%M%S")"
   mkdir -p "$TEMP_DIR"
   
   # Set up cleanup trap
