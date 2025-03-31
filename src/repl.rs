@@ -51,7 +51,7 @@ pub struct Repl {
     global_scope: Scope, // Global scope for the REPL session
 }
 
-// A simple value type for our REPL to demonstrate variable operations
+// A value type for our REPL to support various SmashLang features
 #[derive(Debug, Clone)]
 pub enum Value {
     Number(i64),
@@ -59,6 +59,10 @@ pub enum Value {
     String(String),
     Boolean(bool),
     Null,
+    Array(Vec<Value>),
+    Object(HashMap<String, Value>),
+    Function(String, Vec<String>, Box<AstNode>), // name, params, body
+    Undefined,
 }
 
 impl Repl {
@@ -126,6 +130,10 @@ impl Repl {
         println!("  {}  - Subtract and assign (counter -= 2)", "-=".yellow());
         println!("  {}  - Multiply and assign (counter *= 3)", "*=".yellow());
         println!("  {}  - Divide and assign (counter /= 2)", "/=".yellow());
+        println!("  {}  - Comparison (==, ===, !=, !==, <, >, <=, >=)", "==, etc".yellow());
+        println!("  {}  - Logical operators (&&, ||, !)", "&&, ||, !".yellow());
+        println!("  {}  - Bitwise operators (&, |, ^, ~, <<, >>)", "&, |, etc".yellow());
+        println!("  {}  - Ternary operator (condition ? expr1 : expr2)", "? :".yellow());
         
         println!("
 {}", "Block Scoping Examples:".bright_cyan());
@@ -136,6 +144,18 @@ impl Repl {
         println!("  {}
   {}
   {}", "let z = 1;".yellow(), "{ z++; let z = 100; z++; }".yellow(), "console.log(z);  // Prints 2 (outer z was incremented before shadowing)".yellow());
+        
+        println!("
+{}", "String Examples:".bright_cyan());
+        println!("  {}  - Double-quoted strings", "\"Hello, world!\"".yellow());
+        println!("  {}  - Single-quoted strings", "'Hello, world!'".yellow());
+        println!("  {}  - Template literals", "`Hello, ${name}!`".yellow());
+        
+        println!("
+{}", "Array and Object Examples:".bright_cyan());
+        println!("  {}  - Array literal", "[1, 2, 3, 4]".yellow());
+        println!("  {}  - Object literal", "{{ name: 'John', age: 30 }}".yellow());
+        println!("  {}  - Array/Object access", "arr[0], obj.name".yellow());
         
         println!("
 {}", "SmashLang expressions and statements can be entered directly.".bright_cyan());
@@ -275,6 +295,7 @@ impl Repl {
                 let right_clone = right_val.clone();
                 
                 match (left_val, op.as_str(), right_val) {
+                    // Arithmetic operators
                     (Value::Number(l), "+", Value::Number(r)) => Ok(Value::Number(l + r)),
                     (Value::Number(l), "-", Value::Number(r)) => Ok(Value::Number(l - r)),
                     (Value::Number(l), "*", Value::Number(r)) => Ok(Value::Number(l * r)),
@@ -284,7 +305,41 @@ impl Repl {
                         }
                         Ok(Value::Number(l / r))
                     },
+                    (Value::Number(l), "%", Value::Number(r)) => {
+                        if r == 0 {
+                            return Err("Modulo by zero".to_string());
+                        }
+                        Ok(Value::Number(l % r))
+                    },
+                    
+                    // String concatenation
                     (Value::String(l), "+", Value::String(r)) => Ok(Value::String(l + &r)),
+                    (Value::String(l), "+", Value::Number(r)) => Ok(Value::String(l + &r.to_string())),
+                    (Value::Number(l), "+", Value::String(r)) => Ok(Value::String(l.to_string() + &r)),
+                    
+                    // Comparison operators
+                    (Value::Number(l), "==", Value::Number(r)) => Ok(Value::Boolean(l == r)),
+                    (Value::String(l), "==", Value::String(r)) => Ok(Value::Boolean(l == r)),
+                    (Value::Boolean(l), "==", Value::Boolean(r)) => Ok(Value::Boolean(l == r)),
+                    (Value::Number(l), "!=", Value::Number(r)) => Ok(Value::Boolean(l != r)),
+                    (Value::String(l), "!=", Value::String(r)) => Ok(Value::Boolean(l != r)),
+                    (Value::Boolean(l), "!=", Value::Boolean(r)) => Ok(Value::Boolean(l != r)),
+                    (Value::Number(l), "<", Value::Number(r)) => Ok(Value::Boolean(l < r)),
+                    (Value::Number(l), ">", Value::Number(r)) => Ok(Value::Boolean(l > r)),
+                    (Value::Number(l), "<=", Value::Number(r)) => Ok(Value::Boolean(l <= r)),
+                    (Value::Number(l), ">=", Value::Number(r)) => Ok(Value::Boolean(l >= r)),
+                    
+                    // Logical operators
+                    (Value::Boolean(l), "&&", Value::Boolean(r)) => Ok(Value::Boolean(l && r)),
+                    (Value::Boolean(l), "||", Value::Boolean(r)) => Ok(Value::Boolean(l || r)),
+                    
+                    // Bitwise operators
+                    (Value::Number(l), "&", Value::Number(r)) => Ok(Value::Number(l & r)),
+                    (Value::Number(l), "|", Value::Number(r)) => Ok(Value::Number(l | r)),
+                    (Value::Number(l), "^", Value::Number(r)) => Ok(Value::Number(l ^ r)),
+                    (Value::Number(l), "<<", Value::Number(r)) => Ok(Value::Number(l << r as u32)),
+                    (Value::Number(l), ">>", Value::Number(r)) => Ok(Value::Number(l >> r as u32)),
+                    
                     _ => Err(format!("Invalid operation: {:?} {} {:?}", left_clone, op, right_clone))
                 }
             },

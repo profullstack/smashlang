@@ -27,6 +27,32 @@ pub enum AstNode {
         right: Box<AstNode>,
     },
     
+    // Unary operators
+    UnaryOp {
+        op: String,  // !, ~
+        expr: Box<AstNode>,
+    },
+    
+    // Ternary operator
+    TernaryOp {
+        condition: Box<AstNode>,
+        true_expr: Box<AstNode>,
+        false_expr: Box<AstNode>,
+    },
+    
+    // Unary operators
+    UnaryOp {
+        op: String,  // !, ~
+        expr: Box<AstNode>,
+    },
+    
+    // Ternary operator
+    TernaryOp {
+        condition: Box<AstNode>,
+        true_expr: Box<AstNode>,
+        false_expr: Box<AstNode>,
+    },
+    
     // Increment/Decrement
     PreIncrement(Box<AstNode>),  // ++x
     PostIncrement(Box<AstNode>), // x++
@@ -831,7 +857,32 @@ impl Parser {
     
     // Basic expression parsing
     fn parse_expr(&mut self) -> ParseResult<AstNode> {
-        self.parse_assignment()
+        self.parse_ternary()
+    }
+    
+    // Parse ternary conditional operator: condition ? expr1 : expr2
+    fn parse_ternary(&mut self) -> ParseResult<AstNode> {
+        let condition = self.parse_assignment()?;
+        
+        if matches!(self.peek(), Some(Token::QuestionMark)) {
+            self.advance(); // Consume ?
+            let true_expr = self.parse_expr()?;
+            
+            if matches!(self.peek(), Some(Token::Colon)) {
+                self.advance(); // Consume :
+                let false_expr = self.parse_assignment()?;
+                
+                return Ok(AstNode::TernaryOp {
+                    condition: Box::new(condition),
+                    true_expr: Box::new(true_expr),
+                    false_expr: Box::new(false_expr),
+                });
+            } else {
+                return Err(ParseError::new("Expected ':' in ternary operator", self.pos));
+            }
+        }
+        
+        Ok(condition)
     }
     
     fn parse_expr_statement(&mut self) -> ParseResult<Option<AstNode>> {
@@ -844,7 +895,7 @@ impl Parser {
     }
     
     fn parse_unary(&mut self) -> ParseResult<AstNode> {
-        // Check for prefix increment/decrement
+        // Check for prefix operators
         if matches!(self.peek(), Some(Token::Increment)) {
             self.advance(); // Consume ++
             let expr = self.parse_primary()?;
@@ -853,6 +904,20 @@ impl Parser {
             self.advance(); // Consume --
             let expr = self.parse_primary()?;
             return Ok(AstNode::PreDecrement(Box::new(expr)));
+        } else if matches!(self.peek(), Some(Token::LogicalNot)) {
+            self.advance(); // Consume !
+            let expr = self.parse_unary()?;
+            return Ok(AstNode::UnaryOp {
+                op: "!".to_string(),
+                expr: Box::new(expr),
+            });
+        } else if matches!(self.peek(), Some(Token::BitwiseNot)) {
+            self.advance(); // Consume ~
+            let expr = self.parse_unary()?;
+            return Ok(AstNode::UnaryOp {
+                op: "~".to_string(),
+                expr: Box::new(expr),
+            });
         }
         
         // Otherwise, parse a primary expression
@@ -923,8 +988,195 @@ impl Parser {
     }
     
     fn parse_equality(&mut self) -> ParseResult<AstNode> {
-        // For now, just handle simple expressions
-        self.parse_unary()
+        let mut expr = self.parse_comparison()?;
+        
+        while let Some(token) = self.peek() {
+            match token {
+                Token::Equal => {
+                    self.advance();
+                    let right = self.parse_comparison()?;
+                    expr = AstNode::BinaryOp {
+                        left: Box::new(expr),
+                        op: "==".to_string(),
+                        right: Box::new(right),
+                    };
+                },
+                Token::StrictEqual => {
+                    self.advance();
+                    let right = self.parse_comparison()?;
+                    expr = AstNode::BinaryOp {
+                        left: Box::new(expr),
+                        op: "===".to_string(),
+                        right: Box::new(right),
+                    };
+                },
+                Token::NotEqual => {
+                    self.advance();
+                    let right = self.parse_comparison()?;
+                    expr = AstNode::BinaryOp {
+                        left: Box::new(expr),
+                        op: "!=".to_string(),
+                        right: Box::new(right),
+                    };
+                },
+                Token::StrictNotEqual => {
+                    self.advance();
+                    let right = self.parse_comparison()?;
+                    expr = AstNode::BinaryOp {
+                        left: Box::new(expr),
+                        op: "!==".to_string(),
+                        right: Box::new(right),
+                    };
+                },
+                _ => break,
+            }
+        }
+        
+        Ok(expr)
+    }
+    
+    fn parse_comparison(&mut self) -> ParseResult<AstNode> {
+        let mut expr = self.parse_logical()?;
+        
+        while let Some(token) = self.peek() {
+            match token {
+                Token::LessThan => {
+                    self.advance();
+                    let right = self.parse_logical()?;
+                    expr = AstNode::BinaryOp {
+                        left: Box::new(expr),
+                        op: "<".to_string(),
+                        right: Box::new(right),
+                    };
+                },
+                Token::GreaterThan => {
+                    self.advance();
+                    let right = self.parse_logical()?;
+                    expr = AstNode::BinaryOp {
+                        left: Box::new(expr),
+                        op: ">".to_string(),
+                        right: Box::new(right),
+                    };
+                },
+                Token::LessThanEqual => {
+                    self.advance();
+                    let right = self.parse_logical()?;
+                    expr = AstNode::BinaryOp {
+                        left: Box::new(expr),
+                        op: "<=".to_string(),
+                        right: Box::new(right),
+                    };
+                },
+                Token::GreaterThanEqual => {
+                    self.advance();
+                    let right = self.parse_logical()?;
+                    expr = AstNode::BinaryOp {
+                        left: Box::new(expr),
+                        op: ">=".to_string(),
+                        right: Box::new(right),
+                    };
+                },
+                _ => break,
+            }
+        }
+        
+        Ok(expr)
+    }
+    
+    fn parse_logical(&mut self) -> ParseResult<AstNode> {
+        let mut expr = self.parse_bitwise()?;
+        
+        while let Some(token) = self.peek() {
+            match token {
+                Token::LogicalAnd => {
+                    self.advance();
+                    let right = self.parse_bitwise()?;
+                    expr = AstNode::BinaryOp {
+                        left: Box::new(expr),
+                        op: "&&".to_string(),
+                        right: Box::new(right),
+                    };
+                },
+                Token::LogicalOr => {
+                    self.advance();
+                    let right = self.parse_bitwise()?;
+                    expr = AstNode::BinaryOp {
+                        left: Box::new(expr),
+                        op: "||".to_string(),
+                        right: Box::new(right),
+                    };
+                },
+                _ => break,
+            }
+        }
+        
+        Ok(expr)
+    }
+    
+    fn parse_bitwise(&mut self) -> ParseResult<AstNode> {
+        let mut expr = self.parse_unary()?;
+        
+        while let Some(token) = self.peek() {
+            match token {
+                Token::BitwiseAnd => {
+                    self.advance();
+                    let right = self.parse_unary()?;
+                    expr = AstNode::BinaryOp {
+                        left: Box::new(expr),
+                        op: "&".to_string(),
+                        right: Box::new(right),
+                    };
+                },
+                Token::BitwiseOr => {
+                    self.advance();
+                    let right = self.parse_unary()?;
+                    expr = AstNode::BinaryOp {
+                        left: Box::new(expr),
+                        op: "|".to_string(),
+                        right: Box::new(right),
+                    };
+                },
+                Token::BitwiseXor => {
+                    self.advance();
+                    let right = self.parse_unary()?;
+                    expr = AstNode::BinaryOp {
+                        left: Box::new(expr),
+                        op: "^".to_string(),
+                        right: Box::new(right),
+                    };
+                },
+                Token::BitwiseLeftShift => {
+                    self.advance();
+                    let right = self.parse_unary()?;
+                    expr = AstNode::BinaryOp {
+                        left: Box::new(expr),
+                        op: "<<".to_string(),
+                        right: Box::new(right),
+                    };
+                },
+                Token::BitwiseRightShift => {
+                    self.advance();
+                    let right = self.parse_unary()?;
+                    expr = AstNode::BinaryOp {
+                        left: Box::new(expr),
+                        op: ">>".to_string(),
+                        right: Box::new(right),
+                    };
+                },
+                Token::BitwiseUnsignedRightShift => {
+                    self.advance();
+                    let right = self.parse_unary()?;
+                    expr = AstNode::BinaryOp {
+                        left: Box::new(expr),
+                        op: ">>>".to_string(),
+                        right: Box::new(right),
+                    };
+                },
+                _ => break,
+            }
+        }
+        
+        Ok(expr)
     }
     
     fn parse_primary(&mut self) -> ParseResult<AstNode> {
@@ -937,6 +1189,18 @@ impl Parser {
             Some(Token::String(s)) => {
                 let value = s.clone();
                 self.advance();
+                Ok(AstNode::String(value))
+            },
+            Some(Token::SingleQuoteString(s)) => {
+                let value = s.clone();
+                self.advance();
+                Ok(AstNode::String(value))
+            },
+            Some(Token::TemplateString(s)) => {
+                let value = s.clone();
+                self.advance();
+                // For now, treat template literals as regular strings
+                // In the future, we'll need to handle interpolation
                 Ok(AstNode::String(value))
             },
             Some(Token::Bool(value)) => {
