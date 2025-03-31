@@ -512,7 +512,7 @@ main() {
     if [ "$upgrade" == "true" ]; then
       upgrade_linux
     else
-      install_linux_main "$use_master"
+      install_linux "$use_master"
     fi
   elif [ "$os" == "macos" ]; then
     if [ "$upgrade" == "true" ]; then
