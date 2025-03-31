@@ -951,6 +951,36 @@ impl Parser {
             Some(Token::Identifier(name)) => {
                 let id = name.clone();
                 self.advance();
+                
+                // Check if this is a function call (identifier followed by left parenthesis)
+                if let Some(Token::LParen) = self.peek() {
+                    self.advance(); // Consume the left parenthesis
+                    
+                    // Parse arguments
+                    let mut args = Vec::new();
+                    
+                    // Handle empty argument list
+                    if let Some(Token::RParen) = self.peek() {
+                        self.advance(); // Consume the right parenthesis
+                        return Ok(AstNode::FunctionCall { name: id, args });
+                    }
+                    
+                    // Parse first argument
+                    args.push(self.parse_expr()?);
+                    
+                    // Parse additional arguments separated by commas
+                    while let Some(Token::Comma) = self.peek() {
+                        self.advance(); // Consume the comma
+                        args.push(self.parse_expr()?);
+                    }
+                    
+                    // Expect closing parenthesis
+                    self.expect(&Token::RParen)?;
+                    
+                    return Ok(AstNode::FunctionCall { name: id, args });
+                }
+                
+                // If not a function call, it's just an identifier
                 Ok(AstNode::Identifier(id))
             },
             Some(Token::LParen) => {
