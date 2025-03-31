@@ -1,5 +1,23 @@
 #!/bin/bash
 
+# This script fixes the install.sh script to ensure the run_tests function is defined before it's used
+
+set -e
+
+# Check if install.sh exists
+if [ ! -f "install.sh" ]; then
+  echo "Error: install.sh not found in the current directory"
+  exit 1
+fi
+
+# Create a backup of the original install.sh
+cp install.sh install.sh.bak
+echo "Created backup of install.sh as install.sh.bak"
+
+# Create a new version of the installer script
+cat > install.sh << 'EOF'
+#!/bin/bash
+
 # SmashLang Installer Script
 # This script installs SmashLang on Windows, macOS, and Linux systems
 
@@ -585,3 +603,15 @@ create_config_linux() {
   "assets_dir": "$LINUX_INSTALL_DIR/assets",
   "packages_dir": "$HOME/.local/share/smashlang_packages"
 }
+EOF
+  
+  echo -e "${BLUE}Creating configuration file...${NC}"
+}
+
+# Run the main function
+main "$@"
+EOF
+
+echo "Successfully updated install.sh to ensure the run_tests function is defined before it's used"
+echo "You can now run './install.sh --master' to install SmashLang with comprehensive tests"
+echo "A detailed test log will be saved and a summary will be displayed at the end of installation"
