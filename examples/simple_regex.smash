@@ -3,15 +3,34 @@
 // Basic regex patterns
 const simplePattern = /hello/;
 const patternWithFlags = /hello/i;  // Case-insensitive match
+const globalPattern = /Hello/g;     // Global flag to find all matches
 
 // Testing regex patterns
 const text = "Hello, world! Hello again.";
+
+// Test method returns true/false if the pattern matches
 const result1 = simplePattern.test(text);  // false (case-sensitive)
 const result2 = patternWithFlags.test(text);  // true (case-insensitive)
 
 print("Simple pattern test:", result1);
 print("Pattern with flags test:", result2);
 
-// Finding matches with a simple pattern
-const matches = text.match(/Hello/g);  // Global flag to find all matches
+// Match method returns an array of matches
+const matches = text.match(globalPattern);  // Returns array of matches
 print("All matches:", matches);  // ["Hello", "Hello"]
+
+// Replace method replaces matches with a new string
+const replaced = text.replace(/Hello/g, "Hi");
+print("After replacement:", replaced);  // "Hi, world! Hi again."
+
+// Using capture groups in regex
+const dateText = "Today is 2025-03-31.";
+const datePattern = /(\d{4})-(\d{2})-(\d{2})/;
+const dateMatches = dateText.match(datePattern);
+print("Date matches:", dateMatches);  // ["2025-03-31", "2025", "03", "31"]
+
+// Complex regex with multiple features
+const emailPattern = /([a-zA-Z0-9._-]+)@([a-zA-Z0-9._-]+)\.([a-zA-Z0-9._-]+)/;
+const emailText = "Contact us at info@example.com or support@example.org";
+const emailMatches = emailText.match(emailPattern);
+print("Email match:", emailMatches);  // ["info@example.com", "info", "example", "com"]

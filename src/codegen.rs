@@ -1,5 +1,31 @@
 use crate::parser::AstNode;
 
+// Helper function to parse a regex pattern string into pattern and flags
+fn parse_regex_pattern(regex: &str) -> (&str, &str) {
+    // Regex pattern format is typically /pattern/flags
+    // We need to extract the pattern and flags
+    
+    // First, check if the pattern has flags
+    if let Some(last_slash_pos) = regex.rfind('/') {
+        if last_slash_pos > 1 && last_slash_pos < regex.len() - 1 {
+            // There are flags after the last slash
+            let pattern = &regex[1..last_slash_pos];
+            let flags = &regex[last_slash_pos+1..];
+            return (pattern, flags);
+        }
+    }
+    
+    // If we get here, either there are no flags or the format is unusual
+    // Try to extract just the pattern between slashes
+    if regex.starts_with('/') && regex.ends_with('/') && regex.len() >= 2 {
+        let pattern = &regex[1..regex.len()-1];
+        return (pattern, "");
+    }
+    
+    // If all else fails, return the whole string as the pattern with no flags
+    (regex, "")
+}
+
 // Simple structure to represent a target machine for C code generation
 pub struct TargetMachine {
     pub target_triple: String, // Made public to avoid unused field warning
@@ -59,7 +85,8 @@ impl<'a> Module<'a> {
         code.push_str("#include <stdlib.h>\n");
         code.push_str("#include <string.h>\n");
         code.push_str("#include <stdbool.h>\n");
-        code.push_str("#include <ctype.h>\n\n");
+        code.push_str("#include <ctype.h>\n");
+        code.push_str("#include <dlfcn.h>\n\n");  // For dynamic loading of our Rust regex library
         
         // Add helper function for string concatenation
         code.push_str("// Helper function for string concatenation\n");
@@ -171,6 +198,107 @@ impl<'a> Module<'a> {
         code.push_str("    return strdup(\"[Popped item]\");\n");
         code.push_str("}\n\n");
         
+        // Add Rust regex library integration
+        code.push_str("// Type definitions for Rust regex functions\n");
+        code.push_str("typedef void* SmashRegex;\n");
+        code.push_str("typedef SmashRegex (*smash_regex_create_fn)(const char*, const char*);\n");
+        code.push_str("typedef void (*smash_regex_free_fn)(SmashRegex);\n");
+        code.push_str("typedef int (*smash_regex_test_fn)(SmashRegex, const char*);\n");
+        code.push_str("typedef char* (*smash_regex_match_fn)(SmashRegex, const char*);\n");
+        code.push_str("typedef char* (*smash_regex_replace_fn)(SmashRegex, const char*, const char*);\n");
+        code.push_str("typedef void (*smash_free_string_fn)(char*);\n\n");
+        
+        code.push_str("// Global function pointers for regex operations\n");
+        code.push_str("smash_regex_create_fn smash_regex_create = NULL;\n");
+        code.push_str("smash_regex_free_fn smash_regex_free = NULL;\n");
+        code.push_str("smash_regex_test_fn smash_regex_test = NULL;\n");
+        code.push_str("smash_regex_match_fn smash_regex_match = NULL;\n");
+        code.push_str("smash_regex_replace_fn smash_regex_replace = NULL;\n");
+        code.push_str("smash_free_string_fn smash_free_string = NULL;\n\n");
+        
+        code.push_str("// Function to load the Rust regex library\n");
+        code.push_str("int load_regex_library() {\n");
+        code.push_str("    void* lib_handle = dlopen(\"libsmashlang_regex.so\", RTLD_LAZY);\n");
+        code.push_str("    if (!lib_handle) {\n");
+        code.push_str("        fprintf(stderr, \"Error loading regex library: %s\\n\", dlerror());\n");
+        code.push_str("        return 0;\n");
+        code.push_str("    }\n\n");
+        
+        code.push_str("    // Load function pointers\n");
+        code.push_str("    smash_regex_create = (smash_regex_create_fn)dlsym(lib_handle, \"smash_regex_create\");\n");
+        code.push_str("    smash_regex_free = (smash_regex_free_fn)dlsym(lib_handle, \"smash_regex_free\");\n");
+        code.push_str("    smash_regex_test = (smash_regex_test_fn)dlsym(lib_handle, \"smash_regex_test\");\n");
+        code.push_str("    smash_regex_match = (smash_regex_match_fn)dlsym(lib_handle, \"smash_regex_match\");\n");
+        code.push_str("    smash_regex_replace = (smash_regex_replace_fn)dlsym(lib_handle, \"smash_regex_replace\");\n");
+        code.push_str("    smash_free_string = (smash_free_string_fn)dlsym(lib_handle, \"smash_free_string\");\n\n");
+        
+        code.push_str("    // Check that all functions were loaded successfully\n");
+        code.push_str("    if (!smash_regex_create || !smash_regex_free || !smash_regex_test || \n");
+        code.push_str("        !smash_regex_match || !smash_regex_replace || !smash_free_string) {\n");
+        code.push_str("        fprintf(stderr, \"Error loading regex functions: %s\\n\", dlerror());\n");
+        code.push_str("        return 0;\n");
+        code.push_str("    }\n\n");
+        
+        code.push_str("    return 1;\n");
+        code.push_str("}\n\n");
+        
+        // Helper functions for string methods that use regex
+        code.push_str("// Helper function for string.match with regex\n");
+        code.push_str("char* smash_string_match(const char* str, const char* pattern) {\n");
+        code.push_str("    // If pattern is a regex object (starts with 'SmashRegex:'), use it directly\n");
+        code.push_str("    // Otherwise, create a new regex object\n");
+        code.push_str("    SmashRegex regex;\n");
+        code.push_str("    int should_free = 0;\n");
+        code.push_str("    \n");
+        code.push_str("    if (strncmp(pattern, \"SmashRegex:\", 11) == 0) {\n");
+        code.push_str("        // Extract the regex pointer from the string\n");
+        code.push_str("        sscanf(pattern + 11, \"%p\", &regex);\n");
+        code.push_str("    } else {\n");
+        code.push_str("        // Create a new regex object from the pattern string\n");
+        code.push_str("        // For simplicity, we'll assume no flags\n");
+        code.push_str("        regex = smash_regex_create(pattern, \"\");\n");
+        code.push_str("        should_free = 1;\n");
+        code.push_str("    }\n");
+        code.push_str("    \n");
+        code.push_str("    // Match the regex against the string\n");
+        code.push_str("    char* result = smash_regex_match(regex, str);\n");
+        code.push_str("    \n");
+        code.push_str("    // Free the regex if we created it\n");
+        code.push_str("    if (should_free) {\n");
+        code.push_str("        smash_regex_free(regex);\n");
+        code.push_str("    }\n");
+        code.push_str("    \n");
+        code.push_str("    return result;\n");
+        code.push_str("}\n\n");
+        
+        code.push_str("// Helper function for string.replace with regex\n");
+        code.push_str("char* smash_string_replace(const char* str, const char* pattern, const char* replacement) {\n");
+        code.push_str("    // If pattern is a regex object (starts with 'SmashRegex:'), use it directly\n");
+        code.push_str("    // Otherwise, create a new regex object\n");
+        code.push_str("    SmashRegex regex;\n");
+        code.push_str("    int should_free = 0;\n");
+        code.push_str("    \n");
+        code.push_str("    if (strncmp(pattern, \"SmashRegex:\", 11) == 0) {\n");
+        code.push_str("        // Extract the regex pointer from the string\n");
+        code.push_str("        sscanf(pattern + 11, \"%p\", &regex);\n");
+        code.push_str("    } else {\n");
+        code.push_str("        // Create a new regex object from the pattern string\n");
+        code.push_str("        // For simplicity, we'll assume no flags\n");
+        code.push_str("        regex = smash_regex_create(pattern, \"\");\n");
+        code.push_str("        should_free = 1;\n");
+        code.push_str("    }\n");
+        code.push_str("    \n");
+        code.push_str("    // Replace matches in the string\n");
+        code.push_str("    char* result = smash_regex_replace(regex, str, replacement);\n");
+        code.push_str("    \n");
+        code.push_str("    // Free the regex if we created it\n");
+        code.push_str("    if (should_free) {\n");
+        code.push_str("        smash_regex_free(regex);\n");
+        code.push_str("    }\n");
+        code.push_str("    \n");
+        code.push_str("    return result;\n");
+        code.push_str("}\n\n");
+        
         // Process each AST node
         let mut has_main_function = false;
         // We'll track if we have a main function
@@ -237,6 +365,10 @@ impl<'a> Module<'a> {
         
         // Add C main function with the collected code
         code.push_str("int main(int argc, char** argv) {\n");
+        code.push_str("    // Initialize the regex library\n");
+        code.push_str("    if (!load_regex_library()) {\n");
+        code.push_str("        fprintf(stderr, \"Failed to load regex library. Regex operations will not work.\\n\");\n");
+        code.push_str("    }\n\n");
         code.push_str(&main_code);
         code.push_str("    return 0;\n");
         code.push_str("};\n");
@@ -465,6 +597,28 @@ impl<'a> Module<'a> {
                 
                 // Handle common methods based on the object type and method name
                 match method.as_str() {
+                    // Regex methods
+                    "test" => {
+                        if arg_codes.len() < 1 {
+                            format!("\"Error: test requires a string to test\"")
+                        } else {
+                            format!("(smash_regex_test({}, {}) ? \"true\" : \"false\")", obj_code, arg_codes[0])
+                        }
+                    },
+                    "match" => {
+                        if arg_codes.len() < 1 {
+                            format!("\"Error: match requires a string to match\"")
+                        } else {
+                            format!("smash_regex_match({}, {})", obj_code, arg_codes[0])
+                        }
+                    },
+                    "replace" => {
+                        if arg_codes.len() < 2 {
+                            format!("\"Error: replace requires a pattern and replacement\"")
+                        } else {
+                            format!("smash_regex_replace({}, {}, {})", obj_code, arg_codes[0], arg_codes[1])
+                        }
+                    },
                     "map" => {
                         // For array.map, we need to implement a map function in C
                         // This is a simplified implementation that assumes the first argument is a function
@@ -619,6 +773,26 @@ impl<'a> Module<'a> {
                         format!("smash_object_entries({})", obj_code)
                     },
                     
+                    // String methods that use regex
+                    "match" => {
+                        if arg_codes.len() < 1 {
+                            format!("\"Error: match requires a regex pattern\"")
+                        } else {
+                            // If the argument is a regex object, use it directly
+                            // Otherwise, create a regex object from the string
+                            format!("smash_string_match({}, {})", obj_code, arg_codes[0])
+                        }
+                    },
+                    "replace" => {
+                        if arg_codes.len() < 2 {
+                            format!("\"Error: replace requires a pattern and replacement\"")
+                        } else {
+                            // If the first argument is a regex object, use it directly
+                            // Otherwise, create a regex object from the string
+                            format!("smash_string_replace({}, {}, {})", obj_code, arg_codes[0], arg_codes[1])
+                        }
+                    },
+                    
                     // Common methods that might be used by different types
                     "toString" => {
                         // Handle toString based on object type
@@ -641,6 +815,13 @@ impl<'a> Module<'a> {
                         format!("\"Method {} not implemented\"", method)
                     }
                 }
+            },
+            AstNode::Regex(pattern) => {
+                // Parse the regex pattern and flags
+                let (pattern_str, flags) = parse_regex_pattern(pattern);
+                
+                // Create a regex object using our Rust implementation
+                format!("smash_regex_create(\"{}\", \"{}\")", pattern_str, flags)
             },
             _ => {
                 format!("\"Unsupported expression type\"" )

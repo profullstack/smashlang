@@ -9,6 +9,8 @@ anyhow = "1.0"
 rustyline = "11.0.0"  # For improved REPL input handling
 colored = "2.0.0"    # For colored terminal output
 chrono = "0.4"      # For date and time functionality
+regex = "1.9.5"     # For regular expression support
+serde_json = "1.0"   # For JSON serialization/deserialization
 
 [build-dependencies]
 cc = "1.0.79"      # For compiling C code

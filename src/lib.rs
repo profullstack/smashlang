@@ -5,6 +5,7 @@ pub mod parser;
 pub mod repl;
 pub mod compiler;
 pub mod codegen;
+pub mod runtime_regex;
 
 // Test modules - temporarily disabled
 /*
