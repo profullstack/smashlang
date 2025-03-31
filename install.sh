@@ -110,11 +110,21 @@ run_tests() {
     
     # Run tests for all workspace packages
     echo -e "${BLUE}Running tests for all packages...${NC}"
+    echo "Running tests for all packages..." >> "$log_file"
     echo "All Packages Tests" >> "$log_file"
     echo "-----------------" >> "$log_file"
-    # Run tests in src directory - use the full path to ensure we're in the right directory
-    (cd "$repo_dir" && cargo test --lib --bins --no-fail-fast) > "$log_file.tmp" 2>&1 || true
-    local all_test_result=$?
+    
+    # Check if src directory exists
+    if [ ! -d "$repo_dir/src" ]; then
+      echo -e "${YELLOW}Warning: src directory not found at $repo_dir/src${NC}"
+      echo "Warning: src directory not found at $repo_dir/src" >> "$log_file"
+      local all_test_result=1
+    else
+      # Run tests in src directory - use the full path to ensure we're in the right directory
+      echo -e "${BLUE}Running library and binary tests...${NC}"
+      (cd "$repo_dir" && cargo test --lib --bins --no-fail-fast) > "$log_file.tmp" 2>&1 || true
+      local all_test_result=$?
+    fi
     if [ -f "$log_file.tmp" ]; then
       # Display output to console
       cat "$log_file.tmp"
@@ -135,9 +145,25 @@ run_tests() {
     echo -e "${BLUE}Running tests with all features enabled...${NC}"
     echo "All Features Tests" >> "$log_file"
     echo "-----------------" >> "$log_file"
-    # Run all tests with all features enabled - use the full path to ensure we're in the right directory
-    (cd "$repo_dir" && cargo test --all-features --tests --bins --lib --no-fail-fast) > "$log_file.tmp" 2>&1 || true
-    local features_test_result=$?
+    
+    # Check if Cargo.toml exists and has features
+    if [ ! -f "$repo_dir/Cargo.toml" ]; then
+      echo -e "${YELLOW}Warning: Cargo.toml not found at $repo_dir/Cargo.toml${NC}"
+      echo "Warning: Cargo.toml not found at $repo_dir/Cargo.toml" >> "$log_file"
+      local features_test_result=1
+    else
+      # Check if there are any features defined
+      if grep -q "\[features\]" "$repo_dir/Cargo.toml"; then
+        # Run all tests with all features enabled - use the full path to ensure we're in the right directory
+        echo -e "${BLUE}Running tests with all features enabled...${NC}"
+        (cd "$repo_dir" && cargo test --all-features --tests --bins --lib --no-fail-fast) > "$log_file.tmp" 2>&1 || true
+        local features_test_result=$?
+      else
+        echo -e "${YELLOW}No features defined in Cargo.toml, skipping feature tests${NC}"
+        echo "No features defined in Cargo.toml, skipping feature tests" >> "$log_file"
+        local features_test_result=0
+      fi
+    fi
     if [ -f "$log_file.tmp" ]; then
       # Display output to console
       cat "$log_file.tmp"
@@ -161,19 +187,32 @@ run_tests() {
     
     # Check if smashlang_packages directory exists
     if [ -d "$repo_dir/smashlang_packages" ]; then
+      echo -e "${BLUE}Testing SmashLang packages...${NC}"
       echo "Testing SmashLang packages..." >> "$log_file"
-      # Find all .test.smash files in the smashlang_packages directory
-      local test_files=$(find "$repo_dir/smashlang_packages" -name "*.test.smash" -type f 2>/dev/null || echo "")
+      
+      # Find all .test.smash files in the repository
+      local smash_test_files=$(find "$repo_dir" -type f -name "*.test.smash" 2>/dev/null || echo "")
+      
+      # Find all .test.rs files in the repository for Rust tests
+      local rust_test_files=$(find "$repo_dir" -type f -name "*.test.rs" 2>/dev/null || echo "")
+      
+      # Also look for Cargo.toml files in the packages directory to run Rust tests
+      local cargo_files=$(find "$repo_dir/smashlang_packages" -type f -name "Cargo.toml" 2>/dev/null || echo "")
+      
       local package_test_result=0
       
-      if [ -n "$test_files" ]; then
+      # Process .test.smash files if found
+      if [ -n "$smash_test_files" ]; then
+        echo -e "${BLUE}Found SmashLang package tests:${NC}"
         echo "Found SmashLang package tests:" >> "$log_file"
-        echo "$test_files" >> "$log_file"
+        echo "$smash_test_files" >> "$log_file"
         echo "" >> "$log_file"
+        echo "Processing SmashLang test files..." >> "$log_file"
         
         # Run each test file using the smashtest binary
-        for test_file in $test_files; do
-          echo "Running test: $test_file" >> "$log_file"
+        for test_file in $smash_test_files; do
+          echo -e "${BLUE}Running SmashLang test: $test_file${NC}"
+          echo "Running SmashLang test: $test_file" >> "$log_file"
           # First check if the smashtest binary exists
           if [ -f "$repo_dir/target/release/smashtest" ]; then
             (cd "$repo_dir" && ./target/release/smashtest "$test_file") > "$log_file.tmp" 2>&1 || package_test_result=1
@@ -199,9 +238,68 @@ run_tests() {
           echo "" >> "$log_file"
         done
       else
+        echo -e "${YELLOW}No SmashLang .test.smash files found.${NC}"
         echo "No SmashLang package tests found." >> "$log_file"
       fi
+      
+      # Process .test.rs files if found
+      if [ -n "$rust_test_files" ]; then
+        echo -e "${BLUE}Found Rust test files:${NC}"
+        echo "Found Rust test files:" >> "$log_file"
+        echo "$rust_test_files" >> "$log_file"
+        echo "" >> "$log_file"
+        echo "Processing Rust test files..." >> "$log_file"
+        
+        # Run each Rust test file
+        for test_file in $rust_test_files; do
+          echo -e "${BLUE}Running Rust test: $test_file${NC}"
+          echo "Running Rust test: $test_file" >> "$log_file"
+          # Run the test using cargo test
+          (cd "$repo_dir" && cargo test --test "$(basename "$test_file" .test.rs)") > "$log_file.tmp" 2>&1 || package_test_result=1
+          
+          if [ -f "$log_file.tmp" ]; then
+            # Display output to console
+            cat "$log_file.tmp"
+            # Save output to log file
+            cat "$log_file.tmp" >> "$log_file"
+            rm "$log_file.tmp"
+          fi
+        done
+      fi
+      
+      # Process Cargo.toml files for Rust tests in packages
+      if [ -n "$cargo_files" ]; then
+        echo -e "${BLUE}Found Cargo package tests:${NC}"
+        echo "Found Cargo package tests:" >> "$log_file"
+        echo "$cargo_files" >> "$log_file"
+        echo "" >> "$log_file"
+        
+        # Run tests for each Cargo.toml file found
+        for cargo_file in $cargo_files; do
+          pkg_dir=$(dirname "$cargo_file")
+          pkg_name=$(basename "$pkg_dir")
+          echo -e "${BLUE}Testing Rust package: $pkg_name${NC}"
+          echo "Testing Rust package: $pkg_name" >> "$log_file"
+          
+          (cd "$pkg_dir" && cargo test --no-fail-fast) > "$log_file.tmp" 2>&1 || true
+          local pkg_test_result=$?
+          if [ $pkg_test_result -ne 0 ]; then
+            package_test_result=1
+          fi
+          
+          if [ -f "$log_file.tmp" ]; then
+            cat "$log_file.tmp"
+            cat "$log_file.tmp" >> "$log_file"
+            rm "$log_file.tmp"
+          fi
+          echo "" >> "$log_file"
+        done
+      else
+        echo -e "${YELLOW}No Cargo package tests found in smashlang_packages.${NC}"
+        echo "No Cargo package tests found in smashlang_packages." >> "$log_file"
+      fi
     else
+      echo -e "${YELLOW}smashlang_packages directory not found. Skipping package tests.${NC}"
       echo "smashlang_packages directory not found. Skipping package tests." >> "$log_file"
       local package_test_result=0
     fi
@@ -459,7 +557,7 @@ display_test_results() {
     # Extract all packages test results
     echo "All Packages Tests:"
     if grep -q "Running tests for all packages" "$log_file"; then
-      grep -A 10 "Running tests for all packages" "$log_file" | grep -E "Compiling|Running|warning:|error:|test result:" | head -5
+      grep -A 10 "Running tests for all packages" "$log_file" | grep -E "Compiling|Running|warning:|error:|test result:|... ok" | head -5
     else
       echo "No package test results found"
     fi
@@ -469,7 +567,9 @@ display_test_results() {
     # Extract all features test results
     echo "All Features Tests:"
     if grep -q "Running tests with all features enabled" "$log_file"; then
-      grep -A 10 "Running tests with all features enabled" "$log_file" | grep -E "Compiling|Running|warning:|error:|test result:" | head -5
+      grep -A 10 "Running tests with all features enabled" "$log_file" | grep -E "Compiling|Running|warning:|error:|test result:|... ok" | head -5
+    elif grep -q "No features defined in Cargo.toml" "$log_file"; then
+      echo "No features defined in Cargo.toml, tests skipped"
     else
       echo "No feature test results found"
     fi
@@ -478,15 +578,27 @@ display_test_results() {
     
     # Extract SmashLang package test results
     echo "SmashLang Package Tests:"
-    if grep -q "Running SmashLang package tests" "$log_file"; then
-      if grep -q "Found SmashLang package tests:" "$log_file"; then
-        grep -A 10 "Found SmashLang package tests:" "$log_file" | head -5
+    if grep -q "Testing SmashLang packages" "$log_file"; then
+      if grep -q "Processing SmashLang test files" "$log_file"; then
+        grep -A 10 "Processing SmashLang test files" "$log_file" | grep -E "Running|Success|Passed|Failed|Error" | head -5
+      elif grep -q "Found Cargo package tests:" "$log_file"; then
+        grep -A 10 "Found Cargo package tests:" "$log_file" | grep -E "Running|test result:|... ok" | head -5
       else
         echo "No SmashLang package tests found"
       fi
+    
+    echo
+    
+    # Extract Rust test file results
+    echo "Rust Test Files:"
+    if grep -q "Processing Rust test files" "$log_file"; then
+      grep -A 10 "Processing Rust test files" "$log_file" | grep -E "Running|test result:|... ok" | head -5
     else
-      echo "SmashLang package tests were not run"
+      echo "No Rust test files found"
     fi
+  else
+    echo "SmashLang package tests were not run"
+  fi
     
     echo
     
@@ -495,6 +607,8 @@ display_test_results() {
     if grep -q "Running documentation tests" "$log_file"; then
       if grep -q "Found documentation examples:" "$log_file"; then
         grep -A 10 "Found documentation examples:" "$log_file" | head -5
+      elif grep -q "Testing documentation examples" "$log_file"; then
+        grep -A 10 "Testing documentation examples" "$log_file" | grep -E "Compiling|Success|warning:|error:|compiled" | head -5
       else
         echo "No documentation examples found"
       fi
