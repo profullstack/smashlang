@@ -461,3 +461,9 @@ create_config_linux() {
   "packages_dir": "$HOME/.local/share/smashlang_packages"
 }
 EOF
+  
+  echo -e "${BLUE}Creating configuration file...${NC}"
+}
+
+# Run the main function
+main "$@"
