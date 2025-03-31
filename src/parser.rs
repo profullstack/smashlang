@@ -252,7 +252,7 @@ impl Parser {
             Some(Token::For) => self.parse_for(),
             Some(Token::Do) => self.parse_do_while(),
             Some(Token::Switch) => self.parse_switch(),
-            Some(_) => self.parse_expr().map(Some),
+            Some(_) => self.parse_expr_statement(),
             None => Ok(None),
         }
     }
@@ -832,6 +832,15 @@ impl Parser {
     // Basic expression parsing
     fn parse_expr(&mut self) -> ParseResult<AstNode> {
         self.parse_assignment()
+    }
+    
+    fn parse_expr_statement(&mut self) -> ParseResult<Option<AstNode>> {
+        let expr = self.parse_expr()?;
+        
+        // Expect semicolon after expression statement
+        self.expect(&Token::Semicolon)?;
+        
+        Ok(Some(expr))
     }
     
     fn parse_unary(&mut self) -> ParseResult<AstNode> {
