@@ -9,6 +9,7 @@ pub enum AstNode {
     Float(f64),
     String(String),
     TemplateLiteral(Vec<AstNode>), // Template literal with interpolation
+    Regex(String), // Regular expression literal
     Boolean(bool),
     Null,
     Identifier(String),
@@ -1324,6 +1325,11 @@ impl Parser {
                 let value = s.clone();
                 self.advance();
                 Ok(AstNode::String(value))
+            },
+            Some(Token::Regex(r)) => {
+                let value = r.clone();
+                self.advance();
+                Ok(AstNode::Regex(value))
             },
             Some(Token::TemplateStringPart(s)) => {
                 // This is a part of a template string with interpolation

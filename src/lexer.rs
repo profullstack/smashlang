@@ -225,7 +225,19 @@ pub fn tokenize(input: &str) -> Vec<Token> {
             '/' => {
                 chars.next(); // consume the '/'
                 
-                // Check for /= or // (comment) or /* (block comment)
+                // Determine if this could be a regex based on context
+                let is_potential_regex = tokens.is_empty() || 
+                    matches!(tokens.last(), 
+                        Some(Token::Equal) | 
+                        Some(Token::LParen) | 
+                        Some(Token::LBrace) | 
+                        Some(Token::LBracket) | 
+                        Some(Token::Comma) | 
+                        Some(Token::Semicolon) | 
+                        Some(Token::Colon) | 
+                        Some(Token::Return));
+                
+                // Check for /= or // (comment) or /* (block comment) or regex
                 if let Some(&next_ch) = chars.peek() {
                     match next_ch {
                         '=' => {
@@ -254,6 +266,47 @@ pub fn tokenize(input: &str) -> Vec<Token> {
                                 }
                                 prev_char = ch;
                                 chars.next();
+                            }
+                        },
+                        _ if is_potential_regex => {
+                            // This is a regex pattern
+                            let mut pattern = String::new();
+                            let mut escaped = false;
+                            
+                            // Parse the regex pattern
+                            while let Some(&ch) = chars.peek() {
+                                if !escaped && ch == '/' {
+                                    chars.next(); // consume the closing '/'
+                                    
+                                    // Check for regex flags
+                                    let mut flags = String::new();
+                                    while let Some(&flag_ch) = chars.peek() {
+                                        if flag_ch.is_alphabetic() {
+                                            flags.push(flag_ch);
+                                            chars.next();
+                                        } else {
+                                            break;
+                                        }
+                                    }
+                                    
+                                    // Store the complete regex pattern with flags
+                                    if !flags.is_empty() {
+                                        pattern = format!("/{}\/{}", pattern, flags);
+                                    } else {
+                                        pattern = format!("/{}/", pattern);
+                                    }
+                                    
+                                    tokens.push(Token::Regex(pattern));
+                                    break;
+                                } else if ch == '\\' {
+                                    pattern.push(ch);
+                                    chars.next();
+                                    escaped = !escaped;
+                                } else {
+                                    pattern.push(ch);
+                                    chars.next();
+                                    escaped = false;
+                                }
                             }
                         },
                         _ => tokens.push(Token::Slash),
