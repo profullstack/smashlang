@@ -49,7 +49,8 @@ run_tests() {
     echo -e "${BLUE}Running main crate tests...${NC}"
     echo "Main Crate Tests" >> "$log_file"
     echo "---------------" >> "$log_file"
-    cargo test > "$log_file.tmp" 2>&1 || true
+    # Use --lib to ensure we're testing the library code, not just the binaries
+    cargo test --lib > "$log_file.tmp" 2>&1 || true
     local main_test_result=$?
     if [ -f "$log_file.tmp" ]; then
       # Display output to console
@@ -71,7 +72,8 @@ run_tests() {
     echo -e "${BLUE}Running tests for all packages...${NC}"
     echo "All Packages Tests" >> "$log_file"
     echo "-----------------" >> "$log_file"
-    cargo test --all > "$log_file.tmp" 2>&1 || true
+    # Use --workspace instead of --all (which is deprecated)
+    cargo test --workspace > "$log_file.tmp" 2>&1 || true
     local all_test_result=$?
     if [ -f "$log_file.tmp" ]; then
       # Display output to console
@@ -93,7 +95,8 @@ run_tests() {
     echo -e "${BLUE}Running tests with all features enabled...${NC}"
     echo "All Features Tests" >> "$log_file"
     echo "-----------------" >> "$log_file"
-    cargo test --all-features > "$log_file.tmp" 2>&1 || true
+    # Run tests with all features enabled and include test binaries
+    cargo test --all-features --tests > "$log_file.tmp" 2>&1 || true
     local features_test_result=$?
     if [ -f "$log_file.tmp" ]; then
       # Display output to console
@@ -271,9 +274,12 @@ display_test_results() {
     # Extract and display test results
     echo "Main Crate Tests:"
     if grep -q "test result:" "$log_file"; then
-      grep -B 1 -A 1 "test result:" "$log_file" | head -3 | grep -v "Doc-tests"
+      # Look for test results that aren't for Doc-tests
+      grep -B 3 -A 1 "test result:" "$log_file" | grep -v "Doc-tests" | head -5
+      # Also show any actual test names that were run
+      grep -B 1 "... ok" "$log_file" | head -6
     elif grep -q "Running main crate tests" "$log_file"; then
-      grep -A 10 "Running main crate tests" "$log_file" | grep -E "Compiling|Running|warning:|error:|test result:" | head -5
+      grep -A 10 "Running main crate tests" "$log_file" | grep -E "Compiling|Running|warning:|error:|test result:|... ok" | head -5
     else
       echo "No main crate test results found"
     fi
