@@ -1,4 +1,15 @@
 # FConvert
+## Package Structure
+
+This package follows the standard SmashLang package structure:
+
+- `package.smash`: Build and installation configuration
+- `package_config.json`: Theme and presentation configuration
+- `assets/`: Package assets (logos, icons, etc.)
+- `src/`: Source code
+- `examples/`: Example code
+- `tests/`: Test files
+
 
 <p align="center">
   <img src="./assets/logo.svg" alt="FConvert Logo" width="200" />
@@ -7,12 +18,34 @@
 A versatile file format conversion utility for SmashLang.
 
 ## Installation
+## Package Structure
+
+This package follows the standard SmashLang package structure:
+
+- `package.smash`: Build and installation configuration
+- `package_config.json`: Theme and presentation configuration
+- `assets/`: Package assets (logos, icons, etc.)
+- `src/`: Source code
+- `examples/`: Example code
+- `tests/`: Test files
+
 
 ```bash
 smashpkg install fconvert
 ```
 
 ## Features
+## Package Structure
+
+This package follows the standard SmashLang package structure:
+
+- `package.smash`: Build and installation configuration
+- `package_config.json`: Theme and presentation configuration
+- `assets/`: Package assets (logos, icons, etc.)
+- `src/`: Source code
+- `examples/`: Example code
+- `tests/`: Test files
+
 
 - **Multiple Format Support**: Convert between various file formats
 - **Image Conversion**: Convert between PNG, JPEG, GIF, WebP, SVG, and more
@@ -23,6 +56,17 @@ smashpkg install fconvert
 - **Customizable Options**: Set quality, size, and other conversion parameters
 
 ## Basic Usage
+## Package Structure
+
+This package follows the standard SmashLang package structure:
+
+- `package.smash`: Build and installation configuration
+- `package_config.json`: Theme and presentation configuration
+- `assets/`: Package assets (logos, icons, etc.)
+- `src/`: Source code
+- `examples/`: Example code
+- `tests/`: Test files
+
 
 ```js
 import "fconvert";
@@ -51,21 +95,76 @@ converter.convert();
 ```
 
 ## Command Line Usage
+## Package Structure
+
+This package follows the standard SmashLang package structure:
+
+- `package.smash`: Build and installation configuration
+- `package_config.json`: Theme and presentation configuration
+- `assets/`: Package assets (logos, icons, etc.)
+- `src/`: Source code
+- `examples/`: Example code
+- `tests/`: Test files
+
 
 FConvert can also be used from the command line:
 
 ```bash
 # Basic conversion
+## Package Structure
+
+This package follows the standard SmashLang package structure:
+
+- `package.smash`: Build and installation configuration
+- `package_config.json`: Theme and presentation configuration
+- `assets/`: Package assets (logos, icons, etc.)
+- `src/`: Source code
+- `examples/`: Example code
+- `tests/`: Test files
+
 smash -r fconvert input.png output.jpg
 
 # Conversion with options
+## Package Structure
+
+This package follows the standard SmashLang package structure:
+
+- `package.smash`: Build and installation configuration
+- `package_config.json`: Theme and presentation configuration
+- `assets/`: Package assets (logos, icons, etc.)
+- `src/`: Source code
+- `examples/`: Example code
+- `tests/`: Test files
+
 smash -r fconvert input.md output.pdf --quality=high --page-size=a4
 
 # List supported formats
+## Package Structure
+
+This package follows the standard SmashLang package structure:
+
+- `package.smash`: Build and installation configuration
+- `package_config.json`: Theme and presentation configuration
+- `assets/`: Package assets (logos, icons, etc.)
+- `src/`: Source code
+- `examples/`: Example code
+- `tests/`: Test files
+
 smash -r fconvert --list-formats
 ```
 
 ### Command Line Options
+## Package Structure
+
+This package follows the standard SmashLang package structure:
+
+- `package.smash`: Build and installation configuration
+- `package_config.json`: Theme and presentation configuration
+- `assets/`: Package assets (logos, icons, etc.)
+- `src/`: Source code
+- `examples/`: Example code
+- `tests/`: Test files
+
 
 ```
 Options:
@@ -79,25 +178,113 @@ Options:
 ```
 
 ## Supported Formats
+## Package Structure
+
+This package follows the standard SmashLang package structure:
+
+- `package.smash`: Build and installation configuration
+- `package_config.json`: Theme and presentation configuration
+- `assets/`: Package assets (logos, icons, etc.)
+- `src/`: Source code
+- `examples/`: Example code
+- `tests/`: Test files
+
 
 ### Image Formats
+## Package Structure
+
+This package follows the standard SmashLang package structure:
+
+- `package.smash`: Build and installation configuration
+- `package_config.json`: Theme and presentation configuration
+- `assets/`: Package assets (logos, icons, etc.)
+- `src/`: Source code
+- `examples/`: Example code
+- `tests/`: Test files
+
 - PNG, JPEG/JPG, GIF, WebP, TIFF, BMP, SVG, ICO
 
 ### Document Formats
+## Package Structure
+
+This package follows the standard SmashLang package structure:
+
+- `package.smash`: Build and installation configuration
+- `package_config.json`: Theme and presentation configuration
+- `assets/`: Package assets (logos, icons, etc.)
+- `src/`: Source code
+- `examples/`: Example code
+- `tests/`: Test files
+
 - Markdown, HTML, PDF, DOCX, ODT, RTF, TXT, LaTeX
 
 ### Audio Formats
+## Package Structure
+
+This package follows the standard SmashLang package structure:
+
+- `package.smash`: Build and installation configuration
+- `package_config.json`: Theme and presentation configuration
+- `assets/`: Package assets (logos, icons, etc.)
+- `src/`: Source code
+- `examples/`: Example code
+- `tests/`: Test files
+
 - MP3, WAV, FLAC, OGG, AAC, M4A, WMA
 
 ### Video Formats
+## Package Structure
+
+This package follows the standard SmashLang package structure:
+
+- `package.smash`: Build and installation configuration
+- `package_config.json`: Theme and presentation configuration
+- `assets/`: Package assets (logos, icons, etc.)
+- `src/`: Source code
+- `examples/`: Example code
+- `tests/`: Test files
+
 - MP4, WebM, AVI, MKV, MOV, WMV, FLV
 
 ### Data Formats
+## Package Structure
+
+This package follows the standard SmashLang package structure:
+
+- `package.smash`: Build and installation configuration
+- `package_config.json`: Theme and presentation configuration
+- `assets/`: Package assets (logos, icons, etc.)
+- `src/`: Source code
+- `examples/`: Example code
+- `tests/`: Test files
+
 - JSON, YAML, XML, CSV, TSV, Excel (XLSX)
 
 ## API Reference
+## Package Structure
+
+This package follows the standard SmashLang package structure:
+
+- `package.smash`: Build and installation configuration
+- `package_config.json`: Theme and presentation configuration
+- `assets/`: Package assets (logos, icons, etc.)
+- `src/`: Source code
+- `examples/`: Example code
+- `tests/`: Test files
+
 
 ### convert(inputPath, outputPath, options)
+## Package Structure
+
+This package follows the standard SmashLang package structure:
+
+- `package.smash`: Build and installation configuration
+- `package_config.json`: Theme and presentation configuration
+- `assets/`: Package assets (logos, icons, etc.)
+- `src/`: Source code
+- `examples/`: Example code
+- `tests/`: Test files
+
 
 Converts a file from one format to another.
 
@@ -107,14 +294,47 @@ Converts a file from one format to another.
   - Format-specific options vary based on input and output formats.
 
 ### getFormats()
+## Package Structure
+
+This package follows the standard SmashLang package structure:
+
+- `package.smash`: Build and installation configuration
+- `package_config.json`: Theme and presentation configuration
+- `assets/`: Package assets (logos, icons, etc.)
+- `src/`: Source code
+- `examples/`: Example code
+- `tests/`: Test files
+
 
 Returns an object containing all supported input and output formats.
 
 ### class Converter
+## Package Structure
+
+This package follows the standard SmashLang package structure:
+
+- `package.smash`: Build and installation configuration
+- `package_config.json`: Theme and presentation configuration
+- `assets/`: Package assets (logos, icons, etc.)
+- `src/`: Source code
+- `examples/`: Example code
+- `tests/`: Test files
+
 
 A class-based interface for more complex conversion operations.
 
 #### Methods:
+## Package Structure
+
+This package follows the standard SmashLang package structure:
+
+- `package.smash`: Build and installation configuration
+- `package_config.json`: Theme and presentation configuration
+- `assets/`: Package assets (logos, icons, etc.)
+- `src/`: Source code
+- `examples/`: Example code
+- `tests/`: Test files
+
 
 - **setInputFile(path)**: Set the input file path.
 - **setOutputFile(path)**: Set the output file path.
@@ -124,6 +344,17 @@ A class-based interface for more complex conversion operations.
 - **getProgress()**: Get the current conversion progress (0-100).
 
 ## Examples
+## Package Structure
+
+This package follows the standard SmashLang package structure:
+
+- `package.smash`: Build and installation configuration
+- `package_config.json`: Theme and presentation configuration
+- `assets/`: Package assets (logos, icons, etc.)
+- `src/`: Source code
+- `examples/`: Example code
+- `tests/`: Test files
+
 
 Check the examples directory for more usage examples:
 
@@ -133,6 +364,17 @@ Check the examples directory for more usage examples:
 - **audio_conversion.smash**: Audio format conversion
 
 ## Dependencies
+## Package Structure
+
+This package follows the standard SmashLang package structure:
+
+- `package.smash`: Build and installation configuration
+- `package_config.json`: Theme and presentation configuration
+- `assets/`: Package assets (logos, icons, etc.)
+- `src/`: Source code
+- `examples/`: Example code
+- `tests/`: Test files
+
 
 FConvert requires the following system tools to be installed:
 
@@ -143,28 +385,94 @@ FConvert requires the following system tools to be installed:
 These dependencies are checked during installation and when using the package. If any of these tools are missing, appropriate error messages will be displayed.
 
 ### Installation of Dependencies
+## Package Structure
+
+This package follows the standard SmashLang package structure:
+
+- `package.smash`: Build and installation configuration
+- `package_config.json`: Theme and presentation configuration
+- `assets/`: Package assets (logos, icons, etc.)
+- `src/`: Source code
+- `examples/`: Example code
+- `tests/`: Test files
+
 
 #### Debian/Ubuntu
+## Package Structure
+
+This package follows the standard SmashLang package structure:
+
+- `package.smash`: Build and installation configuration
+- `package_config.json`: Theme and presentation configuration
+- `assets/`: Package assets (logos, icons, etc.)
+- `src/`: Source code
+- `examples/`: Example code
+- `tests/`: Test files
+
 ```bash
 sudo apt-get install imagemagick pandoc ffmpeg
 ```
 
 #### Fedora
+## Package Structure
+
+This package follows the standard SmashLang package structure:
+
+- `package.smash`: Build and installation configuration
+- `package_config.json`: Theme and presentation configuration
+- `assets/`: Package assets (logos, icons, etc.)
+- `src/`: Source code
+- `examples/`: Example code
+- `tests/`: Test files
+
 ```bash
 sudo dnf install ImageMagick pandoc ffmpeg
 ```
 
 #### macOS (using Homebrew)
+## Package Structure
+
+This package follows the standard SmashLang package structure:
+
+- `package.smash`: Build and installation configuration
+- `package_config.json`: Theme and presentation configuration
+- `assets/`: Package assets (logos, icons, etc.)
+- `src/`: Source code
+- `examples/`: Example code
+- `tests/`: Test files
+
 ```bash
 brew install imagemagick pandoc ffmpeg
 ```
 
 #### Windows
+## Package Structure
+
+This package follows the standard SmashLang package structure:
+
+- `package.smash`: Build and installation configuration
+- `package_config.json`: Theme and presentation configuration
+- `assets/`: Package assets (logos, icons, etc.)
+- `src/`: Source code
+- `examples/`: Example code
+- `tests/`: Test files
+
 Download and install the following:
 - ImageMagick: https://imagemagick.org/script/download.php
 - Pandoc: https://pandoc.org/installing.html
 - FFmpeg: https://ffmpeg.org/download.html
 
 ## License
+## Package Structure
+
+This package follows the standard SmashLang package structure:
+
+- `package.smash`: Build and installation configuration
+- `package_config.json`: Theme and presentation configuration
+- `assets/`: Package assets (logos, icons, etc.)
+- `src/`: Source code
+- `examples/`: Example code
+- `tests/`: Test files
+
 
 This project is licensed under the MIT License - see the LICENSE file for details.

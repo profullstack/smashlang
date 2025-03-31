@@ -1,4 +1,15 @@
 # PocketBase Client for SmashLang
+## Package Structure
+
+This package follows the standard SmashLang package structure:
+
+- `package.smash`: Build and installation configuration
+- `package_config.json`: Theme and presentation configuration
+- `assets/`: Package assets (logos, icons, etc.)
+- `src/`: Source code
+- `examples/`: Example code
+- `tests/`: Test files
+
 
 <p align="center">
   <img src="./assets/logo.svg" alt="PocketBase Client Logo" width="200" />
@@ -7,12 +18,34 @@
 A comprehensive client library for interacting with [PocketBase](https://pocketbase.io) servers from SmashLang applications.
 
 ## Installation
+## Package Structure
+
+This package follows the standard SmashLang package structure:
+
+- `package.smash`: Build and installation configuration
+- `package_config.json`: Theme and presentation configuration
+- `assets/`: Package assets (logos, icons, etc.)
+- `src/`: Source code
+- `examples/`: Example code
+- `tests/`: Test files
+
 
 ```bash
 smashpkg install pocketbase
 ```
 
 ## Features
+## Package Structure
+
+This package follows the standard SmashLang package structure:
+
+- `package.smash`: Build and installation configuration
+- `package_config.json`: Theme and presentation configuration
+- `assets/`: Package assets (logos, icons, etc.)
+- `src/`: Source code
+- `examples/`: Example code
+- `tests/`: Test files
+
 
 - **Authentication**: Email/password login, OAuth2, token refresh
 - **CRUD Operations**: Create, read, update, and delete collection records
@@ -21,6 +54,17 @@ smashpkg install pocketbase
 - **Admin API**: Manage collections, fields, users, and settings
 
 ## Basic Usage
+## Package Structure
+
+This package follows the standard SmashLang package structure:
+
+- `package.smash`: Build and installation configuration
+- `package_config.json`: Theme and presentation configuration
+- `assets/`: Package assets (logos, icons, etc.)
+- `src/`: Source code
+- `examples/`: Example code
+- `tests/`: Test files
+
 
 ```js
 import "pocketbase";
@@ -63,6 +107,17 @@ fn subscribeToTasks() {
 ```
 
 ## Examples
+## Package Structure
+
+This package follows the standard SmashLang package structure:
+
+- `package.smash`: Build and installation configuration
+- `package_config.json`: Theme and presentation configuration
+- `assets/`: Package assets (logos, icons, etc.)
+- `src/`: Source code
+- `examples/`: Example code
+- `tests/`: Test files
+
 
 Check out the [examples directory](./examples) for more detailed examples:
 
@@ -73,14 +128,47 @@ Check out the [examples directory](./examples) for more detailed examples:
 - **[Admin Operations](./examples/admin.smash)**: Collection and user management
 
 ## API Reference
+## Package Structure
+
+This package follows the standard SmashLang package structure:
+
+- `package.smash`: Build and installation configuration
+- `package_config.json`: Theme and presentation configuration
+- `assets/`: Package assets (logos, icons, etc.)
+- `src/`: Source code
+- `examples/`: Example code
+- `tests/`: Test files
+
 
 ### Client
+## Package Structure
+
+This package follows the standard SmashLang package structure:
+
+- `package.smash`: Build and installation configuration
+- `package_config.json`: Theme and presentation configuration
+- `assets/`: Package assets (logos, icons, etc.)
+- `src/`: Source code
+- `examples/`: Example code
+- `tests/`: Test files
+
 
 ```js
 const client = pocketbase.createClient(url);
 ```
 
 #### Authentication Methods
+## Package Structure
+
+This package follows the standard SmashLang package structure:
+
+- `package.smash`: Build and installation configuration
+- `package_config.json`: Theme and presentation configuration
+- `assets/`: Package assets (logos, icons, etc.)
+- `src/`: Source code
+- `examples/`: Example code
+- `tests/`: Test files
+
 
 - `authWithPassword(collection, email, password)`: Authenticate with email/password
 - `authWithOAuth2(provider, code, codeVerifier, redirectUrl)`: OAuth2 authentication
@@ -88,6 +176,17 @@ const client = pocketbase.createClient(url);
 - `logout()`: Log out the current user
 
 #### Record Methods
+## Package Structure
+
+This package follows the standard SmashLang package structure:
+
+- `package.smash`: Build and installation configuration
+- `package_config.json`: Theme and presentation configuration
+- `assets/`: Package assets (logos, icons, etc.)
+- `src/`: Source code
+- `examples/`: Example code
+- `tests/`: Test files
+
 
 - `getCollection(collectionIdOrName)`: Get collection details
 - `getCollectionList()`: List all collections
@@ -98,34 +197,100 @@ const client = pocketbase.createClient(url);
 - `deleteRecord(collection, id)`: Delete a record
 
 #### File Methods
+## Package Structure
+
+This package follows the standard SmashLang package structure:
+
+- `package.smash`: Build and installation configuration
+- `package_config.json`: Theme and presentation configuration
+- `assets/`: Package assets (logos, icons, etc.)
+- `src/`: Source code
+- `examples/`: Example code
+- `tests/`: Test files
+
 
 - `uploadFile(collection, id, fieldName, fileData, filename)`: Upload a file
 - `getFileUrl(record, filename, queryParams)`: Get a file's URL
 
 #### Realtime Methods
+## Package Structure
+
+This package follows the standard SmashLang package structure:
+
+- `package.smash`: Build and installation configuration
+- `package_config.json`: Theme and presentation configuration
+- `assets/`: Package assets (logos, icons, etc.)
+- `src/`: Source code
+- `examples/`: Example code
+- `tests/`: Test files
+
 
 - `subscribe(collection, callback)`: Subscribe to collection changes
 - `unsubscribe(collection)`: Unsubscribe from collection changes
 
 ### Admin
+## Package Structure
+
+This package follows the standard SmashLang package structure:
+
+- `package.smash`: Build and installation configuration
+- `package_config.json`: Theme and presentation configuration
+- `assets/`: Package assets (logos, icons, etc.)
+- `src/`: Source code
+- `examples/`: Example code
+- `tests/`: Test files
+
 
 ```js
 const admin = new pocketbase.Admin(client);
 ```
 
 #### Collection Management
+## Package Structure
+
+This package follows the standard SmashLang package structure:
+
+- `package.smash`: Build and installation configuration
+- `package_config.json`: Theme and presentation configuration
+- `assets/`: Package assets (logos, icons, etc.)
+- `src/`: Source code
+- `examples/`: Example code
+- `tests/`: Test files
+
 
 - `createCollection(data)`: Create a new collection
 - `updateCollection(collectionId, data)`: Update a collection
 - `deleteCollection(collectionId)`: Delete a collection
 
 #### Field Management
+## Package Structure
+
+This package follows the standard SmashLang package structure:
+
+- `package.smash`: Build and installation configuration
+- `package_config.json`: Theme and presentation configuration
+- `assets/`: Package assets (logos, icons, etc.)
+- `src/`: Source code
+- `examples/`: Example code
+- `tests/`: Test files
+
 
 - `createField(collectionId, data)`: Create a new field
 - `updateField(collectionId, fieldId, data)`: Update a field
 - `deleteField(collectionId, fieldId)`: Delete a field
 
 #### User Management
+## Package Structure
+
+This package follows the standard SmashLang package structure:
+
+- `package.smash`: Build and installation configuration
+- `package_config.json`: Theme and presentation configuration
+- `assets/`: Package assets (logos, icons, etc.)
+- `src/`: Source code
+- `examples/`: Example code
+- `tests/`: Test files
+
 
 - `listUsers(page, perPage)`: List users
 - `createUser(data)`: Create a new user
@@ -133,5 +298,16 @@ const admin = new pocketbase.Admin(client);
 - `deleteUser(userId)`: Delete a user
 
 ## License
+## Package Structure
+
+This package follows the standard SmashLang package structure:
+
+- `package.smash`: Build and installation configuration
+- `package_config.json`: Theme and presentation configuration
+- `assets/`: Package assets (logos, icons, etc.)
+- `src/`: Source code
+- `examples/`: Example code
+- `tests/`: Test files
+
 
 MIT

@@ -1,4 +1,15 @@
 # Package Name
+## Package Structure
+
+This package follows the standard SmashLang package structure:
+
+- `package.smash`: Build and installation configuration
+- `package_config.json`: Theme and presentation configuration
+- `assets/`: Package assets (logos, icons, etc.)
+- `src/`: Source code
+- `examples/`: Example code
+- `tests/`: Test files
+
 
 <p align="center">
   <picture>
@@ -10,18 +21,51 @@
 A brief description of what your package does and why it's useful.
 
 ## Installation
+## Package Structure
+
+This package follows the standard SmashLang package structure:
+
+- `package.smash`: Build and installation configuration
+- `package_config.json`: Theme and presentation configuration
+- `assets/`: Package assets (logos, icons, etc.)
+- `src/`: Source code
+- `examples/`: Example code
+- `tests/`: Test files
+
 
 ```bash
 smashpkg install package_name
 ```
 
 ## Features
+## Package Structure
+
+This package follows the standard SmashLang package structure:
+
+- `package.smash`: Build and installation configuration
+- `package_config.json`: Theme and presentation configuration
+- `assets/`: Package assets (logos, icons, etc.)
+- `src/`: Source code
+- `examples/`: Example code
+- `tests/`: Test files
+
 
 - Feature 1: Brief description
 - Feature 2: Brief description
 - Feature 3: Brief description
 
 ## Basic Usage
+## Package Structure
+
+This package follows the standard SmashLang package structure:
+
+- `package.smash`: Build and installation configuration
+- `package_config.json`: Theme and presentation configuration
+- `assets/`: Package assets (logos, icons, etc.)
+- `src/`: Source code
+- `examples/`: Example code
+- `tests/`: Test files
+
 
 ```js
 import "package_name";
@@ -36,6 +80,17 @@ instance.method();
 ```
 
 ## Advanced Usage
+## Package Structure
+
+This package follows the standard SmashLang package structure:
+
+- `package.smash`: Build and installation configuration
+- `package_config.json`: Theme and presentation configuration
+- `assets/`: Package assets (logos, icons, etc.)
+- `src/`: Source code
+- `examples/`: Example code
+- `tests/`: Test files
+
 
 ```js
 // More complex example demonstrating advanced features
@@ -45,10 +100,43 @@ async fn advancedExample() {
 ```
 
 ## API Reference
+## Package Structure
+
+This package follows the standard SmashLang package structure:
+
+- `package.smash`: Build and installation configuration
+- `package_config.json`: Theme and presentation configuration
+- `assets/`: Package assets (logos, icons, etc.)
+- `src/`: Source code
+- `examples/`: Example code
+- `tests/`: Test files
+
 
 ### Functions
+## Package Structure
+
+This package follows the standard SmashLang package structure:
+
+- `package.smash`: Build and installation configuration
+- `package_config.json`: Theme and presentation configuration
+- `assets/`: Package assets (logos, icons, etc.)
+- `src/`: Source code
+- `examples/`: Example code
+- `tests/`: Test files
+
 
 #### `functionName(param1, param2)`
+## Package Structure
+
+This package follows the standard SmashLang package structure:
+
+- `package.smash`: Build and installation configuration
+- `package_config.json`: Theme and presentation configuration
+- `assets/`: Package assets (logos, icons, etc.)
+- `src/`: Source code
+- `examples/`: Example code
+- `tests/`: Test files
+
 
 Description of what the function does.
 
@@ -65,8 +153,30 @@ const result = package_name.functionName("value1", 42);
 ```
 
 ### Classes
+## Package Structure
+
+This package follows the standard SmashLang package structure:
+
+- `package.smash`: Build and installation configuration
+- `package_config.json`: Theme and presentation configuration
+- `assets/`: Package assets (logos, icons, etc.)
+- `src/`: Source code
+- `examples/`: Example code
+- `tests/`: Test files
+
 
 #### `ClassName`
+## Package Structure
+
+This package follows the standard SmashLang package structure:
+
+- `package.smash`: Build and installation configuration
+- `package_config.json`: Theme and presentation configuration
+- `assets/`: Package assets (logos, icons, etc.)
+- `src/`: Source code
+- `examples/`: Example code
+- `tests/`: Test files
+
 
 Description of what the class does.
 
@@ -83,6 +193,17 @@ new package_name.ClassName(options)
 **Methods:**
 
 ##### `instance.method(param)`
+## Package Structure
+
+This package follows the standard SmashLang package structure:
+
+- `package.smash`: Build and installation configuration
+- `package_config.json`: Theme and presentation configuration
+- `assets/`: Package assets (logos, icons, etc.)
+- `src/`: Source code
+- `examples/`: Example code
+- `tests/`: Test files
+
 
 Description of what the method does.
 
@@ -93,6 +214,17 @@ Description of what the method does.
 - (ReturnType): Description of return value
 
 ## Examples
+## Package Structure
+
+This package follows the standard SmashLang package structure:
+
+- `package.smash`: Build and installation configuration
+- `package_config.json`: Theme and presentation configuration
+- `assets/`: Package assets (logos, icons, etc.)
+- `src/`: Source code
+- `examples/`: Example code
+- `tests/`: Test files
+
 
 See the [examples directory](./examples) for more detailed examples:
 
@@ -101,36 +233,168 @@ See the [examples directory](./examples) for more detailed examples:
 - [Testing Example](./examples/testing.smash): Demonstrates how to use the testing framework
 
 ## Testing
+## Package Structure
+
+This package follows the standard SmashLang package structure:
+
+- `package.smash`: Build and installation configuration
+- `package_config.json`: Theme and presentation configuration
+- `assets/`: Package assets (logos, icons, etc.)
+- `src/`: Source code
+- `examples/`: Example code
+- `tests/`: Test files
+
 
 This package includes comprehensive tests using SmashLang's built-in testing framework.
 
 ### Running Tests
+## Package Structure
+
+This package follows the standard SmashLang package structure:
+
+- `package.smash`: Build and installation configuration
+- `package_config.json`: Theme and presentation configuration
+- `assets/`: Package assets (logos, icons, etc.)
+- `src/`: Source code
+- `examples/`: Example code
+- `tests/`: Test files
+
 
 ```bash
 # Run all tests for this package
+## Package Structure
+
+This package follows the standard SmashLang package structure:
+
+- `package.smash`: Build and installation configuration
+- `package_config.json`: Theme and presentation configuration
+- `assets/`: Package assets (logos, icons, etc.)
+- `src/`: Source code
+- `examples/`: Example code
+- `tests/`: Test files
+
 smashtest ./tests
 
 # Run a specific test file
+## Package Structure
+
+This package follows the standard SmashLang package structure:
+
+- `package.smash`: Build and installation configuration
+- `package_config.json`: Theme and presentation configuration
+- `assets/`: Package assets (logos, icons, etc.)
+- `src/`: Source code
+- `examples/`: Example code
+- `tests/`: Test files
+
 smashtest ./tests/utils/string.test.smash
 
 # Run tests with a specific tag
+## Package Structure
+
+This package follows the standard SmashLang package structure:
+
+- `package.smash`: Build and installation configuration
+- `package_config.json`: Theme and presentation configuration
+- `assets/`: Package assets (logos, icons, etc.)
+- `src/`: Source code
+- `examples/`: Example code
+- `tests/`: Test files
+
 smashtest ./tests --tag=unit
 ```
 
 ### Test Structure
+## Package Structure
+
+This package follows the standard SmashLang package structure:
+
+- `package.smash`: Build and installation configuration
+- `package_config.json`: Theme and presentation configuration
+- `assets/`: Package assets (logos, icons, etc.)
+- `src/`: Source code
+- `examples/`: Example code
+- `tests/`: Test files
+
 
 Tests are organized in the following structure:
 
 ```
 tests/
 ├── index.test.smash       # Main test file for the package
+## Package Structure
+
+This package follows the standard SmashLang package structure:
+
+- `package.smash`: Build and installation configuration
+- `package_config.json`: Theme and presentation configuration
+- `assets/`: Package assets (logos, icons, etc.)
+- `src/`: Source code
+- `examples/`: Example code
+- `tests/`: Test files
+
 └── utils/                 # Tests for utility modules
+## Package Structure
+
+This package follows the standard SmashLang package structure:
+
+- `package.smash`: Build and installation configuration
+- `package_config.json`: Theme and presentation configuration
+- `assets/`: Package assets (logos, icons, etc.)
+- `src/`: Source code
+- `examples/`: Example code
+- `tests/`: Test files
+
     ├── string.test.smash  # Tests for string utilities
+## Package Structure
+
+This package follows the standard SmashLang package structure:
+
+- `package.smash`: Build and installation configuration
+- `package_config.json`: Theme and presentation configuration
+- `assets/`: Package assets (logos, icons, etc.)
+- `src/`: Source code
+- `examples/`: Example code
+- `tests/`: Test files
+
     ├── math.test.smash    # Tests for math utilities
+## Package Structure
+
+This package follows the standard SmashLang package structure:
+
+- `package.smash`: Build and installation configuration
+- `package_config.json`: Theme and presentation configuration
+- `assets/`: Package assets (logos, icons, etc.)
+- `src/`: Source code
+- `examples/`: Example code
+- `tests/`: Test files
+
     └── validator.test.smash # Tests for validation utilities
+## Package Structure
+
+This package follows the standard SmashLang package structure:
+
+- `package.smash`: Build and installation configuration
+- `package_config.json`: Theme and presentation configuration
+- `assets/`: Package assets (logos, icons, etc.)
+- `src/`: Source code
+- `examples/`: Example code
+- `tests/`: Test files
+
 ```
 
 ### Writing Tests
+## Package Structure
+
+This package follows the standard SmashLang package structure:
+
+- `package.smash`: Build and installation configuration
+- `package_config.json`: Theme and presentation configuration
+- `assets/`: Package assets (logos, icons, etc.)
+- `src/`: Source code
+- `examples/`: Example code
+- `tests/`: Test files
+
 
 Tests use the SmashLang testing framework with a syntax inspired by Jest and Mocha:
 
@@ -157,9 +421,31 @@ describe('Feature group', () => {
 ```
 
 ## Contributing
+## Package Structure
+
+This package follows the standard SmashLang package structure:
+
+- `package.smash`: Build and installation configuration
+- `package_config.json`: Theme and presentation configuration
+- `assets/`: Package assets (logos, icons, etc.)
+- `src/`: Source code
+- `examples/`: Example code
+- `tests/`: Test files
+
 
 Instructions for contributing to this package.
 
 ## License
+## Package Structure
+
+This package follows the standard SmashLang package structure:
+
+- `package.smash`: Build and installation configuration
+- `package_config.json`: Theme and presentation configuration
+- `assets/`: Package assets (logos, icons, etc.)
+- `src/`: Source code
+- `examples/`: Example code
+- `tests/`: Test files
+
 
 MIT (or your chosen license)

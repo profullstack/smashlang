@@ -1,4 +1,15 @@
 # SmashHono
+## Package Structure
+
+This package follows the standard SmashLang package structure:
+
+- `package.smash`: Build and installation configuration
+- `package_config.json`: Theme and presentation configuration
+- `assets/`: Package assets (logos, icons, etc.)
+- `src/`: Source code
+- `examples/`: Example code
+- `tests/`: Test files
+
 
 <p align="center">
   <img src="./assets/logo.svg" alt="SmashHono logo" width="200" />
@@ -7,6 +18,17 @@
 A lightweight, ultrafast web framework for SmashLang inspired by [Hono.js](https://hono.dev/). Hono (u708e) means "flame" in Japanese.
 
 ## Features
+## Package Structure
+
+This package follows the standard SmashLang package structure:
+
+- `package.smash`: Build and installation configuration
+- `package_config.json`: Theme and presentation configuration
+- `assets/`: Package assets (logos, icons, etc.)
+- `src/`: Source code
+- `examples/`: Example code
+- `tests/`: Test files
+
 
 - **Ultrafast**: Optimized for performance with minimal overhead
 - **Middleware**: Extensible middleware system
@@ -16,12 +38,34 @@ A lightweight, ultrafast web framework for SmashLang inspired by [Hono.js](https
 - **Zero dependencies**: Minimal core with modular extensions
 
 ## Installation
+## Package Structure
+
+This package follows the standard SmashLang package structure:
+
+- `package.smash`: Build and installation configuration
+- `package_config.json`: Theme and presentation configuration
+- `assets/`: Package assets (logos, icons, etc.)
+- `src/`: Source code
+- `examples/`: Example code
+- `tests/`: Test files
+
 
 ```bash
 smashpkg install networking/smashhono
 ```
 
 ## Basic Usage
+## Package Structure
+
+This package follows the standard SmashLang package structure:
+
+- `package.smash`: Build and installation configuration
+- `package_config.json`: Theme and presentation configuration
+- `assets/`: Package assets (logos, icons, etc.)
+- `src/`: Source code
+- `examples/`: Example code
+- `tests/`: Test files
+
 
 ```javascript
 import "smashhono";
@@ -45,6 +89,17 @@ app.listen(3000, () => {
 ```
 
 ## Middleware
+## Package Structure
+
+This package follows the standard SmashLang package structure:
+
+- `package.smash`: Build and installation configuration
+- `package_config.json`: Theme and presentation configuration
+- `assets/`: Package assets (logos, icons, etc.)
+- `src/`: Source code
+- `examples/`: Example code
+- `tests/`: Test files
+
 
 SmashHono includes several built-in middleware functions:
 
@@ -73,6 +128,17 @@ app.listen(3000);
 ```
 
 ## REST API
+## Package Structure
+
+This package follows the standard SmashLang package structure:
+
+- `package.smash`: Build and installation configuration
+- `package_config.json`: Theme and presentation configuration
+- `assets/`: Package assets (logos, icons, etc.)
+- `src/`: Source code
+- `examples/`: Example code
+- `tests/`: Test files
+
 
 ```javascript
 import "smashhono";
@@ -115,6 +181,17 @@ app.listen(3000);
 ```
 
 ## WebSockets
+## Package Structure
+
+This package follows the standard SmashLang package structure:
+
+- `package.smash`: Build and installation configuration
+- `package_config.json`: Theme and presentation configuration
+- `assets/`: Package assets (logos, icons, etc.)
+- `src/`: Source code
+- `examples/`: Example code
+- `tests/`: Test files
+
 
 ```javascript
 import "smashhono";
@@ -176,6 +253,17 @@ app.listen(3000);
 ```
 
 ## GraphQL
+## Package Structure
+
+This package follows the standard SmashLang package structure:
+
+- `package.smash`: Build and installation configuration
+- `package_config.json`: Theme and presentation configuration
+- `assets/`: Package assets (logos, icons, etc.)
+- `src/`: Source code
+- `examples/`: Example code
+- `tests/`: Test files
+
 
 ```javascript
 import "smashhono";
@@ -242,6 +330,17 @@ app.listen(3000);
 ```
 
 ## Error Handling
+## Package Structure
+
+This package follows the standard SmashLang package structure:
+
+- `package.smash`: Build and installation configuration
+- `package_config.json`: Theme and presentation configuration
+- `assets/`: Package assets (logos, icons, etc.)
+- `src/`: Source code
+- `examples/`: Example code
+- `tests/`: Test files
+
 
 ```javascript
 import "smashhono";
@@ -282,8 +381,30 @@ app.listen(3000);
 ```
 
 ## API Reference
+## Package Structure
+
+This package follows the standard SmashLang package structure:
+
+- `package.smash`: Build and installation configuration
+- `package_config.json`: Theme and presentation configuration
+- `assets/`: Package assets (logos, icons, etc.)
+- `src/`: Source code
+- `examples/`: Example code
+- `tests/`: Test files
+
 
 ### SmashHono Class
+## Package Structure
+
+This package follows the standard SmashLang package structure:
+
+- `package.smash`: Build and installation configuration
+- `package_config.json`: Theme and presentation configuration
+- `assets/`: Package assets (logos, icons, etc.)
+- `src/`: Source code
+- `examples/`: Example code
+- `tests/`: Test files
+
 
 - `new SmashHono(options)`: Create a new SmashHono application
 - `app.get(path, ...handlers)`: Add a GET route
@@ -303,6 +424,17 @@ app.listen(3000);
 - `app.listen(port, options)`: Start the server
 
 ### Context Class
+## Package Structure
+
+This package follows the standard SmashLang package structure:
+
+- `package.smash`: Build and installation configuration
+- `package_config.json`: Theme and presentation configuration
+- `assets/`: Package assets (logos, icons, etc.)
+- `src/`: Source code
+- `examples/`: Example code
+- `tests/`: Test files
+
 
 - `c.req`: Request object
 - `c.res`: Response object
@@ -318,6 +450,17 @@ app.listen(3000);
 - `c.header(name)`: Get request header
 
 ### Middleware
+## Package Structure
+
+This package follows the standard SmashLang package structure:
+
+- `package.smash`: Build and installation configuration
+- `package_config.json`: Theme and presentation configuration
+- `assets/`: Package assets (logos, icons, etc.)
+- `src/`: Source code
+- `examples/`: Example code
+- `tests/`: Test files
+
 
 - `smashhono.middleware.logger()`: Log requests
 - `smashhono.middleware.cors(options)`: CORS support
@@ -327,11 +470,33 @@ app.listen(3000);
 - `smashhono.middleware.jwt(options)`: JWT authentication
 
 ### Other
+## Package Structure
+
+This package follows the standard SmashLang package structure:
+
+- `package.smash`: Build and installation configuration
+- `package_config.json`: Theme and presentation configuration
+- `assets/`: Package assets (logos, icons, etc.)
+- `src/`: Source code
+- `examples/`: Example code
+- `tests/`: Test files
+
 
 - `smashhono.serve(options)`: Static file serving
 - `smashhono.validator.validate(schema)`: Request validation
 - `smashhono.HTTPException`: Custom HTTP error
 
 ## License
+## Package Structure
+
+This package follows the standard SmashLang package structure:
+
+- `package.smash`: Build and installation configuration
+- `package_config.json`: Theme and presentation configuration
+- `assets/`: Package assets (logos, icons, etc.)
+- `src/`: Source code
+- `examples/`: Example code
+- `tests/`: Test files
+
 
 MIT

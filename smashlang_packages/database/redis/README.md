@@ -1,14 +1,47 @@
 # Redis Client for SmashLang
+## Package Structure
+
+This package follows the standard SmashLang package structure:
+
+- `package.smash`: Build and installation configuration
+- `package_config.json`: Theme and presentation configuration
+- `assets/`: Package assets (logos, icons, etc.)
+- `src/`: Source code
+- `examples/`: Example code
+- `tests/`: Test files
+
 
 A high-performance Redis client library for SmashLang with support for all Redis data structures and commands.
 
 ## Installation
+## Package Structure
+
+This package follows the standard SmashLang package structure:
+
+- `package.smash`: Build and installation configuration
+- `package_config.json`: Theme and presentation configuration
+- `assets/`: Package assets (logos, icons, etc.)
+- `src/`: Source code
+- `examples/`: Example code
+- `tests/`: Test files
+
 
 ```bash
 smashpkg install redis
 ```
 
 ## Features
+## Package Structure
+
+This package follows the standard SmashLang package structure:
+
+- `package.smash`: Build and installation configuration
+- `package_config.json`: Theme and presentation configuration
+- `assets/`: Package assets (logos, icons, etc.)
+- `src/`: Source code
+- `examples/`: Example code
+- `tests/`: Test files
+
 
 - Complete Redis command coverage
 - Support for all Redis data structures (Strings, Lists, Sets, Hashes, Sorted Sets)
@@ -19,6 +52,17 @@ smashpkg install redis
 - Redis Cluster support
 
 ## Basic Usage
+## Package Structure
+
+This package follows the standard SmashLang package structure:
+
+- `package.smash`: Build and installation configuration
+- `package_config.json`: Theme and presentation configuration
+- `assets/`: Package assets (logos, icons, etc.)
+- `src/`: Source code
+- `examples/`: Example code
+- `tests/`: Test files
+
 
 ```js
 import "redis";
@@ -56,8 +100,30 @@ main().catch(console.error);
 ```
 
 ## Advanced Features
+## Package Structure
+
+This package follows the standard SmashLang package structure:
+
+- `package.smash`: Build and installation configuration
+- `package_config.json`: Theme and presentation configuration
+- `assets/`: Package assets (logos, icons, etc.)
+- `src/`: Source code
+- `examples/`: Example code
+- `tests/`: Test files
+
 
 ### Transactions
+## Package Structure
+
+This package follows the standard SmashLang package structure:
+
+- `package.smash`: Build and installation configuration
+- `package_config.json`: Theme and presentation configuration
+- `assets/`: Package assets (logos, icons, etc.)
+- `src/`: Source code
+- `examples/`: Example code
+- `tests/`: Test files
+
 
 ```js
 async fn transactionExample() {
@@ -73,6 +139,17 @@ async fn transactionExample() {
 ```
 
 ### Pub/Sub
+## Package Structure
+
+This package follows the standard SmashLang package structure:
+
+- `package.smash`: Build and installation configuration
+- `package_config.json`: Theme and presentation configuration
+- `assets/`: Package assets (logos, icons, etc.)
+- `src/`: Source code
+- `examples/`: Example code
+- `tests/`: Test files
+
 
 ```js
 async fn pubSubExample() {
@@ -91,6 +168,17 @@ async fn pubSubExample() {
 ```
 
 ### Pipelining
+## Package Structure
+
+This package follows the standard SmashLang package structure:
+
+- `package.smash`: Build and installation configuration
+- `package_config.json`: Theme and presentation configuration
+- `assets/`: Package assets (logos, icons, etc.)
+- `src/`: Source code
+- `examples/`: Example code
+- `tests/`: Test files
+
 
 ```js
 async fn pipelineExample() {
@@ -109,6 +197,17 @@ async fn pipelineExample() {
 ```
 
 ## Examples
+## Package Structure
+
+This package follows the standard SmashLang package structure:
+
+- `package.smash`: Build and installation configuration
+- `package_config.json`: Theme and presentation configuration
+- `assets/`: Package assets (logos, icons, etc.)
+- `src/`: Source code
+- `examples/`: Example code
+- `tests/`: Test files
+
 
 See the [examples directory](./examples) for more detailed examples:
 
@@ -119,8 +218,30 @@ See the [examples directory](./examples) for more detailed examples:
 - **Caching**: Implementing a caching layer with Redis
 
 ## API Reference
+## Package Structure
+
+This package follows the standard SmashLang package structure:
+
+- `package.smash`: Build and installation configuration
+- `package_config.json`: Theme and presentation configuration
+- `assets/`: Package assets (logos, icons, etc.)
+- `src/`: Source code
+- `examples/`: Example code
+- `tests/`: Test files
+
 
 ### Client
+## Package Structure
+
+This package follows the standard SmashLang package structure:
+
+- `package.smash`: Build and installation configuration
+- `package_config.json`: Theme and presentation configuration
+- `assets/`: Package assets (logos, icons, etc.)
+- `src/`: Source code
+- `examples/`: Example code
+- `tests/`: Test files
+
 
 ```js
 const client = redis.createClient(options);
@@ -134,10 +255,32 @@ Options:
 - `tls`: TLS/SSL options
 
 ### Commands
+## Package Structure
+
+This package follows the standard SmashLang package structure:
+
+- `package.smash`: Build and installation configuration
+- `package_config.json`: Theme and presentation configuration
+- `assets/`: Package assets (logos, icons, etc.)
+- `src/`: Source code
+- `examples/`: Example code
+- `tests/`: Test files
+
 
 The client provides access to all Redis commands organized by data structure:
 
 #### String Commands
+## Package Structure
+
+This package follows the standard SmashLang package structure:
+
+- `package.smash`: Build and installation configuration
+- `package_config.json`: Theme and presentation configuration
+- `assets/`: Package assets (logos, icons, etc.)
+- `src/`: Source code
+- `examples/`: Example code
+- `tests/`: Test files
+
 - `get(key)`: Get the value of a key
 - `set(key, value, options)`: Set the value of a key
 - `append(key, value)`: Append a value to a key
@@ -145,12 +288,34 @@ The client provides access to all Redis commands organized by data structure:
 - `decr(key)`: Decrement the integer value of a key
 
 #### Hash Commands
+## Package Structure
+
+This package follows the standard SmashLang package structure:
+
+- `package.smash`: Build and installation configuration
+- `package_config.json`: Theme and presentation configuration
+- `assets/`: Package assets (logos, icons, etc.)
+- `src/`: Source code
+- `examples/`: Example code
+- `tests/`: Test files
+
 - `hget(key, field)`: Get the value of a hash field
 - `hset(key, field, value)`: Set the value of a hash field
 - `hgetall(key)`: Get all fields and values in a hash
 - `hdel(key, field)`: Delete a hash field
 
 #### List Commands
+## Package Structure
+
+This package follows the standard SmashLang package structure:
+
+- `package.smash`: Build and installation configuration
+- `package_config.json`: Theme and presentation configuration
+- `assets/`: Package assets (logos, icons, etc.)
+- `src/`: Source code
+- `examples/`: Example code
+- `tests/`: Test files
+
 - `lpush(key, ...values)`: Prepend values to a list
 - `rpush(key, ...values)`: Append values to a list
 - `lpop(key)`: Remove and get the first element in a list
@@ -158,31 +323,97 @@ The client provides access to all Redis commands organized by data structure:
 - `lrange(key, start, stop)`: Get a range of elements from a list
 
 #### Set Commands
+## Package Structure
+
+This package follows the standard SmashLang package structure:
+
+- `package.smash`: Build and installation configuration
+- `package_config.json`: Theme and presentation configuration
+- `assets/`: Package assets (logos, icons, etc.)
+- `src/`: Source code
+- `examples/`: Example code
+- `tests/`: Test files
+
 - `sadd(key, ...members)`: Add members to a set
 - `srem(key, ...members)`: Remove members from a set
 - `smembers(key)`: Get all members in a set
 - `sismember(key, member)`: Check if a value is a member of a set
 
 #### Sorted Set Commands
+## Package Structure
+
+This package follows the standard SmashLang package structure:
+
+- `package.smash`: Build and installation configuration
+- `package_config.json`: Theme and presentation configuration
+- `assets/`: Package assets (logos, icons, etc.)
+- `src/`: Source code
+- `examples/`: Example code
+- `tests/`: Test files
+
 - `zadd(key, score, member)`: Add a member to a sorted set
 - `zrange(key, start, stop, options)`: Get a range of members from a sorted set
 - `zrank(key, member)`: Get the rank of a member in a sorted set
 - `zscore(key, member)`: Get the score of a member in a sorted set
 
 #### PubSub Commands
+## Package Structure
+
+This package follows the standard SmashLang package structure:
+
+- `package.smash`: Build and installation configuration
+- `package_config.json`: Theme and presentation configuration
+- `assets/`: Package assets (logos, icons, etc.)
+- `src/`: Source code
+- `examples/`: Example code
+- `tests/`: Test files
+
 - `subscribe(...channels)`: Subscribe to channels
 - `publish(channel, message)`: Publish a message to a channel
 - `unsubscribe(...channels)`: Unsubscribe from channels
 
 #### Transaction Commands
+## Package Structure
+
+This package follows the standard SmashLang package structure:
+
+- `package.smash`: Build and installation configuration
+- `package_config.json`: Theme and presentation configuration
+- `assets/`: Package assets (logos, icons, etc.)
+- `src/`: Source code
+- `examples/`: Example code
+- `tests/`: Test files
+
 - `multi()`: Start a transaction
 - `exec()`: Execute a transaction
 - `discard()`: Discard a transaction
 
 #### Scripting Commands
+## Package Structure
+
+This package follows the standard SmashLang package structure:
+
+- `package.smash`: Build and installation configuration
+- `package_config.json`: Theme and presentation configuration
+- `assets/`: Package assets (logos, icons, etc.)
+- `src/`: Source code
+- `examples/`: Example code
+- `tests/`: Test files
+
 - `eval(script, numKeys, ...keysAndArgs)`: Execute a Lua script
 - `evalsha(sha1, numKeys, ...keysAndArgs)`: Execute a Lua script cached on the server
 
 ## License
+## Package Structure
+
+This package follows the standard SmashLang package structure:
+
+- `package.smash`: Build and installation configuration
+- `package_config.json`: Theme and presentation configuration
+- `assets/`: Package assets (logos, icons, etc.)
+- `src/`: Source code
+- `examples/`: Example code
+- `tests/`: Test files
+
 
 MIT

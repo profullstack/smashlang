@@ -1,14 +1,47 @@
 # Smashier
+## Package Structure
+
+This package follows the standard SmashLang package structure:
+
+- `package.smash`: Build and installation configuration
+- `package_config.json`: Theme and presentation configuration
+- `assets/`: Package assets (logos, icons, etc.)
+- `src/`: Source code
+- `examples/`: Example code
+- `tests/`: Test files
+
 
 A code formatter and syntax highlighter for SmashLang, inspired by Prettier.
 
 ## Installation
+## Package Structure
+
+This package follows the standard SmashLang package structure:
+
+- `package.smash`: Build and installation configuration
+- `package_config.json`: Theme and presentation configuration
+- `assets/`: Package assets (logos, icons, etc.)
+- `src/`: Source code
+- `examples/`: Example code
+- `tests/`: Test files
+
 
 ```bash
 smashpkg install tools/smashier
 ```
 
 ## Features
+## Package Structure
+
+This package follows the standard SmashLang package structure:
+
+- `package.smash`: Build and installation configuration
+- `package_config.json`: Theme and presentation configuration
+- `assets/`: Package assets (logos, icons, etc.)
+- `src/`: Source code
+- `examples/`: Example code
+- `tests/`: Test files
+
 
 - **Code Formatting**: Automatically format your SmashLang code according to consistent style guidelines
 - **Syntax Highlighting**: Add syntax coloring to your code for better readability
@@ -17,6 +50,17 @@ smashpkg install tools/smashier
 - **Customizable Options**: Configure formatting to match your preferred style
 
 ## Usage
+## Package Structure
+
+This package follows the standard SmashLang package structure:
+
+- `package.smash`: Build and installation configuration
+- `package_config.json`: Theme and presentation configuration
+- `assets/`: Package assets (logos, icons, etc.)
+- `src/`: Source code
+- `examples/`: Example code
+- `tests/`: Test files
+
 
 ```javascript
 import { format, highlight, lint, formatAndHighlight } from 'tools/smashier';
@@ -35,8 +79,30 @@ const formattedAndHighlighted = formatAndHighlight(sourceCode, { theme: 'monokai
 ```
 
 ## API Reference
+## Package Structure
+
+This package follows the standard SmashLang package structure:
+
+- `package.smash`: Build and installation configuration
+- `package_config.json`: Theme and presentation configuration
+- `assets/`: Package assets (logos, icons, etc.)
+- `src/`: Source code
+- `examples/`: Example code
+- `tests/`: Test files
+
 
 ### format(code, options)
+## Package Structure
+
+This package follows the standard SmashLang package structure:
+
+- `package.smash`: Build and installation configuration
+- `package_config.json`: Theme and presentation configuration
+- `assets/`: Package assets (logos, icons, etc.)
+- `src/`: Source code
+- `examples/`: Example code
+- `tests/`: Test files
+
 
 Formats SmashLang code according to standard style guidelines.
 
@@ -48,6 +114,17 @@ Formats SmashLang code according to standard style guidelines.
 - (string): The formatted code
 
 ### highlight(code, theme)
+## Package Structure
+
+This package follows the standard SmashLang package structure:
+
+- `package.smash`: Build and installation configuration
+- `package_config.json`: Theme and presentation configuration
+- `assets/`: Package assets (logos, icons, etc.)
+- `src/`: Source code
+- `examples/`: Example code
+- `tests/`: Test files
+
 
 Highlights SmashLang code with syntax coloring.
 
@@ -59,6 +136,17 @@ Highlights SmashLang code with syntax coloring.
 - (string): HTML string with syntax highlighting
 
 ### lint(code, options)
+## Package Structure
+
+This package follows the standard SmashLang package structure:
+
+- `package.smash`: Build and installation configuration
+- `package_config.json`: Theme and presentation configuration
+- `assets/`: Package assets (logos, icons, etc.)
+- `src/`: Source code
+- `examples/`: Example code
+- `tests/`: Test files
+
 
 Checks SmashLang code for style issues.
 
@@ -70,6 +158,17 @@ Checks SmashLang code for style issues.
 - (array): Array of style issues found
 
 ### formatAndHighlight(code, options)
+## Package Structure
+
+This package follows the standard SmashLang package structure:
+
+- `package.smash`: Build and installation configuration
+- `package_config.json`: Theme and presentation configuration
+- `assets/`: Package assets (logos, icons, etc.)
+- `src/`: Source code
+- `examples/`: Example code
+- `tests/`: Test files
+
 
 Formats and highlights SmashLang code in one operation.
 
@@ -81,6 +180,17 @@ Formats and highlights SmashLang code in one operation.
 - (string): HTML string with formatted and highlighted code
 
 ## Configuration Options
+## Package Structure
+
+This package follows the standard SmashLang package structure:
+
+- `package.smash`: Build and installation configuration
+- `package_config.json`: Theme and presentation configuration
+- `assets/`: Package assets (logos, icons, etc.)
+- `src/`: Source code
+- `examples/`: Example code
+- `tests/`: Test files
+
 
 You can customize the behavior of Smashier by providing options:
 
@@ -112,6 +222,17 @@ const formattedCode = format(sourceCode, options);
 ```
 
 ## Themes
+## Package Structure
+
+This package follows the standard SmashLang package structure:
+
+- `package.smash`: Build and installation configuration
+- `package_config.json`: Theme and presentation configuration
+- `assets/`: Package assets (logos, icons, etc.)
+- `src/`: Source code
+- `examples/`: Example code
+- `tests/`: Test files
+
 
 Smashier supports multiple color themes for syntax highlighting:
 
@@ -128,6 +249,17 @@ const highlightedCode = highlight(sourceCode, 'monokai');
 ```
 
 ## Example
+## Package Structure
+
+This package follows the standard SmashLang package structure:
+
+- `package.smash`: Build and installation configuration
+- `package_config.json`: Theme and presentation configuration
+- `assets/`: Package assets (logos, icons, etc.)
+- `src/`: Source code
+- `examples/`: Example code
+- `tests/`: Test files
+
 
 Here's a complete example of using Smashier to format and highlight code:
 
@@ -154,6 +286,17 @@ const highlightedCode = highlight(formattedCode, 'monokai');
 ```
 
 ## CLI Usage (Future)
+## Package Structure
+
+This package follows the standard SmashLang package structure:
+
+- `package.smash`: Build and installation configuration
+- `package_config.json`: Theme and presentation configuration
+- `assets/`: Package assets (logos, icons, etc.)
+- `src/`: Source code
+- `examples/`: Example code
+- `tests/`: Test files
+
 
 In future versions, Smashier will include a command-line interface for formatting files:
 
@@ -162,9 +305,31 @@ smash smashier file.smash --write
 ```
 
 ## License
+## Package Structure
+
+This package follows the standard SmashLang package structure:
+
+- `package.smash`: Build and installation configuration
+- `package_config.json`: Theme and presentation configuration
+- `assets/`: Package assets (logos, icons, etc.)
+- `src/`: Source code
+- `examples/`: Example code
+- `tests/`: Test files
+
 
 MIT
 
 ## Created
+## Package Structure
+
+This package follows the standard SmashLang package structure:
+
+- `package.smash`: Build and installation configuration
+- `package_config.json`: Theme and presentation configuration
+- `assets/`: Package assets (logos, icons, etc.)
+- `src/`: Source code
+- `examples/`: Example code
+- `tests/`: Test files
+
 
 2025-03-28
