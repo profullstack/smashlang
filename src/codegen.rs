@@ -74,11 +74,45 @@ impl<'a> Module<'a> {
         code.push_str("}\n\n");
         
         // Process each AST node
+        let mut has_main_function = false;
+        // We'll track if we have a main function
+        
         for node in self.ast {
             match node {
-                AstNode::Function { .. } => {
-                    // Function definitions go outside main
-                    code.push_str(&self.generate_c_code_for_node(node, 0));
+                AstNode::Function { name, params, body } => {
+                    if name == "main" {
+                        // Remember that we found a main function
+                        has_main_function = true;
+                        
+                        // Instead of generating a char* main(), we'll call it smash_main()
+                        // and call it from our C main function
+                        let mut modified_function = format!("char* smash_main(\n");
+                        
+                        // Add parameters
+                        for (i, param) in params.iter().enumerate() {
+                            if i > 0 {
+                                modified_function.push_str(", ");
+                            }
+                            modified_function.push_str(&format!("char* {}", param));
+                        }
+                        modified_function.push_str(") {\n");
+                        
+                        // Add function body
+                        for stmt in body {
+                            modified_function.push_str(&self.generate_c_code_for_node(stmt, 1));
+                        }
+                        
+                        // Add default return if none is present
+                        modified_function.push_str("    return \"\";\n");
+                        
+                        // Close function
+                        modified_function.push_str("}\n\n");
+                        
+                        code.push_str(&modified_function);
+                    } else {
+                        // Other function definitions go outside main
+                        code.push_str(&self.generate_c_code_for_node(node, 0));
+                    }
                 },
                 AstNode::FunctionCall { name, args } => {
                     if name == "main" && args.is_empty() {
@@ -93,6 +127,14 @@ impl<'a> Module<'a> {
                     main_code.push_str(&self.generate_c_code_for_node(node, 1));
                 }
             }
+        }
+        
+        // If we have a main function, add a call to smash_main in our C main
+        if has_main_function {
+            main_code.push_str("    char* result = smash_main();\n");
+            main_code.push_str("    if (result && strlen(result) > 0) {\n");
+            main_code.push_str("        printf(\"%s\\n\", result);\n");
+            main_code.push_str("    }\n");
         }
         
         // Add C main function with the collected code
