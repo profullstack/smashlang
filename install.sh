@@ -204,17 +204,33 @@ display_test_results() {
     
     # Extract and display test results
     echo -e "${YELLOW}Main Crate Tests:${NC}"
-    grep -A 2 "Main Crate Tests" "$log_file" | grep -v "Main Crate Tests" | grep -v "---------------"
+    if grep -q "Main Crate Tests" "$log_file"; then
+      grep -A 5 "Main Crate Tests" "$log_file" | grep -v "Main Crate Tests" | grep -v "---------------" | head -n 3
+    else
+      echo "No main crate test results found"
+    fi
     
     echo -e "\n${YELLOW}All Packages Tests:${NC}"
-    grep -A 2 "All Packages Tests" "$log_file" | grep -v "All Packages Tests" | grep -v "-----------------"
+    if grep -q "All Packages Tests" "$log_file"; then
+      grep -A 5 "All Packages Tests" "$log_file" | grep -v "All Packages Tests" | grep -v "-----------------" | head -n 3
+    else
+      echo "No package test results found"
+    fi
     
     echo -e "\n${YELLOW}All Features Tests:${NC}"
-    grep -A 2 "All Features Tests" "$log_file" | grep -v "All Features Tests" | grep -v "-----------------"
+    if grep -q "All Features Tests" "$log_file"; then
+      grep -A 5 "All Features Tests" "$log_file" | grep -v "All Features Tests" | grep -v "-----------------" | head -n 3
+    else
+      echo "No feature test results found"
+    fi
     
     # Display any failures
     echo -e "\n${YELLOW}Test Failures (if any):${NC}"
-    grep -i "failed" "$log_file" | grep -v "0 failed" | head -n 10
+    if grep -i "failed" "$log_file" | grep -v "0 failed" | grep -q "."; then
+      grep -i "failed" "$log_file" | grep -v "0 failed" | head -n 10
+    else
+      echo -e "${GREEN}No test failures found${NC}"
+    fi
     
     echo -e "\nTo view the full test results, run: cat $log_file"
   else
