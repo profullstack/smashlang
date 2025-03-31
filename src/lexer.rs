@@ -97,6 +97,9 @@ pub enum Token {
     OptionalChaining, // ?.
     NullishCoalescing, // ??
     
+    // Modulo operator
+    Modulo,     // %
+    
     // Delimiters
     Colon,     // :
     LParen,    // (
@@ -520,76 +523,7 @@ pub fn tokenize(input: &str) -> Vec<Token> {
                     _ => tokens.push(Token::Identifier(ident)),
                 }
             }
-            // Single quotes are handled earlier in the code
-            '`' => {
-                chars.next(); // consume the opening backtick
-                tokens.push(Token::Backtick);
-                
-                let mut template = String::new();
-                
-                while let Some(&ch) = chars.peek() {
-                    if ch == '`' {
-                        chars.next(); // consume the closing backtick
-                        tokens.push(Token::Backtick);
-                        break;
-                    } else if ch == '\\' {
-                        // Handle escape sequences
-                        chars.next(); // consume the backslash
-                        
-                        if let Some(&next_ch) = chars.peek() {
-                            match next_ch {
-                                'n' => template.push('\n'),
-                                't' => template.push('\t'),
-                                'r' => template.push('\r'),
-                                '\\' => template.push('\\'),
-                                '`' => template.push('`'),
-                                '$' => template.push('$'),
-                                _ => template.push(next_ch),
-                            }
-                            chars.next(); // consume the escaped character
-                        }
-                    } else if ch == '$' {
-                        chars.next(); // consume the $
-                        
-                        // Check for ${...} expression
-                        if let Some(&next_ch) = chars.peek() {
-                            if next_ch == '{' {
-                                // This is a template expression
-                                // For now, we'll just include it as part of the template string
-                                template.push('$');
-                                template.push('{');
-                                chars.next(); // consume the {
-                                
-                                // Find the closing }
-                                let mut brace_count = 1;
-                                while let Some(&ch) = chars.peek() {
-                                    if ch == '{' {
-                                        brace_count += 1;
-                                    } else if ch == '}' {
-                                        brace_count -= 1;
-                                        if brace_count == 0 {
-                                            template.push('}');
-                                            chars.next(); // consume the }
-                                            break;
-                                        }
-                                    }
-                                    template.push(ch);
-                                    chars.next();
-                                }
-                            } else {
-                                template.push('$');
-                            }
-                        } else {
-                            template.push('$');
-                        }
-                    } else {
-                        template.push(ch);
-                        chars.next();
-                    }
-                }
-                
-                tokens.push(Token::TemplateString(template));
-            }
+            // Single quotes and backticks are handled earlier in the code
             '<' => {
                 chars.next(); // consume the '<'
                 
@@ -706,11 +640,11 @@ pub fn tokenize(input: &str) -> Vec<Token> {
                 if let Some(&next_ch) = chars.peek() {
                     match next_ch {
                         '|' => {
-                            tokens.push(Token::Or);
+                            tokens.push(Token::LogicalOr);
                             chars.next(); // consume the second '|'
                         },
                         '=' => {
-                            tokens.push(Token::OrEqual);
+                            tokens.push(Token::BitwiseOrEqual);
                             chars.next(); // consume the '='
                         },
                         _ => tokens.push(Token::BitwiseOr),
@@ -724,7 +658,7 @@ pub fn tokenize(input: &str) -> Vec<Token> {
                 
                 if let Some(&next_ch) = chars.peek() {
                     if next_ch == '=' {
-                        tokens.push(Token::XorEqual);
+                        tokens.push(Token::BitwiseXorEqual);
                         chars.next(); // consume the '='
                     } else {
                         tokens.push(Token::BitwiseXor);
@@ -757,10 +691,7 @@ pub fn tokenize(input: &str) -> Vec<Token> {
                     tokens.push(Token::QuestionMark);
                 }
             }
-            '$' => {
-                chars.next(); // consume the '$'
-                tokens.push(Token::Dollar);
-            }
+            // Dollar sign is handled elsewhere
             '%' => {
                 chars.next(); // consume the '%'
                 
@@ -780,44 +711,13 @@ pub fn tokenize(input: &str) -> Vec<Token> {
                 chars.next(); // consume the '@'
                 tokens.push(Token::At);
             },
-            '^' => {
-                chars.next(); // consume the '^'
-                
-                // Check for ^=
-                if let Some(&next_ch) = chars.peek() {
-                    if next_ch == '=' {
-                        tokens.push(Token::BitwiseXorEqual);
-                        chars.next(); // consume the '='
-                    } else {
-                        tokens.push(Token::BitwiseXor);
-                    }
-                } else {
-                    tokens.push(Token::BitwiseXor);
-                }
-            },
-            '~' => {
-                chars.next(); // consume the '~'
-                tokens.push(Token::BitwiseNot);
-            },
-            '%' => {
-                chars.next(); // consume the '%'
-                
-                // Check for %=
-                if let Some(&next_ch) = chars.peek() {
-                    if next_ch == '=' {
-                        tokens.push(Token::ModuloEqual);
-                        chars.next(); // consume the '='
-                    } else {
-                        tokens.push(Token::Modulo);
-                    }
-                } else {
-                    tokens.push(Token::Modulo);
-                }
-            },
-            '$' => {
-                chars.next(); // consume the '$'
-                tokens.push(Token::Dollar);
-            }
+            // Caret is handled elsewhere
+            
+            // Tilde is handled elsewhere
+            
+            // Percent is handled elsewhere
+            
+            // Dollar sign is handled elsewhere
             _ => {
                 println!("Unexpected character: {}", ch);
                 chars.next();

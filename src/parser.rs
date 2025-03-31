@@ -2,7 +2,7 @@ use crate::lexer::Token;
 use std::collections::HashMap;
 use std::fmt;
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum AstNode {
     // Literals
     Number(i64),
@@ -25,19 +25,6 @@ pub enum AstNode {
         left: Box<AstNode>,
         op: String,
         right: Box<AstNode>,
-    },
-    
-    // Unary operators
-    UnaryOp {
-        op: String,  // !, ~
-        expr: Box<AstNode>,
-    },
-    
-    // Ternary operator
-    TernaryOp {
-        condition: Box<AstNode>,
-        true_expr: Box<AstNode>,
-        false_expr: Box<AstNode>,
     },
     
     // Unary operators
@@ -152,7 +139,7 @@ pub enum AstNode {
     Import(String),
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct SwitchCase {
     pub value: AstNode,
     pub body: Vec<AstNode>,
@@ -181,7 +168,7 @@ impl fmt::Display for ParseError {
 
 pub type ParseResult<T> = Result<T, ParseError>;
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct DestructuringTarget {
     pub name: String,
     pub alias: Option<String>,

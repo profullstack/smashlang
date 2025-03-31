@@ -497,6 +497,10 @@ impl Repl {
                                 Value::String(s) => print!("{}", s),
                                 Value::Boolean(b) => print!("{}", b),
                                 Value::Null => print!("null"),
+                                Value::Array(_) => print!("[Array]"),
+                                Value::Object(_) => print!("{{Object}}"),
+                                Value::Function(_, _, _) => print!("[Function]"),
+                                Value::Undefined => print!("undefined"),
                             }
                         }
                         println!();
