@@ -1,0 +1,16 @@
+// SmashLang Regex Example
+
+// Create a string to test regex against
+let text = "Hello, SmashLang! This is a test string.";
+
+// Use string methods with regex patterns
+let matches = text.match("SmashLang");
+print("Matches:", matches);
+
+// Use string replace with regex
+let replaced = text.replace("SmashLang", "Awesome Language");
+print("Replaced:", replaced);
+
+// Test if a string contains a pattern
+let hasSmash = text.match("Smash");
+print("Contains 'Smash':", hasSmash);

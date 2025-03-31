@@ -868,7 +868,10 @@ impl Parser {
     
     // Basic expression parsing
     fn parse_expr(&mut self) -> ParseResult<AstNode> {
-        self.parse_ternary()
+        println!("parse_expr: Current token: {:?}", self.peek());
+        let result = self.parse_ternary();
+        println!("parse_expr result: {:?}", result.is_ok());
+        result
     }
     
     // Parse ternary conditional operator: condition ? expr1 : expr2
@@ -1327,8 +1330,10 @@ impl Parser {
                 Ok(AstNode::String(value))
             },
             Some(Token::Regex(r)) => {
+                println!("Processing regex token: {}", r);
                 let value = r.clone();
                 self.advance();
+                println!("Created AstNode::Regex");
                 Ok(AstNode::Regex(value))
             },
             Some(Token::TemplateStringPart(s)) => {

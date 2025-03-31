@@ -1,0 +1,39 @@
+// SmashLang Regex Demonstration
+
+// Create a test string
+let text = "Hello, SmashLang! This is a test string with multiple words. SmashLang is awesome!";
+print("Original text:", text);
+
+// 1. Basic string matching with regex
+let hasSmash = text.match("Smash");
+print("Contains 'Smash':", hasSmash);
+
+// 2. String replacement with regex
+let replaced = text.replace("SmashLang", "Awesome Language");
+print("After replacement:", replaced);
+
+// 3. Using regex for multiple replacements
+let multiReplaced = text.replace("SmashLang", "Rust");
+print("Multiple replacements:", multiReplaced);
+
+// 4. Matching with word boundaries
+let wordMatch = text.match("\\bSmash\\b");
+print("Exact word 'Smash':", wordMatch);
+
+// 5. Matching with capturing groups
+let captureMatch = text.match("(Smash)(Lang)");
+print("Captured groups:", captureMatch);
+
+// 6. Case insensitive matching
+let caseInsensitive = text.match("smash");
+print("Case insensitive match:", caseInsensitive);
+
+// 7. Simple detection
+let count = 0;
+// Simple detection of pattern
+if (text.match("SmashLang")) {
+    count = 1;
+}
+print("Number of 'SmashLang' occurrences:", count);
+
+print("Regex functionality demonstration complete!");

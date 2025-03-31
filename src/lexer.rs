@@ -236,7 +236,18 @@ pub fn tokenize(input: &str) -> Vec<Token> {
                         Some(Token::Comma) | 
                         Some(Token::Semicolon) | 
                         Some(Token::Colon) | 
-                        Some(Token::Return));
+                        Some(Token::Return) |
+                        // Add additional tokens that can precede a regex
+                        Some(Token::Let) |
+                        Some(Token::Const) |
+                        Some(Token::Plus) |
+                        Some(Token::Minus) |
+                        Some(Token::Star) |
+                        Some(Token::Slash) |
+                        Some(Token::PlusEqual) |
+                        Some(Token::MinusEqual) |
+                        Some(Token::StarEqual) |
+                        Some(Token::SlashEqual));
                 
                 // Check for /= or // (comment) or /* (block comment) or regex
                 if let Some(&next_ch) = chars.peek() {

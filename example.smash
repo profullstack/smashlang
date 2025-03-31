@@ -9,4 +9,5 @@ let year = 2025;
 let pi = 3.14;
 let active = true;
 
-let pattern = /smash.*/;
+// Using a string-based approach for regex patterns
+let pattern = "smash.*";
