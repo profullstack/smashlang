@@ -1,0 +1,8 @@
+// SmashLang Example 1: Hello World
+// This is the simplest SmashLang program that prints a message
+
+// In SmashLang, statements end with semicolons
+print;
+
+// The current implementation will print a default message
+// Future versions will support: print "Hello, World!";

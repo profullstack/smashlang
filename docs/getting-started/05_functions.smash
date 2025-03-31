@@ -1,0 +1,18 @@
+// SmashLang Example 5: Functions
+// This example demonstrates how to define and call functions
+
+// Function declaration
+// Note: In the current implementation, this is parsed but not fully implemented in code generation
+// fn add(a, b) {
+//   return a + b;
+// }
+
+// Function call
+// Note: In the current implementation, this is parsed but not fully implemented in code generation
+// let result = add(5, 3);
+
+// Print the result
+// Future versions will support: print result;
+print;
+
+// Future versions will support full function declarations and calls

@@ -1,0 +1,18 @@
+// SmashLang Example 3: Conditionals
+// This example demonstrates if/else statements
+
+// Declare a variable with an initializer
+let x = 5;
+
+// If statement
+// Note: In the current implementation, this is parsed but not fully implemented in code generation
+// if (x > 0) {
+//   print;
+// } else {
+//   print;
+// }
+
+// For now, we'll just use a simple statement
+print;
+
+// Future versions will support full conditional logic with comparison operators

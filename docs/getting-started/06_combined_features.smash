@@ -1,0 +1,33 @@
+// SmashLang Example 6: Combined Features
+// This example demonstrates multiple language features working together
+
+// Variable declarations with initializers
+let count = 5;
+let message = "Hello";
+
+// Note: In the current implementation, string operations are parsed but not fully implemented
+// The following code shows the intended syntax for future versions:
+//
+// // Function declaration
+// fn countdown(start) {
+//   let current = start;
+//   while (current > 0) {
+//     print current;
+//     current = current - 1;
+//   }
+//   print "Blast off!";
+// }
+//
+// // Conditional logic
+// if (count > 0) {
+//   // Function call
+//   countdown(count);
+// } else {
+//   print "Count is zero or negative";
+// }
+
+// For the current implementation, we'll use a simple statement
+print;
+
+// This example shows how variables, functions, conditionals, and loops
+// can be combined to create more complex programs in SmashLang

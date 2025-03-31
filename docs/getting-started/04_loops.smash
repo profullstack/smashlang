@@ -1,0 +1,30 @@
+// SmashLang Example 4: Loops
+// This example demonstrates different types of loops
+
+// Declare a counter variable with an initializer
+let i = 0;
+
+// While loop
+// Note: In the current implementation, this is parsed but not fully implemented in code generation
+// while (i < 10) {
+//   print;
+//   i = i + 1;
+// }
+
+// For loop
+// Note: In the current implementation, this is parsed but not fully implemented in code generation
+// for (let j = 0; j < 5; j = j + 1) {
+//   print;
+// }
+
+// Do-while loop
+// Note: In the current implementation, this is parsed but not fully implemented in code generation
+// do {
+//   print;
+//   i = i + 1;
+// } while (i < 5);
+
+// For now, we'll just use a simple statement
+print;
+
+// Future versions will support all loop types with proper code generation

@@ -1,0 +1,15 @@
+// SmashLang Example 2: Variables
+// This example demonstrates how to declare and use variables
+
+// Declare a variable using 'let' with an initializer
+let x = 10;
+
+// Declare a constant using 'const'
+// Note: In the current implementation, this is parsed but not fully implemented
+// const PI = 3.14159;
+
+// Variables can be used in expressions
+// Future versions will support: let y = x + 5;
+
+// Print the result
+print;
