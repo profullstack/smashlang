@@ -36,6 +36,7 @@ run_tests() {
   local log_file="$BASE_DIR/logs/test_results_$timestamp.log"
   
   echo -e "${BLUE}Running tests for SmashLang...${NC}"
+  echo -e "(Test output will be saved and summarized at the end)"
   cd "$repo_dir" || { echo -e "${RED}Error: Could not change to directory $repo_dir${NC}"; return 1; }
   
   # Create the log file
@@ -49,8 +50,8 @@ run_tests() {
     echo -e "${BLUE}Running main crate tests...${NC}"
     echo "Main Crate Tests" >> "$log_file"
     echo "---------------" >> "$log_file"
-    # Run tests in the tests directory
-    cargo test --test compiler_tests --test lexer_parser_tests --test codegen_tests > "$log_file.tmp" 2>&1 || true
+    # Run tests in the tests directory - use the full path to ensure we're in the right directory
+    (cd "$repo_dir" && cargo test --test compiler_tests --test lexer_parser_tests --test codegen_tests) > "$log_file.tmp" 2>&1 || true
     local main_test_result=$?
     if [ -f "$log_file.tmp" ]; then
       # Display output to console
@@ -72,8 +73,8 @@ run_tests() {
     echo -e "${BLUE}Running tests for all packages...${NC}"
     echo "All Packages Tests" >> "$log_file"
     echo "-----------------" >> "$log_file"
-    # Run tests in src directory
-    cargo test --lib --bins > "$log_file.tmp" 2>&1 || true
+    # Run tests in src directory - use the full path to ensure we're in the right directory
+    (cd "$repo_dir" && cargo test --lib --bins) > "$log_file.tmp" 2>&1 || true
     local all_test_result=$?
     if [ -f "$log_file.tmp" ]; then
       # Display output to console
@@ -95,8 +96,8 @@ run_tests() {
     echo -e "${BLUE}Running tests with all features enabled...${NC}"
     echo "All Features Tests" >> "$log_file"
     echo "-----------------" >> "$log_file"
-    # Run all tests with all features enabled
-    cargo test --all-features --tests --bins --lib > "$log_file.tmp" 2>&1 || true
+    # Run all tests with all features enabled - use the full path to ensure we're in the right directory
+    (cd "$repo_dir" && cargo test --all-features --tests --bins --lib) > "$log_file.tmp" 2>&1 || true
     local features_test_result=$?
     if [ -f "$log_file.tmp" ]; then
       # Display output to console
