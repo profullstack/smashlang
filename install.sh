@@ -40,24 +40,33 @@ run_tests() {
     echo -e "${BLUE}Running main crate tests...${NC}"
     echo "Main Crate Tests" >> "$log_file"
     echo "---------------" >> "$log_file"
-    cargo test 2>&1 | tee -a "$log_file"
+    cargo test > "$log_file.tmp" 2>&1
     local main_test_result=$?
+    cat "$log_file.tmp"
+    cat "$log_file.tmp" >> "$log_file"
+    rm "$log_file.tmp"
     echo "" >> "$log_file"
     
     # Run tests for all workspace packages
     echo -e "${BLUE}Running tests for all packages...${NC}"
     echo "All Packages Tests" >> "$log_file"
     echo "-----------------" >> "$log_file"
-    cargo test --all 2>&1 | tee -a "$log_file"
+    cargo test --all > "$log_file.tmp" 2>&1
     local all_test_result=$?
+    cat "$log_file.tmp"
+    cat "$log_file.tmp" >> "$log_file"
+    rm "$log_file.tmp"
     echo "" >> "$log_file"
     
     # Run tests with all features enabled
     echo -e "${BLUE}Running tests with all features enabled...${NC}"
     echo "All Features Tests" >> "$log_file"
     echo "-----------------" >> "$log_file"
-    cargo test --all-features 2>&1 | tee -a "$log_file"
+    cargo test --all-features > "$log_file.tmp" 2>&1
     local features_test_result=$?
+    cat "$log_file.tmp"
+    cat "$log_file.tmp" >> "$log_file"
+    rm "$log_file.tmp"
     echo "" >> "$log_file"
     
     # Check if any tests failed
