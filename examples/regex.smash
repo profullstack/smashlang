@@ -1,0 +1,99 @@
+// SmashLang Regular Expression Examples
+
+// Basic regex patterns
+const simplePattern = /hello/;
+const patternWithFlags = /hello/i;  // Case-insensitive match
+
+// Testing regex patterns
+const text = "Hello, world! Hello again.";
+const result1 = simplePattern.test(text);  // false (case-sensitive)
+const result2 = patternWithFlags.test(text);  // true (case-insensitive)
+
+console.log("Simple pattern test:", result1);
+console.log("Pattern with flags test:", result2);
+
+// Finding matches
+const matches = text.match(/[Hh]ello/g);  // Global flag to find all matches
+console.log("All matches:", matches);  // ["Hello", "Hello"]
+
+// Common regex patterns
+
+// 1. Email validation
+const emailPattern = /^[\w.-]+@[\w.-]+\.[a-zA-Z]{2,}$/;
+const validEmail = "user@example.com";
+const invalidEmail = "invalid-email";
+
+console.log("Valid email test:", emailPattern.test(validEmail));  // true
+console.log("Invalid email test:", emailPattern.test(invalidEmail));  // false
+
+// 2. URL validation
+const urlPattern = /^(https?:\/\/)?([\w-]+\.)+[\w-]+(\/[\w- ./?%&=]*)?$/;
+const validUrl = "https://example.com/path?query=value";
+const invalidUrl = "not a url";
+
+console.log("Valid URL test:", urlPattern.test(validUrl));  // true
+console.log("Invalid URL test:", urlPattern.test(invalidUrl));  // false
+
+// 3. Phone number validation (US format)
+const phonePattern = /^\(\d{3}\) \d{3}-\d{4}$/;
+const validPhone = "(555) 123-4567";
+const invalidPhone = "555-123-4567";
+
+console.log("Valid phone test:", phonePattern.test(validPhone));  // true
+console.log("Invalid phone test:", phonePattern.test(invalidPhone));  // false
+
+// 4. Date validation (YYYY-MM-DD)
+const datePattern = /^\d{4}-\d{2}-\d{2}$/;
+const validDate = "2025-03-31";
+const invalidDate = "03/31/2025";
+
+console.log("Valid date test:", datePattern.test(validDate));  // true
+console.log("Invalid date test:", datePattern.test(invalidDate));  // false
+
+// String replacement with regex
+const sentence = "The quick brown fox jumps over the lazy dog.";
+const replaced = sentence.replace(/[aeiou]/gi, '*');  // Replace all vowels with asterisks
+console.log("Replaced vowels:", replaced);  // "Th* q**ck br*wn f*x j*mps *v*r th* l*zy d*g."
+
+// String splitting with regex
+const csvLine = "John,Doe,42,New York";
+const parts = csvLine.split(/,/);  // Split by comma
+console.log("CSV parts:", parts);  // ["John", "Doe", "42", "New York"]
+
+// Advanced regex features
+
+// 1. Capture groups
+const capturePattern = /(\w+)@(\w+)\.(\w+)/;
+const email = "user@example.com";
+const matches2 = email.match(capturePattern);
+
+console.log("Full match:", matches2[0]);  // "user@example.com"
+console.log("Username:", matches2[1]);  // "user"
+console.log("Domain:", matches2[2]);  // "example"
+console.log("TLD:", matches2[3]);  // "com"
+
+// 2. Lookahead and lookbehind assertions
+const password = "abc123XYZ";
+const strongPasswordPattern = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)[a-zA-Z\d]{8,}$/;
+// Password must contain at least one lowercase letter, one uppercase letter, one digit, and be at least 8 characters long
+
+console.log("Strong password test:", strongPasswordPattern.test(password));  // true
+
+// 3. Word boundaries
+const sentence2 = "The cat sat on the mat.";
+const wordPattern = /\bcat\b/;  // Match "cat" as a whole word
+
+console.log("Word boundary test:", wordPattern.test(sentence2));  // true
+console.log("Word boundary in 'category':", wordPattern.test("category"));  // false
+
+// Practical example: Parsing a log file
+const logLine = "[2025-03-31 15:42:18] ERROR: Connection refused (192.168.1.1)";
+const logPattern = /\[(\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2})\] (\w+): (.+) \(([\d\.]+)\)/;
+const logParts = logLine.match(logPattern);
+
+if (logParts) {
+  console.log("Timestamp:", logParts[1]);  // "2025-03-31 15:42:18"
+  console.log("Log level:", logParts[2]);  // "ERROR"
+  console.log("Message:", logParts[3]);    // "Connection refused"
+  console.log("IP Address:", logParts[4]);  // "192.168.1.1"
+}
