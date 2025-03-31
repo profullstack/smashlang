@@ -318,13 +318,13 @@ install_linux() {
     cd "$temp_dir"
     cargo build --release
     
-    # Run tests after building
-    run_tests "$temp_dir"
-    
     # Copy binaries
     cp "$temp_dir/target/release/smash" "$LINUX_INSTALL_DIR/bin/"
     cp "$temp_dir/target/release/smashc" "$LINUX_INSTALL_DIR/bin/"
     cp "$temp_dir/target/release/smashpkg" "$LINUX_INSTALL_DIR/bin/"
+    
+    # Run tests after installation is complete
+    run_tests "$temp_dir"
     
     # Copy documentation
     echo -e "${BLUE}Installing documentation...${NC}"
@@ -371,18 +371,8 @@ install_linux() {
   echo -e "${BLUE}Copying assets directory...${NC}"
   create_dir "$LINUX_INSTALL_DIR/assets"
   
-  # Generate package assets if needed
-  echo -e "${BLUE}Generating package assets...${NC}"
-  
-  if [ -f "scripts/generate_package_logo.sh" ]; then
-    chmod +x "scripts/generate_package_logo.sh"
-    ./scripts/generate_package_logo.sh
-  fi
-  
-  if [ -f "scripts/generate_favicon.sh" ]; then
-    chmod +x "scripts/generate_favicon.sh"
-    ./scripts/generate_favicon.sh
-  fi
+  # Note: Package assets generation is only needed when publishing packages
+  # and will not be performed during installation
   
   echo -e "${GREEN}SmashLang has been successfully installed on Linux!${NC}"
   echo -e "Run 'smash --version' to verify the installation."
