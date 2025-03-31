@@ -185,18 +185,40 @@ run_tests() {
 
 # Display test results at the end of installation
 display_test_results() {
-  if [ -f "$1/test_log_path.txt" ]; then
-    local log_file=$(cat "$1/test_log_path.txt")
-    if [ -f "$log_file" ]; then
-      echo -e "\n${BLUE}Test Results Summary${NC}"
-      echo -e "${BLUE}-------------------${NC}"
-      echo -e "A detailed test log has been saved to: $log_file"
-      if grep -q "TEST SUMMARY: All tests passed successfully!" "$log_file"; then
-        echo -e "${GREEN}All tests passed successfully!${NC}"
-      else
-        echo -e "${YELLOW}Some tests failed. See the log file for details.${NC}"
-      fi
+  local log_file="$1/test_results.log"
+  if [ -f "$log_file" ]; then
+    echo -e "\n${BLUE}Test Results Summary${NC}"
+    echo -e "${BLUE}-------------------${NC}"
+    echo -e "A detailed test log has been saved to: $log_file"
+    
+    # Check if all tests passed
+    if grep -q "TEST SUMMARY: All tests passed successfully!" "$log_file"; then
+      echo -e "${GREEN}All tests passed successfully!${NC}"
+    else
+      echo -e "${YELLOW}Some tests failed. See the log file for details.${NC}"
     fi
+    
+    # Display important test information at the end
+    echo -e "\n${BLUE}Important Test Information${NC}"
+    echo -e "${BLUE}------------------------${NC}"
+    
+    # Extract and display test results
+    echo -e "${YELLOW}Main Crate Tests:${NC}"
+    grep -A 2 "Main Crate Tests" "$log_file" | grep -v "Main Crate Tests" | grep -v "---------------"
+    
+    echo -e "\n${YELLOW}All Packages Tests:${NC}"
+    grep -A 2 "All Packages Tests" "$log_file" | grep -v "All Packages Tests" | grep -v "-----------------"
+    
+    echo -e "\n${YELLOW}All Features Tests:${NC}"
+    grep -A 2 "All Features Tests" "$log_file" | grep -v "All Features Tests" | grep -v "-----------------"
+    
+    # Display any failures
+    echo -e "\n${YELLOW}Test Failures (if any):${NC}"
+    grep -i "failed" "$log_file" | grep -v "0 failed" | head -n 10
+    
+    echo -e "\nTo view the full test results, run: cat $log_file"
+  else
+    echo -e "${YELLOW}No test log file found.${NC}"
   fi
 }
 
@@ -343,7 +365,9 @@ install_linux() {
     cp "$temp_dir/target/release/smashpkg" "$LINUX_INSTALL_DIR/bin/"
     
     # Run tests after installation is complete
-    run_tests "$temp_dir"
+    echo -e "${BLUE}Running tests for SmashLang...${NC}"
+    echo -e "${BLUE}(Test output will be saved and summarized at the end)${NC}"
+    run_tests "$temp_dir" > /dev/null 2>&1
     
     # Copy documentation
     echo -e "${BLUE}Installing documentation...${NC}"
@@ -393,7 +417,12 @@ install_linux() {
   # Note: Package assets generation is only needed when publishing packages
   # and will not be performed during installation
   
-  echo -e "${GREEN}SmashLang has been successfully installed on Linux!${NC}"
+  # Display test results summary
+  if [ "$use_master" == "true" ]; then
+    display_test_results "$temp_dir"
+  fi
+  
+  echo -e "\n${GREEN}SmashLang has been successfully installed on Linux!${NC}"
   echo -e "Run 'smash --version' to verify the installation."
   echo -e "Note: Package assets generation is only needed when publishing packages."
   echo -e "Run 'scripts/generate_package_logo.sh' and 'scripts/generate_favicon.sh' manually if needed."
