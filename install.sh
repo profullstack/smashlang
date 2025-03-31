@@ -84,7 +84,11 @@ run_tests() {
       echo "Example Tests" >> "$log_file"
       echo "-------------" >> "$log_file"
       chmod +x "docs/getting-started/run_all_examples.sh"
-      ./docs/getting-started/run_all_examples.sh 2>&1 | tee -a "$log_file"
+      ./docs/getting-started/run_all_examples.sh > "$log_file.tmp" 2>&1
+      local example_test_result=$?
+      cat "$log_file.tmp"
+      cat "$log_file.tmp" >> "$log_file"
+      rm "$log_file.tmp"
       echo "" >> "$log_file"
     else
       echo -e "${YELLOW}Warning: Example tests directory not found, skipping example tests.${NC}"
@@ -102,8 +106,11 @@ run_tests() {
         echo -e "${BLUE}Running combined test of all packages...${NC}"
         echo "Combined Package Tests" >> "$log_file"
         echo "---------------------" >> "$log_file"
-        (cd "smashlang_packages" && cargo test --all) 2>&1 | tee -a "$log_file"
+        (cd "smashlang_packages" && cargo test --all > "$repo_dir/pkg_test.tmp" 2>&1)
         local combined_test_result=$?
+        cat "$repo_dir/pkg_test.tmp"
+        cat "$repo_dir/pkg_test.tmp" >> "$log_file"
+        rm "$repo_dir/pkg_test.tmp"
         if [ $combined_test_result -eq 0 ]; then
           echo -e "${GREEN}Combined package tests passed!${NC}"
         else
@@ -131,8 +138,11 @@ run_tests() {
         
         echo -e "${BLUE}Testing package: $pkg_name ($rel_path)${NC}"
         echo "Package: $pkg_name ($rel_path)" >> "$log_file"
-        (cd "$pkg_dir" && cargo test) 2>&1 | tee -a "$log_file"
+        (cd "$pkg_dir" && cargo test > "$repo_dir/pkg_test.tmp" 2>&1)
         local pkg_test_result=$?
+        cat "$repo_dir/pkg_test.tmp"
+        cat "$repo_dir/pkg_test.tmp" >> "$log_file"
+        rm "$repo_dir/pkg_test.tmp"
         
         if [ $pkg_test_result -ne 0 ]; then
           all_packages_passed=false
@@ -459,7 +469,7 @@ main() {
     if [ "$upgrade" == "true" ]; then
       upgrade_linux
     else
-      install_linux "$use_master"
+      install_linux_main "$use_master"
     fi
   elif [ "$os" == "macos" ]; then
     if [ "$upgrade" == "true" ]; then
