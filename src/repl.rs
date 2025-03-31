@@ -306,7 +306,7 @@ impl Repl {
                                 Value::Float(f) => result.push_str(&f.to_string()),
                                 Value::Boolean(b) => result.push_str(&b.to_string()),
                                 Value::Null => result.push_str("null"),
-                                Value::Regex(r) => result.push_str(&format!("/{}\\\\/, r))
+                                Value::Regex(r) => result.push_str(&format!("/{}\\//", r)),
                                 Value::Undefined => result.push_str("undefined"),
                                 _ => result.push_str(&format!("{:?}", value))
                             }
@@ -380,7 +380,7 @@ impl Repl {
                 if let Some(value) = scope.get(name) {
                     Ok(value)
                 } else {
-                    Err(format!("Variable '{}' not found ", name))
+                    Err(format!("Variable \"{}\" not found ", name))
                 }
             },
             
@@ -481,7 +481,7 @@ impl Repl {
                         scope.set(name, Value::Number(new_value));
                         Ok(Value::Number(new_value))
                     } else {
-                        Err("Can only decrement numeric variables".to_string())
+                        Err("Can only decrement numeric variables ".to_string())
                     }
                 } else {
                     Err("Can only decrement variables ".to_string())
@@ -495,7 +495,7 @@ impl Repl {
                         scope.set(name, Value::Number(old_value - 1));
                         Ok(Value::Number(old_value)) // Return the original value for post-decrement
                     } else {
-                        Err("Can only decrement numeric variables".to_string())
+                        Err("Can only decrement numeric variables ".to_string())
                     }
                 } else {
                     Err("Can only decrement variables ".to_string())
@@ -534,7 +534,7 @@ impl Repl {
                         scope.set(name, new_value.clone());
                         Ok(new_value)
                     } else {
-                        Err(format!("Variable '{}' not found ", name))
+                        Err(format!("Variable \"{}\" not found ", name))
                     }
                 } else {
                     Err("Left side of assignment must be a variable ".to_string())
@@ -567,7 +567,7 @@ impl Repl {
                                 Value::Array(_) => print!("[Array]"),
                                 Value::Object(_) => print!("{{}}"),
                                 Value::Function(_, _, _) => print!("[Function]"),
-                                Value::Regex(r) => print!("/{}\\\\/, r),
+                                Value::Regex(r) => print!("/{}\\//", r),
                                 Value::Undefined => print!("undefined"),
                             }
                         }
@@ -716,38 +716,6 @@ impl Repl {
             },
             
             // Handle template literals
-            AstNode::TemplateLiteral(parts) => {
-                let mut result = String::new();
-                
-                for part in parts {
-                    match part {
-                        AstNode::String(s) => {
-                            result.push_str(s);
-                        },
-                        // In the actual AST, interpolated expressions are already parsed
-                        // and included as regular expressions in the template parts list
-                        // So we just need to handle them in the default case below
-                        
-                        _ => {
-                            // Evaluate the expression and convert to string
-                            let value = self.evaluate_ast_with_scope(part, scope)?;
-                            match value {
-                                Value::Number(n) => result.push_str(&n.to_string()),
-                                Value::Float(f) => result.push_str(&f.to_string()),
-                                Value::String(s) => result.push_str(&s),
-                                Value::Boolean(b) => result.push_str(if b { "true" } else { "false" }),
-                                Value::Null => result.push_str("null"),
-                                Value::Array(_) => result.push_str("[Array]"),
-                                Value::Object(_) => result.push_str("{Object}"),
-                                Value::Function(name, _, _) => result.push_str(&format!("[Function: {}]", if name.is_empty() { "anonymous" } else { &name })),
-                                Value::Undefined => result.push_str("undefined"),
-                            }
-                        }
-                    }
-                }
-                
-                Ok(Value::String(result))
-            },
             
             // Handle arrow functions
             AstNode::ArrowFunction { params, body, expression } => {
@@ -1572,7 +1540,7 @@ impl Repl {
                                 // Convert object to string representation
                                 let mut parts = Vec::new();
                                 for (key, value) in obj.iter() {
-                                    let value_str = match value {
+                                let value_str = match value {
                                         Value::String(s) => format!("\"{}\"" , s),
                                         Value::Number(n) => n.to_string(),
                                         Value::Float(f) => f.to_string(),
@@ -1582,7 +1550,7 @@ impl Repl {
                                         Value::Array(_) => "[Array]".to_string(),
                                         Value::Object(_) => "[Object]".to_string(),
                                         Value::Function(_, _, _) => "[Function]".to_string(),
-                                        Value::Regex(r) => format!("/{}\\\\/, r)
+                                        Value::Regex(r) => format!("/{}\\//", r)
                                     };
                                     parts.push(format!("\"{}\":{}", key, value_str));
                                 }

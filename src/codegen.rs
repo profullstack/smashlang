@@ -968,24 +968,6 @@ impl<'a> Module<'a> {
                     },
                     
                     // String methods that use regex
-                    "match" => {
-                        if arg_codes.len() < 1 {
-                            format!("\"Error: match requires a regex pattern\"")
-                        } else {
-                            // If the argument is a regex object, use it directly
-                            // Otherwise, create a regex object from the string
-                            format!("smash_string_match({}, {})", obj_code, arg_codes[0])
-                        }
-                    },
-                    "replace" => {
-                        if arg_codes.len() < 2 {
-                            format!("\"Error: replace requires a pattern and replacement\"")
-                        } else {
-                            // If the first argument is a regex object, use it directly
-                            // Otherwise, create a regex object from the string
-                            format!("smash_string_replace({}, {}, {})", obj_code, arg_codes[0], arg_codes[1])
-                        }
-                    },
                     
                     // Common methods that might be used by different types
                     "toString" => {

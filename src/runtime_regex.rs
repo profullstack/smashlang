@@ -173,7 +173,27 @@ pub extern "C" fn smash_regex_replace(regex_ptr: *const SmashRegex, text: *const
 }
 
 // Helper function to free C strings returned by our functions
+// Getter for the original pattern string
 #[no_mangle]
+pub extern "C" fn smash_regex_get_pattern(regex_ptr: *const SmashRegex) -> *mut c_char {
+    if regex_ptr.is_null() {
+        return ptr::null_mut();
+    }
+    let regex = unsafe { &*regex_ptr };
+    let c_str = CString::new(regex.original_pattern.clone()).unwrap();
+    c_str.into_raw() // Caller must free this with smash_free_string
+}
+
+// Getter for the flags string
+#[no_mangle]
+pub extern "C" fn smash_regex_get_flags(regex_ptr: *const SmashRegex) -> *mut c_char {
+    if regex_ptr.is_null() {
+        return ptr::null_mut();
+    }
+    let regex = unsafe { &*regex_ptr };
+    let c_str = CString::new(regex.flags.clone()).unwrap();
+    c_str.into_raw() // Caller must free this with smash_free_string
+}
 pub extern "C" fn smash_free_string(s: *mut c_char) {
     if !s.is_null() {
         unsafe {
