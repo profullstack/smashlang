@@ -1,0 +1,46 @@
+// hardware/screen/tests/index.test.smash - Test file for screen package
+
+import * from 'hardware/screen';
+import { test, describe, expect, beforeEach, afterEach } from 'std/testing';
+
+describe('Package: screen', () => {
+    beforeEach(() => {
+        // Setup code for each test
+        console.log('Setting up test for screen');
+    });
+
+    afterEach(() => {
+        // Cleanup code for each test
+        console.log('Cleaning up after test for screen');
+    });
+
+    test('package can be imported correctly', () => {
+        // This test verifies that the package can be imported
+        expect(typeof screen).toBe('object');
+    });
+
+    // Add more specific tests for the package functionality
+    test('package has expected exports', () => {
+        // Check for expected exports based on the package
+        // This is a basic test that should be customized for each package
+        expect(screen).not.toBe(null);
+        expect(screen).not.toBe(undefined);
+    });
+});
+
+// Add more specific test cases below
+// Example:
+// test('specific function works as expected', () => {
+//     const result = screen.someFunction();
+//     expect(result).toBe(expectedValue);
+// });
+
+// Specific tests for exported items
+describe('Exported items', () => {
+    test('DisplayServer is exported correctly', () => {
+        expect(typeof screen.DisplayServer).not.toBe('undefined');
+    });
+    test('ScreenRecorder is exported correctly', () => {
+        expect(typeof screen.ScreenRecorder).not.toBe('undefined');
+    });
+});

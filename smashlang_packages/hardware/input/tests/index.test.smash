@@ -1,0 +1,58 @@
+// hardware/input/tests/index.test.smash - Test file for input package
+
+import * from 'hardware/input';
+import { test, describe, expect, beforeEach, afterEach } from 'std/testing';
+
+describe('Package: input', () => {
+    beforeEach(() => {
+        // Setup code for each test
+        console.log('Setting up test for input');
+    });
+
+    afterEach(() => {
+        // Cleanup code for each test
+        console.log('Cleaning up after test for input');
+    });
+
+    test('package can be imported correctly', () => {
+        // This test verifies that the package can be imported
+        expect(typeof input).toBe('object');
+    });
+
+    // Add more specific tests for the package functionality
+    test('package has expected exports', () => {
+        // Check for expected exports based on the package
+        // This is a basic test that should be customized for each package
+        expect(input).not.toBe(null);
+        expect(input).not.toBe(undefined);
+    });
+});
+
+// Add more specific test cases below
+// Example:
+// test('specific function works as expected', () => {
+//     const result = input.someFunction();
+//     expect(result).toBe(expectedValue);
+// });
+
+// Specific tests for exported items
+describe('Exported items', () => {
+    test('InputDeviceType is exported correctly', () => {
+        expect(typeof input.InputDeviceType).not.toBe('undefined');
+    });
+    test('KeyCode is exported correctly', () => {
+        expect(typeof input.KeyCode).not.toBe('undefined');
+    });
+    test('MouseButton is exported correctly', () => {
+        expect(typeof input.MouseButton).not.toBe('undefined');
+    });
+    test('Keyboard is exported correctly', () => {
+        expect(typeof input.Keyboard).not.toBe('undefined');
+    });
+    test('Mouse is exported correctly', () => {
+        expect(typeof input.Mouse).not.toBe('undefined');
+    });
+    test('Touch is exported correctly', () => {
+        expect(typeof input.Touch).not.toBe('undefined');
+    });
+});

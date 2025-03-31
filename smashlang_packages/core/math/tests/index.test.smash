@@ -1,0 +1,36 @@
+// core/math/tests/index.test.smash - Test file for math package
+
+import * from 'core/math';
+import { test, describe, expect, beforeEach, afterEach } from 'std/testing';
+
+describe('Package: math', () => {
+    beforeEach(() => {
+        // Setup code for each test
+        console.log('Setting up test for math');
+    });
+
+    afterEach(() => {
+        // Cleanup code for each test
+        console.log('Cleaning up after test for math');
+    });
+
+    test('package can be imported correctly', () => {
+        // This test verifies that the package can be imported
+        expect(typeof math).toBe('object');
+    });
+
+    // Add more specific tests for the package functionality
+    test('package has expected exports', () => {
+        // Check for expected exports based on the package
+        // This is a basic test that should be customized for each package
+        expect(math).not.toBe(null);
+        expect(math).not.toBe(undefined);
+    });
+});
+
+// Add more specific test cases below
+// Example:
+// test('specific function works as expected', () => {
+//     const result = math.someFunction();
+//     expect(result).toBe(expectedValue);
+// });
