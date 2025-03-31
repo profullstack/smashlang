@@ -3,6 +3,10 @@
 # SmashLang Installer Script
 # This script installs SmashLang on Windows, macOS, and Linux systems
 
+# Create and clear logs directory at the beginning
+mkdir -p "./logs"
+rm -f "./logs/"*
+
 # Set color variables
 RED="\033[0;31m"
 GREEN="\033[0;32m"
@@ -25,12 +29,10 @@ WINDOWS_INSTALL_DIR="$APPDATA\\smashlang"
 run_tests() {
   local repo_dir="$1"
   
-  # Create logs directory if it doesn't exist
-  mkdir -p "$repo_dir/logs"
-  
+  # Use the logs directory in the current working directory, not in the repo
   # Create a log file with timestamp
   local timestamp=$(date +"%Y%m%d_%H%M%S")
-  local log_file="$repo_dir/logs/test_results_$timestamp.log"
+  local log_file="./logs/test_results_$timestamp.log"
   
   echo -e "${BLUE}Running tests for SmashLang...${NC}"
   cd "$repo_dir"
@@ -179,10 +181,7 @@ run_tests() {
       fi
     fi
     
-    # Copy the test results log to both the installation directory and local logs directory
-    mkdir -p "./logs"
-    cp "$log_file" "./logs/"
-    
+    # Copy the test results log to the installation directory if needed
     if [ -n "$LINUX_INSTALL_DIR" ]; then
       mkdir -p "$LINUX_INSTALL_DIR/logs"
       cp "$log_file" "$LINUX_INSTALL_DIR/logs/"
@@ -204,9 +203,8 @@ run_tests() {
 
 # Display test results at the end of installation
 display_test_results() {
-  local repo_dir="$1"
-  # Find the most recent log file
-  local log_file=$(find "$repo_dir/logs" -name "test_results_*.log" -type f -print0 | xargs -0 ls -t | head -n 1)
+  # Find the most recent log file in the logs directory
+  local log_file=$(find "./logs" -name "test_results_*.log" -type f -print0 | xargs -0 ls -t | head -n 1)
   
   if [ -n "$log_file" ] && [ -f "$log_file" ]; then
     echo -e "\n${BLUE}Test Results Summary${NC}"
@@ -372,11 +370,12 @@ install_linux() {
   if [ "$use_master" == "true" ]; then
     echo -e "${BLUE}Using GitHub master branch for installation...${NC}"
     
-    # Create a temporary directory for cloning the repository
-    local temp_dir=$(mktemp -d)
+    # Create a directory for cloning the repository in the current working directory
+    local temp_dir="./build/temp_$(date +"%Y%m%d_%H%M%S")"
+    mkdir -p "$temp_dir"
     
-    # Set up cleanup trap, but preserve logs first
-    trap 'mkdir -p "./logs"; find "$temp_dir" -name "test_results_*.log" -type f -exec cp {} "./logs/" \; 2>/dev/null; echo -e "${BLUE}Test logs preserved in ./logs/ directory${NC}"; rm -rf "$temp_dir"' EXIT
+    # Set up cleanup trap
+    trap 'echo -e "${BLUE}Cleaning up temporary files...${NC}"; rm -rf "$temp_dir"' EXIT
     
     # Clone the repository
     echo -e "${BLUE}Cloning SmashLang repository...${NC}"
@@ -482,10 +481,12 @@ if [ -z "$DOWNLOADED_INSTALLER" ] && [ "$1" = "--master" ]; then
   # Clone the repository directly and run tests
   echo -e "${BLUE}Using GitHub master branch for installation...${NC}"
   
-  # Create a temporary directory for cloning the repository
-  TEMP_DIR=$(mktemp -d)
-  # Set up cleanup trap, but preserve logs first
-  trap 'mkdir -p "./logs"; find "$TEMP_DIR" -name "test_results_*.log" -type f -exec cp {} "./logs/" \; 2>/dev/null; echo -e "${BLUE}Test logs preserved in ./logs/ directory${NC}"; rm -rf "$TEMP_DIR"' EXIT
+  # Create a directory for cloning the repository in the current working directory
+  TEMP_DIR="./build/temp_$(date +"%Y%m%d_%H%M%S")"
+  mkdir -p "$TEMP_DIR"
+  
+  # Set up cleanup trap
+  trap 'echo -e "${BLUE}Cleaning up temporary files...${NC}"; rm -rf "$TEMP_DIR"' EXIT
   
   # Clone the repository
   echo -e "${BLUE}Cloning SmashLang repository...${NC}"
