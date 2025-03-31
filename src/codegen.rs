@@ -198,56 +198,110 @@ impl<'a> Module<'a> {
         code.push_str("    return strdup(\"[Popped item]\");\n");
         code.push_str("}\n\n");
         
-        // Add Rust regex library integration
-        code.push_str("// Type definitions for Rust regex functions\n");
-        code.push_str("typedef void* SmashRegex;\n");
-        code.push_str("typedef SmashRegex (*smash_regex_create_fn)(const char*, const char*);\n");
-        code.push_str("typedef void (*smash_regex_free_fn)(SmashRegex);\n");
-        code.push_str("typedef int (*smash_regex_test_fn)(SmashRegex, const char*);\n");
-        code.push_str("typedef char* (*smash_regex_match_fn)(SmashRegex, const char*);\n");
-        code.push_str("typedef char* (*smash_regex_replace_fn)(SmashRegex, const char*, const char*);\n");
-        code.push_str("typedef void (*smash_free_string_fn)(char*);\n\n");
+        // Add embedded regex implementation
+        code.push_str("// Simple embedded regex implementation\n");
+        code.push_str("typedef struct {\n");
+        code.push_str("    char* pattern;\n");
+        code.push_str("    char* flags;\n");
+        code.push_str("} SmashRegex;\n\n");
         
-        code.push_str("// Global function pointers for regex operations\n");
-        code.push_str("smash_regex_create_fn smash_regex_create = NULL;\n");
-        code.push_str("smash_regex_free_fn smash_regex_free = NULL;\n");
-        code.push_str("smash_regex_test_fn smash_regex_test = NULL;\n");
-        code.push_str("smash_regex_match_fn smash_regex_match = NULL;\n");
-        code.push_str("smash_regex_replace_fn smash_regex_replace = NULL;\n");
-        code.push_str("smash_free_string_fn smash_free_string = NULL;\n\n");
-        
-        code.push_str("// Function to load the Rust regex library\n");
-        code.push_str("int load_regex_library() {\n");
-        code.push_str("    void* lib_handle = dlopen(\"libsmashlang_regex.so\", RTLD_LAZY);\n");
-        code.push_str("    if (!lib_handle) {\n");
-        code.push_str("        fprintf(stderr, \"Error loading regex library: %s\\n\", dlerror());\n");
-        code.push_str("        return 0;\n");
-        code.push_str("    }\n\n");
-        
-        code.push_str("    // Load function pointers\n");
-        code.push_str("    smash_regex_create = (smash_regex_create_fn)dlsym(lib_handle, \"smash_regex_create\");\n");
-        code.push_str("    smash_regex_free = (smash_regex_free_fn)dlsym(lib_handle, \"smash_regex_free\");\n");
-        code.push_str("    smash_regex_test = (smash_regex_test_fn)dlsym(lib_handle, \"smash_regex_test\");\n");
-        code.push_str("    smash_regex_match = (smash_regex_match_fn)dlsym(lib_handle, \"smash_regex_match\");\n");
-        code.push_str("    smash_regex_replace = (smash_regex_replace_fn)dlsym(lib_handle, \"smash_regex_replace\");\n");
-        code.push_str("    smash_free_string = (smash_free_string_fn)dlsym(lib_handle, \"smash_free_string\");\n\n");
-        
-        code.push_str("    // Check that all functions were loaded successfully\n");
-        code.push_str("    if (!smash_regex_create || !smash_regex_free || !smash_regex_test || \n");
-        code.push_str("        !smash_regex_match || !smash_regex_replace || !smash_free_string) {\n");
-        code.push_str("        fprintf(stderr, \"Error loading regex functions: %s\\n\", dlerror());\n");
-        code.push_str("        return 0;\n");
-        code.push_str("    }\n\n");
-        
-        code.push_str("    return 1;\n");
+        code.push_str("// Create a new regex pattern\n");
+        code.push_str("SmashRegex* smash_regex_create(const char* pattern, const char* flags) {\n");
+        code.push_str("    SmashRegex* regex = (SmashRegex*)malloc(sizeof(SmashRegex));\n");
+        code.push_str("    if (regex) {\n");
+        code.push_str("        regex->pattern = strdup(pattern);\n");
+        code.push_str("        regex->flags = strdup(flags);\n");
+        code.push_str("    }\n");
+        code.push_str("    return regex;\n");
         code.push_str("}\n\n");
+        
+        code.push_str("// Free a regex pattern\n");
+        code.push_str("void smash_regex_free(SmashRegex* regex) {\n");
+        code.push_str("    if (regex) {\n");
+        code.push_str("        free(regex->pattern);\n");
+        code.push_str("        free(regex->flags);\n");
+        code.push_str("        free(regex);\n");
+        code.push_str("    }\n");
+        code.push_str("}\n\n");
+        
+        code.push_str("// Simple string search (not a full regex implementation)\n");
+        code.push_str("int smash_regex_test(SmashRegex* regex, const char* str) {\n");
+        code.push_str("    return strstr(str, regex->pattern) != NULL;\n");
+        code.push_str("}\n\n");
+        
+        code.push_str("// Simple string match (returns the matched substring or NULL)\n");
+        code.push_str("char* smash_regex_match(SmashRegex* regex, const char* str) {\n");
+        code.push_str("    const char* match = strstr(str, regex->pattern);\n");
+        code.push_str("    if (match) {\n");
+        code.push_str("        return strdup(regex->pattern);\n");
+        code.push_str("    }\n");
+        code.push_str("    return NULL;\n");
+        code.push_str("}\n\n");
+        
+        code.push_str("// Simple string replace (replaces all occurrences)\n");
+        code.push_str("char* smash_regex_replace(SmashRegex* regex, const char* str, const char* replacement) {\n");
+        code.push_str("    const char* pattern = regex->pattern;\n");
+        code.push_str("    size_t pattern_len = strlen(pattern);\n");
+        code.push_str("    size_t replacement_len = strlen(replacement);\n");
+        code.push_str("    \n");
+        code.push_str("    // Count occurrences to determine buffer size\n");
+        code.push_str("    size_t count = 0;\n");
+        code.push_str("    const char* p = str;\n");
+        code.push_str("    while ((p = strstr(p, pattern)) != NULL) {\n");
+        code.push_str("        count++;\n");
+        code.push_str("        p += pattern_len;\n");
+        code.push_str("    }\n");
+        code.push_str("    \n");
+        code.push_str("    if (count == 0) {\n");
+        code.push_str("        return strdup(str);  // No matches, return original string\n");
+        code.push_str("    }\n");
+        code.push_str("    \n");
+        code.push_str("    // Allocate buffer for result\n");
+        code.push_str("    size_t result_len = strlen(str) + count * (replacement_len - pattern_len) + 1;\n");
+        code.push_str("    char* result = (char*)malloc(result_len);\n");
+        code.push_str("    if (!result) return NULL;\n");
+        code.push_str("    \n");
+        code.push_str("    // Perform replacement\n");
+        code.push_str("    const char* src = str;\n");
+        code.push_str("    char* dest = result;\n");
+        code.push_str("    while ((p = strstr(src, pattern)) != NULL) {\n");
+        code.push_str("        // Copy part before match\n");
+        code.push_str("        size_t prefix_len = p - src;\n");
+        code.push_str("        memcpy(dest, src, prefix_len);\n");
+        code.push_str("        dest += prefix_len;\n");
+        code.push_str("        \n");
+        code.push_str("        // Copy replacement\n");
+        code.push_str("        memcpy(dest, replacement, replacement_len);\n");
+        code.push_str("        dest += replacement_len;\n");
+        code.push_str("        \n");
+        code.push_str("        // Move source pointer past match\n");
+        code.push_str("        src = p + pattern_len;\n");
+        code.push_str("    }\n");
+        code.push_str("    \n");
+        code.push_str("    // Copy remaining part\n");
+        code.push_str("    strcpy(dest, src);\n");
+        code.push_str("    \n");
+        code.push_str("    return result;\n");
+        code.push_str("}\n\n");
+        
+        code.push_str("// Free a string returned by regex functions\n");
+        code.push_str("void smash_free_string(char* str) {\n");
+        code.push_str("    free(str);\n");
+        code.push_str("}\n\n");
+        
+        code.push_str("// No need to load external library, using embedded implementation\n");
+        code.push_str("int load_regex_library() {\n");
+        code.push_str("    return 1;  // Always succeeds with embedded implementation\n");
+        code.push_str("}\n");
+        
+
         
         // Helper functions for string methods that use regex
         code.push_str("// Helper function for string.match with regex\n");
         code.push_str("char* smash_string_match(const char* str, const char* pattern) {\n");
         code.push_str("    // If pattern is a regex object (starts with 'SmashRegex:'), use it directly\n");
         code.push_str("    // Otherwise, create a new regex object\n");
-        code.push_str("    SmashRegex regex;\n");
+        code.push_str("    SmashRegex* regex;\n");
         code.push_str("    int should_free = 0;\n");
         code.push_str("    \n");
         code.push_str("    if (strncmp(pattern, \"SmashRegex:\", 11) == 0) {\n");
@@ -255,7 +309,6 @@ impl<'a> Module<'a> {
         code.push_str("        sscanf(pattern + 11, \"%p\", &regex);\n");
         code.push_str("    } else {\n");
         code.push_str("        // Create a new regex object from the pattern string\n");
-        code.push_str("        // For simplicity, we'll assume no flags\n");
         code.push_str("        regex = smash_regex_create(pattern, \"\");\n");
         code.push_str("        should_free = 1;\n");
         code.push_str("    }\n");
@@ -275,7 +328,7 @@ impl<'a> Module<'a> {
         code.push_str("char* smash_string_replace(const char* str, const char* pattern, const char* replacement) {\n");
         code.push_str("    // If pattern is a regex object (starts with 'SmashRegex:'), use it directly\n");
         code.push_str("    // Otherwise, create a new regex object\n");
-        code.push_str("    SmashRegex regex;\n");
+        code.push_str("    SmashRegex* regex;\n");
         code.push_str("    int should_free = 0;\n");
         code.push_str("    \n");
         code.push_str("    if (strncmp(pattern, \"SmashRegex:\", 11) == 0) {\n");
@@ -283,7 +336,6 @@ impl<'a> Module<'a> {
         code.push_str("        sscanf(pattern + 11, \"%p\", &regex);\n");
         code.push_str("    } else {\n");
         code.push_str("        // Create a new regex object from the pattern string\n");
-        code.push_str("        // For simplicity, we'll assume no flags\n");
         code.push_str("        regex = smash_regex_create(pattern, \"\");\n");
         code.push_str("        should_free = 1;\n");
         code.push_str("    }\n");

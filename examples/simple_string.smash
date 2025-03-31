@@ -1,0 +1,19 @@
+// SmashLang Simple String Example
+
+// Create a test string
+let text = "Hello, SmashLang! This is a test string.";
+print("Original text:", text);
+
+// Convert to uppercase
+let upper = text.toUpperCase();
+print("Uppercase:", upper);
+
+// Convert to lowercase
+let lower = text.toLowerCase();
+print("Lowercase:", lower);
+
+// Get string length
+let length = text.length;
+print("Length:", length);
+
+print("String operations complete!");

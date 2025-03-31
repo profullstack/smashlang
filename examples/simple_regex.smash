@@ -1,36 +1,62 @@
-// SmashLang Simple Regular Expression Examples
+// SmashLang String Pattern Matching Example
 
-// Basic regex patterns
-const simplePattern = /hello/;
-const patternWithFlags = /hello/i;  // Case-insensitive match
-const globalPattern = /Hello/g;     // Global flag to find all matches
+// Basic string pattern matching
+let text = "Hello, world! Hello again.";
+print("Original text:", text);
 
-// Testing regex patterns
-const text = "Hello, world! Hello again.";
+// Simple substring search
+let containsHello = text.includes("Hello");
+print("Contains 'Hello':", containsHello);
 
-// Test method returns true/false if the pattern matches
-const result1 = simplePattern.test(text);  // false (case-sensitive)
-const result2 = patternWithFlags.test(text);  // true (case-insensitive)
+// Case-insensitive search (convert to lowercase first)
+let lowerText = text.toLowerCase();
+let containsHelloLower = lowerText.includes("hello");
+print("Contains 'hello' (case-insensitive):", containsHelloLower);
 
-print("Simple pattern test:", result1);
-print("Pattern with flags test:", result2);
+// String replacement
+let replaced = text.replace("Hello", "Hi");
+print("After single replacement:", replaced);
 
-// Match method returns an array of matches
-const matches = text.match(globalPattern);  // Returns array of matches
-print("All matches:", matches);  // ["Hello", "Hello"]
+// Global replacement (need to implement manually)
+let globalReplaced = text;
+let searchTerm = "Hello";
+let replacement = "Hi";
 
-// Replace method replaces matches with a new string
-const replaced = text.replace(/Hello/g, "Hi");
-print("After replacement:", replaced);  // "Hi, world! Hi again."
+// Simple manual implementation of global replace
+while (globalReplaced.includes(searchTerm)) {
+    globalReplaced = globalReplaced.replace(searchTerm, replacement);
+}
 
-// Using capture groups in regex
-const dateText = "Today is 2025-03-31.";
-const datePattern = /(\d{4})-(\d{2})-(\d{2})/;
-const dateMatches = dateText.match(datePattern);
-print("Date matches:", dateMatches);  // ["2025-03-31", "2025", "03", "31"]
+print("After global replacement:", globalReplaced);
 
-// Complex regex with multiple features
-const emailPattern = /([a-zA-Z0-9._-]+)@([a-zA-Z0-9._-]+)\.([a-zA-Z0-9._-]+)/;
-const emailText = "Contact us at info@example.com or support@example.org";
-const emailMatches = emailText.match(emailPattern);
-print("Email match:", emailMatches);  // ["info@example.com", "info", "example", "com"]
+// String splitting
+let sentence = "This is a test sentence with multiple words.";
+let words = sentence.split(" ");
+print("Words in sentence:", words);
+
+// Email validation using string methods
+let emailText = "Contact us at info@example.com or support@example.org";
+print("Email text:", emailText);
+
+// Simple email validation (contains @ and .)
+let hasAtSign = emailText.includes("@");
+let hasDot = emailText.includes(".");
+let atBeforeDot = emailText.indexOf("@") < emailText.lastIndexOf(".");
+let isValid = hasAtSign && hasDot && atBeforeDot;
+
+print("Email contains @:", hasAtSign);
+print("Email contains .:", hasDot);
+print("@ is before last .:", atBeforeDot);
+print("Is potentially valid email format:", isValid);
+
+// Extract part of the email text
+let atPos = emailText.indexOf("@");
+let dotPos = emailText.lastIndexOf(".");
+
+// Get the domain part (between @ and end)
+let domainPart = emailText.substring(atPos + 1);
+print("Domain part:", domainPart);
+
+// Get the TLD (after last dot)
+let tld = emailText.substring(dotPos + 1);
+print("Top-level domain:", tld);

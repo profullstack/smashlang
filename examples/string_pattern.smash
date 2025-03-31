@@ -1,0 +1,27 @@
+// SmashLang String Pattern Matching Example
+
+// Create a test string
+let text = "Hello, SmashLang! This is a test string.";
+print("Original text:", text);
+
+// 1. Check if a string contains a substring
+let contains = text.indexOf("SmashLang") >= 0;
+print("Contains 'SmashLang':", contains);
+
+// 2. Replace a substring
+let replaced = text.replace("SmashLang", "Awesome Language");
+print("After replacement:", replaced);
+
+// 3. Get a substring
+let substring = text.substring(7, 16); // Should extract "SmashLang"
+print("Extracted substring:", substring);
+
+// 4. Convert to uppercase
+let upper = text.toUpperCase();
+print("Uppercase:", upper);
+
+// 5. Convert to lowercase
+let lower = text.toLowerCase();
+print("Lowercase:", lower);
+
+print("String pattern matching complete!");
