@@ -146,8 +146,23 @@ fn main() -> io::Result<()> {
     
     // Compile and link the generated C code file
     println!("{} executable", "Linking".green());
+    
+    // Get the absolute path to the src directory
+    let current_dir = std::env::current_dir().unwrap_or_default();
+    let project_root = current_dir.ancestors().find(|p| p.join("src").join("runtime.h").exists())
+        .unwrap_or(&current_dir);
+    let src_path = project_root.join("src");
+    
+    println!("{} Using include path: {}", "Info:".blue(), src_path.display());
+    
+    // Get the path to runtime.c
+    let runtime_c_path = src_path.join("runtime.c");
+    
     let status = Command::new("clang")
+        .arg(format!("-I{}", src_path.display()))  // Add absolute include path to src directory
         .arg(&c_file)
+        .arg(runtime_c_path.to_str().unwrap())  // Add runtime.c to compilation
+        .arg(src_path.join("simple_regex.c").to_str().unwrap())  // Add our simple regex implementation
         .arg("-o")
         .arg(output_file)
         .status()?;

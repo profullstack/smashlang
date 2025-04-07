@@ -7,7 +7,7 @@
 
 # SmashLang
 
-**SmashLang** is a bold, high-performance, JavaScript-inspired general-purpose programming language that compiles to native binaries. With strong syntax, a modern standard library, PCRE regex support, REPL, and built-in modules, SmashLang is made for developers who want the power of C/Rust but the clarity of JavaScript — without the bloat.
+**SmashLang** is a bold, high-performance, JavaScript-inspired general-purpose programming language that compiles to native binaries. With strong syntax, a modern standard library, self-contained regex support, REPL, and built-in modules, SmashLang is made for developers who want the power of C/Rust but the clarity of JavaScript — without the bloat.
 
 ---
 
@@ -19,7 +19,7 @@
 ## ✨ Features
 
 - 🔥 JavaScript-inspired syntax with modern improvements
-- 💥 First-class support for arrays, objects, strings, regex, dates
+- 💥 First-class support for arrays, objects, strings, self-contained regex, dates
 - 📦 Module system and `smashpkg` package manager
 - 🧠 Pattern matching and function expression sugar
 - 🚀 Compiles to native binaries (via LLVM + Clang)
@@ -36,7 +36,7 @@
 - **Cross-platform scripting**
 - **WebAssembly** (WASM) targets in future versions
 - **Educational tools** with readable syntax and REPL
-- **Regex-heavy parsing applications**
+- **Regex-heavy parsing applications** with no external dependencies
 
 ---
 
@@ -114,7 +114,46 @@ print("Hello from " + name);
 
 ---
 
-## 🌐 HTTP/HTTPS API
+## 🔍 Self-Contained Regex Engine
+
+SmashLang includes a lightweight, self-contained regex implementation with no external dependencies:
+
+```js
+// Basic pattern matching
+let text = "Hello, SmashLang! This is a test string with numbers 123 and 456.";
+let match = text.match("SmashLang");  // Returns "SmashLang"
+
+// Case-insensitive matching with /i flag
+let caseMatch = text.match("smashlang/i");  // Returns "SmashLang"
+
+// Character classes with quantifiers
+let digits = text.match("[0-9]+");  // Returns "123"
+
+// String replacement
+let replaced = text.replace("test", "sample");
+
+// Global replacement with /g flag
+let text2 = "one two one two one three";
+let globalReplaced = text2.replace("one/g", "ONE");  // Replaces all occurrences
+
+// Combined flags
+let mixedText = "Hello hello HELLO world";
+let combinedReplaced = mixedText.replace("hello/ig", "hi");  // Case-insensitive and global
+```
+
+Features supported:
+- Basic pattern matching
+- Case-insensitive matching with `/i` flag
+- Global replacement with `/g` flag
+- Character classes like `[a-z]`, `[0-9]`
+- Quantifiers like `+` for one or more occurrences
+- Escaped character classes like `\d` (digits), `\w` (word characters), `\s` (whitespace)
+
+All regex functionality is implemented without external dependencies, making SmashLang binaries completely self-contained.
+
+---
+
+## 🔎 HTTP/HTTPS API
 
 SmashLang includes a fetch-compatible API for making HTTP requests with both Promise-based and async/await approaches:
 

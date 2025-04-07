@@ -1,0 +1,43 @@
+// Test for complex regex patterns in self-contained implementation
+
+// Test data
+let text = "Hello, SmashLang! This is a test string with numbers 123 and 456.";
+print("Original text:", text);
+
+// 1. Match numbers
+print("--- Number Matching ---");
+let numberMatch = text.match("[0-9]+");
+print("Match numbers using [0-9]+:", numberMatch);
+
+// 2. Match word boundaries
+print("--- Word Boundary Matching ---");
+let wordMatch = text.match("test");
+print("Match 'test' anywhere:", wordMatch);
+
+// Match 'test' as a complete word
+let wordBoundaryMatch = text.match("\\btest\\b");
+print("Match 'test' as a complete word:" , wordBoundaryMatch);
+
+// 3. Character class ranges
+print("--- Character Class Tests ---");
+let alphabetText = "abcdefghijklmnopqrstuvwxyz123456789";
+print("Original alphabet text:", alphabetText);
+
+// Match vowels using character class
+let vowelMatch = alphabetText.match("[aeiou]");
+print("First vowel match:", vowelMatch);
+
+// Match range of letters
+let letterRangeMatch = alphabetText.match("[a-e]");
+print("First letter in range a-e:", letterRangeMatch);
+
+// 4. Simple replacement
+print("--- Replacement Tests ---");
+let emailText = "Contact us at support@example.com or info@example.org";
+print("Original:", emailText);
+
+// Replace domain in emails
+let domainReplaced = emailText.replace("@example.com", "@smashlang.dev");
+print("After domain replacement:", domainReplaced);
+
+print("Complex regex test complete!");

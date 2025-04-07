@@ -1,0 +1,46 @@
+// Final test for self-contained regex implementation
+
+// Test data
+let text = "Hello, SmashLang! This is a test string with numbers 123 and 456.";
+print("Original text:", text);
+
+// 1. Basic matching
+print("--- Basic Matching ---");
+let basicMatch = text.match("SmashLang");
+print("Match 'SmashLang':", basicMatch);
+
+// 2. Case-insensitive matching
+let caseMatch = text.match("smashlang/i");
+print("Case-insensitive match 'smashlang':", caseMatch);
+
+// 3. Character classes
+print("--- Character Classes ---");
+let digitMatch = text.match("[0-9]+");
+print("Match digits [0-9]+:", digitMatch);
+
+// 4. Multiple matches with global flag
+print("--- Global Matching ---");
+let repeatText = "one two one two one three";
+print("Original text for global match:", repeatText);
+
+// 5. Replacement
+print("--- Replacement Tests ---");
+// Basic replacement
+let basicReplaced = repeatText.replace("one", "ONE");
+print("Replace first 'one':", basicReplaced);
+
+// Global replacement
+let globalReplaced = repeatText.replace("one/g", "ONE");
+print("Replace all 'one' (global):", globalReplaced);
+
+// Case-insensitive replacement
+let mixedText = "Hello hello HELLO world";
+print("Original mixed case text:", mixedText);
+let caseReplaced = mixedText.replace("hello/i", "hi");
+print("Replace first 'hello' case-insensitive:", caseReplaced);
+
+// Combined flags
+let combinedReplaced = mixedText.replace("hello/ig", "hi");
+print("Replace all 'hello' case-insensitive and global:", combinedReplaced);
+
+print("Final regex test complete!");

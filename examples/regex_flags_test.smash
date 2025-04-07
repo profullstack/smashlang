@@ -1,0 +1,28 @@
+// Test for regex flags in self-contained implementation
+
+// Test case-insensitive matching
+let text = "Hello, SmashLang! This is a test string.";
+print("Original text:", text);
+
+// Case-sensitive vs case-insensitive matching
+print("--- Case Sensitivity Tests ---");
+print("Case-sensitive match 'smash':", text.match("smash"));  // Should be empty (no match)
+
+// Create a regex with the 'i' flag for case-insensitive matching
+let insensitiveMatch = text.match("smash/i");  // Using /i flag syntax
+print("Case-insensitive match 'smash':", insensitiveMatch);  // Should match 'Smash'
+
+// Test global flag for multiple replacements
+print("--- Global Flag Tests ---");
+let repeatText = "one two one two one three";
+print("Original:", repeatText);
+
+// Replace only the first occurrence
+let singleReplaced = repeatText.replace("one", "ONE");  // No global flag
+print("Replace first 'one':", singleReplaced);
+
+// Replace all occurrences with global flag
+let globalReplaced = repeatText.replace("one/g", "ONE");  // Using /g flag syntax
+print("Replace all 'one' (global):", globalReplaced);
+
+print("Regex flags test complete!");

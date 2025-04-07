@@ -1,6 +1,9 @@
 #ifndef SMASH_RUNTIME_H
 #define SMASH_RUNTIME_H
 
+#include <stdbool.h>
+#include "simple_regex.h"
+
 // String helper functions
 char* smash_string_to_upper(const char* str);
 char* smash_string_to_lower(const char* str);
@@ -44,5 +47,18 @@ char* smash_object_to_string(const char* object_str);
 char* smash_to_string(const char* value);
 char* smash_value_of(const char* value);
 char* smash_slice(const char* value, const char* start_str, const char* end_str);
+
+// Regex helper functions
+typedef SimpleRegex SmashRegex;
+
+// Regex function declarations
+void smash_regex_free(SmashRegex* regex);
+SmashRegex* smash_regex_create(const char* pattern, const char* flags);
+char* smash_regex_match(SmashRegex* regex, const char* str);
+char* smash_regex_replace(SmashRegex* regex, const char* str, const char* replacement);
+int load_regex_library(void);
+char* smash_string_match(const char* str, const char* pattern);
+char* smash_string_replace(const char* str, const char* pattern, const char* replacement);
+void smash_free_string(char* str);
 
 #endif // SMASH_RUNTIME_H

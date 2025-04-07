@@ -1,0 +1,38 @@
+// Comprehensive test for self-contained regex implementation
+
+// Test basic matching
+let text = "Hello, SmashLang! This is a test string.";
+print("Original text:", text);
+
+// 1. Simple substring matching
+print("--- Basic Matching ---");
+print("Contains 'Smash':", text.match("Smash"));
+print("Contains 'smash':", text.match("smash"));
+
+// 2. Basic replacements
+print("--- Basic Replacement ---");
+let replaced = text.replace("SmashLang", "Awesome Language");
+print("After replacement:", replaced);
+
+// 3. Multiple replacements
+print("--- Multiple Replacements ---");
+let multiText = "one two one two one three";
+print("Original:", multiText);
+let multiReplaced = multiText.replace("one", "ONE");
+print("Replace 'one' with 'ONE':", multiReplaced);
+
+// 4. Special characters
+print("--- Special Characters ---");
+let specialText = "This is a (special) text with [brackets] and {braces}";
+print("Original:", specialText);
+let specialReplaced = specialText.replace("(special)", "modified");
+print("After replacement:", specialReplaced);
+
+// 5. Word boundaries
+print("--- Word Boundaries ---");
+let boundaryText = "The cat is categorical about catching mice";
+print("Original:", boundaryText);
+let boundaryMatch = boundaryText.match("cat");
+print("Match 'cat':", boundaryMatch);
+
+print("Regex test complete!");

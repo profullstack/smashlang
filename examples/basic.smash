@@ -1,0 +1,15 @@
+// basic.smash - A very basic SmashLang example
+
+// Simple function to print a message
+fn greet() {
+  print("Hello, World!");
+}
+
+// Main function
+fn main() {
+  print("Basic SmashLang Example");
+  greet();
+}
+
+// Run the main function
+main();
