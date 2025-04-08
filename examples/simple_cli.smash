@@ -1,0 +1,15 @@
+// simple_cli.smash - A simpler CLI example for SmashLang
+
+// Simple function to greet someone
+fn greet(name) {
+  print("Hello, " + name + "!");
+}
+
+// Main function
+fn main() {
+  print("Simple CLI Example");
+  greet("World");
+}
+
+// Run the main function
+main();

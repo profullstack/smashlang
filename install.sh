@@ -822,6 +822,146 @@ create_dir() {
 
 
 
+# Install SmashLang on macOS
+install_macos() {
+  local use_master="$1"
+  local temp_dir
+  temp_dir=$(mktemp -d)
+  
+  echo -e "${BLUE}Installing SmashLang for macOS...${NC}"
+  
+  # Create installation directory
+  create_dir "$MACOS_INSTALL_DIR"
+  
+  # Check and install dependencies
+  echo -e "${BLUE}Checking dependencies...${NC}"
+  
+  # Install Homebrew if not present
+  if ! command -v brew &> /dev/null; then
+    echo -e "${YELLOW}Homebrew not found. Installing Homebrew...${NC}"
+    /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
+    # Add Homebrew to PATH for the current session
+    eval "$(/opt/homebrew/bin/brew shellenv)"
+  fi
+  
+  # Install required dependencies via Homebrew
+  echo -e "${BLUE}Installing required dependencies...${NC}"
+  BREW_DEPS=("pcre" "llvm@15" "pkg-config")
+  for dep in "${BREW_DEPS[@]}"; do
+    if ! brew list "$dep" &> /dev/null; then
+      echo -e "${BLUE}Installing $dep...${NC}"
+      brew install "$dep"
+    else
+      echo -e "${GREEN}$dep already installed${NC}"
+      # Ensure latest version
+      brew upgrade "$dep" || true
+    fi
+  done
+
+  # Set up pkg-config path for PCRE
+  PCRE_PREFIX=$(brew --prefix pcre)
+  export PKG_CONFIG_PATH="${PCRE_PREFIX}/lib/pkgconfig:$PKG_CONFIG_PATH"
+  
+  # Create symlinks if they don't exist
+  if [ ! -f "/usr/local/include/pcre.h" ]; then
+    echo -e "${BLUE}Creating PCRE symlinks...${NC}"
+    sudo mkdir -p /usr/local/include
+    sudo ln -sf "${PCRE_PREFIX}/include/pcre.h" /usr/local/include/
+    sudo ln -sf "${PCRE_PREFIX}/lib/libpcre.dylib" /usr/local/lib/
+  fi
+  
+  # Install Rust if not present
+  if ! command -v cargo &> /dev/null; then
+    echo -e "${BLUE}Installing Rust toolchain...${NC}"
+    curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
+    source "$HOME/.cargo/env"
+  fi
+  
+  # Set up environment variables for LLVM
+  export LLVM_SYS_150_PREFIX="$(brew --prefix llvm@15)"
+  
+  # Ensure pkg-config can find PCRE
+  export PKG_CONFIG_PATH="$(brew --prefix pcre)/lib/pkgconfig:$PKG_CONFIG_PATH"
+  
+  if [ "$use_master" = "true" ]; then
+    echo -e "${BLUE}Cloning from master branch...${NC}"
+    if ! git clone "$REPO_URL" "$temp_dir/smashlang"; then
+      echo -e "${RED}Failed to clone repository${NC}"
+      rm -rf "$temp_dir"
+      return 1
+    fi
+    # Run tests on the cloned repository
+    run_tests "$temp_dir/smashlang"
+    # Copy files from temp directory to installation directory
+    cp -R "$temp_dir/smashlang"/* "$MACOS_INSTALL_DIR/"
+  else
+    # Download and extract the latest release
+    local latest_release
+    local api_response
+    echo -e "${BLUE}Checking for latest release...${NC}"
+    
+    # Get the API response with error checking
+    api_response=$(curl -sS --write-out "\nHTTP_CODE:%{http_code}" https://api.github.com/repos/profullstack/smashlang/releases/latest)
+    local http_code=$(echo "$api_response" | grep "HTTP_CODE:" | cut -d":" -f2)
+    api_response=$(echo "$api_response" | sed '/HTTP_CODE:/d')
+    
+    if [ "$http_code" != "200" ]; then
+      echo -e "${YELLOW}No releases found (HTTP $http_code). Falling back to master branch...${NC}"
+      use_master="true"
+      if ! git clone "$REPO_URL" "$temp_dir/smashlang"; then
+        echo -e "${RED}Failed to clone repository${NC}"
+        rm -rf "$temp_dir"
+        return 1
+      fi
+      run_tests "$temp_dir/smashlang"
+      cp -R "$temp_dir/smashlang"/* "$MACOS_INSTALL_DIR/"
+      return 0
+    fi
+    
+    latest_release=$(echo "$api_response" | grep '"tag_name":' | sed -E 's/.*"([^"]+)".*/\1/')
+    
+    if [ -z "$latest_release" ]; then
+      echo -e "${RED}Failed to parse release information from GitHub API response${NC}"
+      echo -e "${YELLOW}API Response: $api_response${NC}"
+      rm -rf "$temp_dir"
+      return 1
+    fi
+    
+    echo -e "${BLUE}Downloading SmashLang $latest_release...${NC}"
+    if ! download "https://github.com/profullstack/smashlang/archive/$latest_release.tar.gz" "$temp_dir/smashlang.tar.gz"; then
+      echo -e "${RED}Failed to download SmashLang${NC}"
+      rm -rf "$temp_dir"
+      return 1
+    fi
+    
+    # Extract the archive
+    tar -xzf "$temp_dir/smashlang.tar.gz" -C "$temp_dir"
+    cp -R "$temp_dir/smashlang-$latest_release"/* "$MACOS_INSTALL_DIR/"
+  fi
+  
+  # Create configuration file
+  create_config_macos
+  
+  # Clean up
+  rm -rf "$temp_dir"
+  
+  echo -e "${GREEN}SmashLang has been successfully installed to $MACOS_INSTALL_DIR${NC}"
+  echo -e "${BLUE}Please add the following to your shell configuration file (.bashrc, .zshrc, etc.):${NC}"
+  echo 'export PATH="$PATH:$HOME/Library/Application Support/smashlang/bin"'
+}
+
+# Create configuration file for macOS
+create_config_macos() {
+  local config_dir="$HOME/Library/Application Support/smashlang/config"
+  mkdir -p "$config_dir"
+  
+  cat > "$config_dir/config.toml" << EOL
+[smashlang]
+version = "$VERSION"
+install_dir = "$MACOS_INSTALL_DIR"
+EOL
+}
+
 # Install SmashLang on Linux
 install_linux() {
   local use_master=$1

@@ -4,6 +4,27 @@
 #include <ctype.h>
 #include "runtime.h"
 
+// Forward declarations for regex functions
+void smash_regex_free(SmashRegex* regex);
+SmashRegex* smash_regex_create(const char* pattern, const char* flags);
+char* smash_regex_match(SmashRegex* regex, const char* str);
+char* smash_regex_replace(SmashRegex* regex, const char* str, const char* replacement);
+int smash_regex_test(SmashRegex* regex, const char* str);
+char* smash_string_match(const char* str, const char* pattern);
+char* smash_string_replace(const char* str, const char* pattern, const char* replacement);
+void smash_free_string(char* str);
+int load_regex_library(void);
+
+// Free a regex pattern
+void smash_regex_free(SmashRegex* regex) {
+    simple_regex_free(regex);
+}
+
+// Create a new regex pattern
+SmashRegex* smash_regex_create(const char* pattern, const char* flags) {
+    return simple_regex_create(pattern, flags);
+}
+
 // String helper functions
 
 // Convert a string to uppercase
@@ -110,7 +131,7 @@ char* smash_string_char_at(const char* str, const char* index_str) {
     int index = atoi(index_str);
     size_t len = strlen(str);
     
-    if (index < 0 || index >= len) {
+    if (index < 0 || (size_t)index >= len) {
         return strdup("");
     }
     
@@ -175,7 +196,7 @@ char* smash_string_slice(const char* str, const char* start_str, const char* end
     
     // Adjust indices if they're out of bounds
     if (start < 0) start = 0;
-    if (end > len) end = len;
+    if ((size_t)end > len) end = len;
     if (start >= end) return strdup("");
     
     // Extract the substring
@@ -451,4 +472,102 @@ char* smash_slice(const char* value, const char* start_str, const char* end_str)
         // Assume it's a string
         return smash_string_slice(value, start_str, end_str);
     }
+}
+
+// Match a regex pattern against a string
+char* smash_regex_match(SmashRegex* regex, const char* str) {
+    // Use our simple regex implementation
+    return simple_regex_match(regex, str);
+}
+
+// Replace matches in a string with a replacement string
+char* smash_regex_replace(SmashRegex* regex, const char* str, const char* replacement) {
+    // Use our simple regex implementation
+    return simple_regex_replace(regex, str, replacement);
+}
+
+// Load regex library
+int load_regex_library(void) {
+    // No need to load external library, using embedded implementation
+    return 1;  // Always succeeds with embedded implementation
+}
+
+// Match a string against a pattern
+char* smash_string_match(const char* str, const char* pattern) {
+    if (!str || !pattern) return NULL;
+    
+    // Extract pattern and flags
+    char* pattern_copy = strdup(pattern);
+    if (!pattern_copy) return NULL;
+    
+    char* flags = "";
+    char* slash_pos = strrchr(pattern_copy, '/');
+    if (slash_pos && slash_pos > pattern_copy) {
+        *slash_pos = '\0';  // Split the string at the slash
+        flags = slash_pos + 1;  // Flags start after the slash
+    }
+    
+    // Create a regex object with the pattern and flags
+    SmashRegex* regex = smash_regex_create(pattern_copy, flags);
+    if (!regex) {
+        free(pattern_copy);
+        return NULL;
+    }
+    
+    // Perform the match
+    char* result = smash_regex_match(regex, str);
+    
+    // Free the regex object and pattern copy
+    smash_regex_free(regex);
+    free(pattern_copy);
+    
+    return result;
+}
+
+// Replace matches in a string with a replacement string
+char* smash_string_replace(const char* str, const char* pattern, const char* replacement) {
+    if (!str || !pattern || !replacement) return NULL;
+    
+    // Extract pattern and flags
+    char* pattern_copy = strdup(pattern);
+    if (!pattern_copy) return NULL;
+    
+    char* flags = "g";  // Default to global replacement
+    char* slash_pos = strrchr(pattern_copy, '/');
+    if (slash_pos && slash_pos > pattern_copy) {
+        *slash_pos = '\0';  // Split the string at the slash
+        flags = slash_pos + 1;  // Flags start after the slash
+        
+        // Make sure 'g' is included in flags for replacements
+        if (!strchr(flags, 'g')) {
+            char* new_flags = malloc(strlen(flags) + 2);
+            if (new_flags) {
+                strcpy(new_flags, flags);
+                strcat(new_flags, "g");
+                flags = new_flags;
+            }
+        }
+    }
+    
+    // Create a regex object with the pattern and flags
+    SmashRegex* regex = smash_regex_create(pattern_copy, flags);
+    if (!regex) {
+        free(pattern_copy);
+        if (strcmp(flags, "g") != 0 && strchr(flags, 'g')) {
+            free((void*)flags);
+        }
+        return NULL;
+    }
+    
+    // Perform the replacement
+    char* result = smash_regex_replace(regex, str, replacement);
+    
+    // Free the regex object and pattern copy
+    smash_regex_free(regex);
+    free(pattern_copy);
+    if (strcmp(flags, "g") != 0 && strchr(flags, 'g')) {
+        free((void*)flags);
+    }
+    
+    return result;
 }

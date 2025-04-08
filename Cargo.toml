@@ -12,6 +12,13 @@ chrono = "0.4"      # For date and time functionality
 regex = "1.9.5"     # For regular expression support
 serde_json = "1.0"   # For JSON serialization/deserialization
 
+# macOS-specific dependencies
+[target.'cfg(target_os = "macos")'.dependencies]
+core-foundation = "0.9"  # For macOS Core Foundation bindings
+core-graphics = { version = "0.22", optional = true }  # For macOS graphics
+objc = { version = "0.2", features = ["exception"] }  # For Objective-C runtime
+avfoundation = { version = "0.1", optional = true }  # For macOS AVFoundation
+
 [build-dependencies]
 cc = "1.0.79"      # For compiling C code
 pkg-config = "0.3.27"  # For finding system libraries like PCRE
@@ -20,8 +27,11 @@ pkg-config = "0.3.27"  # For finding system libraries like PCRE
 tempfile = "3.5.0"  # For temporary file handling in tests
 
 [features]
-default = []
+default = ["macos-support"]
 compiler = ["inkwell"]
+macos-support = ["core-graphics", "avfoundation"]
+core-graphics = ["dep:core-graphics"]
+avfoundation = ["dep:avfoundation"]
 
 [lib]
 name = "smashlang"

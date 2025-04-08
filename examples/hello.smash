@@ -1,4 +1,4 @@
 // A simple SmashLang hello world program
 
-print;
+print("Hello, World!");
 

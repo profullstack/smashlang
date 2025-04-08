@@ -877,81 +877,6 @@ impl Parser {
         result
     }
     
-    // Parse ternary conditional operator: condition ? expr1 : expr2
-    fn parse_ternary(&mut self) -> ParseResult<AstNode> {
-        let condition = self.parse_assignment()?;
-        
-        if matches!(self.peek(), Some(Token::QuestionMark)) {
-            self.advance(); // Consume ?
-            let true_expr = self.parse_expr()?;
-            
-            if matches!(self.peek(), Some(Token::Colon)) {
-                self.advance(); // Consume :
-                let false_expr = self.parse_assignment()?;
-                
-                return Ok(AstNode::TernaryOp {
-                    condition: Box::new(condition),
-                    true_expr: Box::new(true_expr),
-                    false_expr: Box::new(false_expr),
-                });
-            } else {
-                return Err(ParseError::new("Expected ':' in ternary operator", self.pos));
-            }
-        }
-        
-        Ok(condition)
-    }
-    
-    fn parse_expr_statement(&mut self) -> ParseResult<Option<AstNode>> {
-        let expr = self.parse_expr()?;
-        
-        // Expect semicolon after expression statement
-        self.expect(&Token::Semicolon)?;
-        
-        Ok(Some(expr))
-    }
-    
-    fn parse_unary(&mut self) -> ParseResult<AstNode> {
-        // Check for prefix operators
-        if matches!(self.peek(), Some(Token::Increment)) {
-            self.advance(); // Consume ++
-            let expr = self.parse_primary()?;
-            return Ok(AstNode::PreIncrement(Box::new(expr)));
-        } else if matches!(self.peek(), Some(Token::Decrement)) {
-            self.advance(); // Consume --
-            let expr = self.parse_primary()?;
-            return Ok(AstNode::PreDecrement(Box::new(expr)));
-        } else if matches!(self.peek(), Some(Token::LogicalNot)) {
-            self.advance(); // Consume !
-            let expr = self.parse_unary()?;
-            return Ok(AstNode::UnaryOp {
-                op: "!".to_string(),
-                expr: Box::new(expr),
-            });
-        } else if matches!(self.peek(), Some(Token::BitwiseNot)) {
-            self.advance(); // Consume ~
-            let expr = self.parse_unary()?;
-            return Ok(AstNode::UnaryOp {
-                op: "~".to_string(),
-                expr: Box::new(expr),
-            });
-        }
-        
-        // Otherwise, parse a primary expression
-        let expr = self.parse_primary()?;
-        
-        // Check for postfix increment/decrement
-        if matches!(self.peek(), Some(Token::Increment)) {
-            self.advance(); // Consume ++
-            return Ok(AstNode::PostIncrement(Box::new(expr)));
-        } else if matches!(self.peek(), Some(Token::Decrement)) {
-            self.advance(); // Consume --
-            return Ok(AstNode::PostDecrement(Box::new(expr)));
-        }
-        
-        Ok(expr)
-    }
-    
     fn parse_assignment(&mut self) -> ParseResult<AstNode> {
         println!("parse_assignment: Current token: {:?}", self.peek());
         // Check for arrow function
@@ -1316,6 +1241,56 @@ impl Parser {
         Ok(AstNode::ArrowFunction { params, body, expression: is_expression })
     }
 
+    fn parse_unary(&mut self) -> ParseResult<AstNode> {
+        // Check for prefix operators
+        if matches!(self.peek(), Some(Token::Increment)) {
+            self.advance(); // Consume ++
+            let expr = self.parse_primary()?;
+            return Ok(AstNode::PreIncrement(Box::new(expr)));
+        } else if matches!(self.peek(), Some(Token::Decrement)) {
+            self.advance(); // Consume --
+            let expr = self.parse_primary()?;
+            return Ok(AstNode::PreDecrement(Box::new(expr)));
+        } else if matches!(self.peek(), Some(Token::LogicalNot)) {
+            self.advance(); // Consume !
+            let expr = self.parse_unary()?;
+            return Ok(AstNode::UnaryOp {
+                op: "!".to_string(),
+                expr: Box::new(expr),
+            });
+        } else if matches!(self.peek(), Some(Token::BitwiseNot)) {
+            self.advance(); // Consume ~
+            let expr = self.parse_unary()?;
+            return Ok(AstNode::UnaryOp {
+                op: "~".to_string(),
+                expr: Box::new(expr),
+            });
+        }
+        
+        // Otherwise, parse a primary expression
+        let expr = self.parse_primary()?;
+        
+        // Check for postfix increment/decrement
+        if matches!(self.peek(), Some(Token::Increment)) {
+            self.advance(); // Consume ++
+            return Ok(AstNode::PostIncrement(Box::new(expr)));
+        } else if matches!(self.peek(), Some(Token::Decrement)) {
+            self.advance(); // Consume --
+            return Ok(AstNode::PostDecrement(Box::new(expr)));
+        }
+        
+        Ok(expr)
+    }
+    
+    fn parse_expr_statement(&mut self) -> ParseResult<Option<AstNode>> {
+        let expr = self.parse_expr()?;
+        
+        // Expect semicolon after expression statement
+        self.expect(&Token::Semicolon)?;
+        
+        Ok(Some(expr))
+    }
+    
     fn parse_primary(&mut self) -> ParseResult<AstNode> {
         println!("parse_primary: Current token: {:?}", self.peek());
         match self.peek() {

@@ -1,0 +1,15 @@
+// Basic regex test for self-contained implementation
+
+// Create a test string
+let text = "Hello, SmashLang! This is a test string.";
+print("Original text:", text);
+
+// Simple string matching
+let matchResult = text.match("Smash");
+print("Contains 'Smash':", matchResult);
+
+// Simple string replacement
+let replaced = text.replace("SmashLang", "Awesome Language");
+print("After replacement:", replaced);
+
+print("Regex test complete!");

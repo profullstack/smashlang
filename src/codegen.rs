@@ -1,4 +1,6 @@
 use crate::parser::AstNode;
+use std::process::{Command, Stdio};
+use std::io::Write;
 
 // Helper function to parse a regex pattern string into pattern and flags
 fn parse_regex_pattern(regex: &str) -> (&str, &str) {
@@ -57,6 +59,29 @@ impl TargetMachine {
             Err(e) => Err(format!("Failed to create file: {}", e)),
         }
     }
+    
+    // Compile C code to an object file
+    pub fn compile_c_code(&self, c_code: &str, output_file: &str) -> Result<(), String> {
+        let mut compiler = Command::new("gcc");
+        compiler.arg("-I./src") // Ensure the src directory is included
+                .arg("-o")
+                .arg(output_file)
+                .arg("-")
+                .stdin(Stdio::piped())
+                .stdout(Stdio::piped())
+                .stderr(Stdio::piped());
+
+        let mut child = compiler.spawn().map_err(|e| e.to_string())?;
+        let stdin = child.stdin.as_mut().ok_or("Failed to open stdin")?;
+        stdin.write_all(c_code.as_bytes()).map_err(|e| e.to_string())?;
+
+        let output = child.wait_with_output().map_err(|e| e.to_string())?;
+        if output.status.success() {
+            Ok(())
+        } else {
+            Err(String::from_utf8_lossy(&output.stderr).into_owned())
+        }
+    }
 }
 
 // Simple enum to represent file types
@@ -78,421 +103,29 @@ impl<'a> Module<'a> {
     // Convert AST to C code
     pub fn to_c_code(&self) -> String {
         let mut code = String::new();
-        let mut main_code = String::new();
-        
-        // Add standard includes
+        // Add all necessary includes
         code.push_str("#include <stdio.h>\n");
         code.push_str("#include <stdlib.h>\n");
         code.push_str("#include <string.h>\n");
         code.push_str("#include <stdbool.h>\n");
         code.push_str("#include <ctype.h>\n");
-        code.push_str("#include <dlfcn.h>\n\n");  // For dynamic loading of our Rust regex library
-        
-        // Add helper function for string concatenation
-        code.push_str("// Helper function for string concatenation\n");
-        code.push_str("char* smash_string_concat(const char* a, const char* b) {\n");
-        code.push_str("    size_t len_a = strlen(a);\n");
-        code.push_str("    size_t len_b = strlen(b);\n");
-        code.push_str("    char* result = (char*)malloc(len_a + len_b + 1);\n");
-        code.push_str("    if (result) {\n");
-        code.push_str("        strcpy(result, a);\n");
-        code.push_str("        strcat(result, b);\n");
-        code.push_str("    }\n");
-        code.push_str("    return result;\n");
-        code.push_str("}\n\n");
-        
-        // Add helper function for getting string length
-        code.push_str("// Helper function for getting string length\n");
-        code.push_str("char* smash_get_length(const char* str) {\n");
-        code.push_str("    size_t len = strlen(str);\n");
-        code.push_str("    char buffer[32];\n");
-        code.push_str("    snprintf(buffer, sizeof(buffer), \"%zu\", len);\n");
-        code.push_str("    char* result = (char*)malloc(strlen(buffer) + 1);\n");
-        code.push_str("    if (result) {\n");
-        code.push_str("        strcpy(result, buffer);\n");
-        code.push_str("    }\n");
-        code.push_str("    return result;\n");
-        code.push_str("}\n\n");
-        
-        // Add helper functions for string methods
-        code.push_str("// Helper function for converting string to uppercase\n");
-        code.push_str("char* smash_string_to_upper(const char* str) {\n");
-        code.push_str("    size_t len = strlen(str);\n");
-        code.push_str("    char* result = (char*)malloc(len + 1);\n");
-        code.push_str("    if (result) {\n");
-        code.push_str("        for (size_t i = 0; i < len; i++) {\n");
-        code.push_str("            result[i] = toupper(str[i]);\n");
-        code.push_str("        }\n");
-        code.push_str("        result[len] = '\0';\n");
-        code.push_str("    }\n");
-        code.push_str("    return result;\n");
-        code.push_str("}\n\n");
-        
-        code.push_str("// Helper function for converting string to lowercase\n");
-        code.push_str("char* smash_string_to_lower(const char* str) {\n");
-        code.push_str("    size_t len = strlen(str);\n");
-        code.push_str("    char* result = (char*)malloc(len + 1);\n");
-        code.push_str("    if (result) {\n");
-        code.push_str("        for (size_t i = 0; i < len; i++) {\n");
-        code.push_str("            result[i] = tolower(str[i]);\n");
-        code.push_str("        }\n");
-        code.push_str("        result[len] = '\0';\n");
-        code.push_str("    }\n");
-        code.push_str("    return result;\n");
-        code.push_str("}\n\n");
-        
-        code.push_str("// Helper function for trimming whitespace from a string\n");
-        code.push_str("char* smash_string_trim(const char* str) {\n");
-        code.push_str("    size_t len = strlen(str);\n");
-        code.push_str("    size_t start = 0, end = len;\n");
-        code.push_str("    \n");
-        code.push_str("    // Find start index (first non-whitespace)\n");
-        code.push_str("    while (start < len && isspace(str[start])) {\n");
-        code.push_str("        start++;\n");
-        code.push_str("    }\n");
-        code.push_str("    \n");
-        code.push_str("    // Find end index (last non-whitespace)\n");
-        code.push_str("    while (end > start && isspace(str[end - 1])) {\n");
-        code.push_str("        end--;\n");
-        code.push_str("    }\n");
-        code.push_str("    \n");
-        code.push_str("    // Create result string\n");
-        code.push_str("    size_t result_len = end - start;\n");
-        code.push_str("    char* result = (char*)malloc(result_len + 1);\n");
-        code.push_str("    if (result) {\n");
-        code.push_str("        strncpy(result, str + start, result_len);\n");
-        code.push_str("        result[result_len] = '\0';\n");
-        code.push_str("    }\n");
-        code.push_str("    return result;\n");
-        code.push_str("}\n\n");
-        
-        // Add helper functions for array methods
-        code.push_str("// Note: These are simplified implementations for demonstration purposes\n");
-        code.push_str("// In a real implementation, we would need proper array handling\n");
-        
-        code.push_str("// Helper function for array map operation\n");
-        code.push_str("char* smash_array_map(const char* array, const char* callback) {\n");
-        code.push_str("    // In a real implementation, this would parse the array, apply the callback to each element,\n");
-        code.push_str("    // and return a new array. For now, we'll just return a placeholder.\n");
-        code.push_str("    return strdup(\"[Mapped Array]\");\n");
-        code.push_str("}\n\n");
-        
-        code.push_str("// Helper function for array filter operation\n");
-        code.push_str("char* smash_array_filter(const char* array, const char* callback) {\n");
-        code.push_str("    // In a real implementation, this would parse the array, apply the callback to each element,\n");
-        code.push_str("    // and return a new array with elements that pass the test. For now, we'll just return a placeholder.\n");
-        code.push_str("    return strdup(\"[Filtered Array]\");\n");
-        code.push_str("}\n\n");
-        
-        code.push_str("// Helper function for array push operation\n");
-        code.push_str("char* smash_array_push(const char* array, const char* item) {\n");
-        code.push_str("    // In a real implementation, this would parse the array, add the item, and return the new array.\n");
-        code.push_str("    // For now, we'll just return a placeholder.\n");
-        code.push_str("    return strdup(\"[Array with pushed item]\");\n");
-        code.push_str("}\n\n");
-        
-        code.push_str("// Helper function for array pop operation\n");
-        code.push_str("char* smash_array_pop(const char* array) {\n");
-        code.push_str("    // In a real implementation, this would parse the array, remove the last item, and return that item.\n");
-        code.push_str("    // For now, we'll just return a placeholder.\n");
-        code.push_str("    return strdup(\"[Popped item]\");\n");
-        code.push_str("}\n\n");
-        
-        // Add embedded regex implementation with full JavaScript-like functionality
-        code.push_str("// Embedded regex implementation for JavaScript-like support\n");
-        code.push_str("#include <pcre.h>  // Use PCRE for JavaScript-compatible regex\n\n");
-        
-        code.push_str("// Structure to hold regex pattern and compiled regex\n");
-        code.push_str("typedef struct {\n");
-        code.push_str("    char* pattern;     // Original pattern string\n");
-        code.push_str("    char* flags;       // Flags (i, g, m, etc.)\n");
-        code.push_str("    pcre* re;          // Compiled regex\n");
-        code.push_str("    pcre_extra* extra; // Optimized regex data\n");
-        code.push_str("} SmashRegex;\n\n");
-        
-        code.push_str("// Create a new regex pattern\n");
-        code.push_str("SmashRegex* smash_regex_create(const char* pattern, const char* flags) {\n");
-        code.push_str("    if (!pattern) return NULL;\n");
-        code.push_str("    \n");
-        code.push_str("    SmashRegex* regex = (SmashRegex*)malloc(sizeof(SmashRegex));\n");
-        code.push_str("    if (!regex) return NULL;\n");
-        
-        code.push_str("    // Initialize to NULL so we can safely free in case of error\n");
-        code.push_str("    regex->pattern = NULL;\n");
-        code.push_str("    regex->flags = NULL;\n");
-        code.push_str("    regex->re = NULL;\n");
-        code.push_str("    regex->extra = NULL;\n");
-        
-        code.push_str("    // Copy pattern and flags\n");
-        code.push_str("    regex->pattern = strdup(pattern);\n");
-        code.push_str("    regex->flags = flags ? strdup(flags) : strdup(\"\");\n");
-        
-        code.push_str("    if (!regex->pattern || !regex->flags) {\n");
-        code.push_str("        smash_regex_free(regex);\n");
-        code.push_str("        return NULL;\n");
-        code.push_str("    }\n");
-        
-        code.push_str("    // Build PCRE options based on flags\n");
-        code.push_str("    int options = 0;\n");
-        code.push_str("    if (strchr(regex->flags, 'i')) options |= PCRE_CASELESS;\n");
-        code.push_str("    if (strchr(regex->flags, 'm')) options |= PCRE_MULTILINE;\n");
-        code.push_str("    if (strchr(regex->flags, 's')) options |= PCRE_DOTALL;\n");
-        
-        code.push_str("    // Compile the regex\n");
-        code.push_str("    const char* error;\n");
-        code.push_str("    int erroffset;\n");
-        code.push_str("    regex->re = pcre_compile(pattern, options, &error, &erroffset, NULL);\n");
-        
-        code.push_str("    if (!regex->re) {\n");
-        code.push_str("        fprintf(stderr, \"Regex compilation failed at offset %d: %s\\n\", erroffset, error);\n");
-        code.push_str("        smash_regex_free(regex);\n");
-        code.push_str("        return NULL;\n");
-        code.push_str("    }\n");
-        
-        code.push_str("    // Study the pattern for optimization\n");
-        code.push_str("    regex->extra = pcre_study(regex->re, 0, &error);\n");
-        code.push_str("    if (error) {\n");
-        code.push_str("        fprintf(stderr, \"Regex study failed: %s\\n\", error);\n");
-        code.push_str("        // Continue without the optimization\n");
-        code.push_str("    }\n");
-        
-        code.push_str("    return regex;\n");
-        code.push_str("}\n\n");
-        
-        code.push_str("// Free a regex pattern\n");
-        code.push_str("void smash_regex_free(SmashRegex* regex) {\n");
-        code.push_str("    if (!regex) return;\n");
-        code.push_str("    \n");
-        code.push_str("    if (regex->pattern) free(regex->pattern);\n");
-        code.push_str("    if (regex->flags) free(regex->flags);\n");
-        code.push_str("    if (regex->extra) pcre_free(regex->extra);\n");
-        code.push_str("    if (regex->re) pcre_free(regex->re);\n");
-        code.push_str("    free(regex);\n");
-        code.push_str("}\n\n");
-        
-        code.push_str("// Test if a string matches a regex pattern\n");
-        code.push_str("int smash_regex_test(SmashRegex* regex, const char* str) {\n");
-        code.push_str("    if (!regex || !str || !regex->re) return 0;\n");
-        code.push_str("    \n");
-        code.push_str("    int ovector[30];  // Output vector for match offsets\n");
-        code.push_str("    int rc = pcre_exec(regex->re, regex->extra, str, strlen(str), 0, 0, ovector, 30);\n");
-        code.push_str("    \n");
-        code.push_str("    // Return 1 for match, 0 for no match\n");
-        code.push_str("    return (rc >= 0) ? 1 : 0;\n");
-        code.push_str("}\n\n");
-        
-        code.push_str("// Find matches in a string (returns JSON array of matches)\n");
-        code.push_str("char* smash_regex_match(SmashRegex* regex, const char* str) {\n");
-        code.push_str("    if (!regex || !str || !regex->re) return NULL;\n");
-        code.push_str("    \n");
-        code.push_str("    int ovector[30];  // Output vector for match offsets\n");
-        code.push_str("    int str_len = strlen(str);\n");
-        code.push_str("    int start_offset = 0;\n");
-        code.push_str("    int global = strchr(regex->flags, 'g') != NULL;\n");
-        code.push_str("    \n");
-        code.push_str("    // Buffer to build JSON array of matches\n");
-        code.push_str("    char* result = strdup(\"[]\");\n");
-        code.push_str("    if (!result) return NULL;\n");
-        code.push_str("    \n");
-        code.push_str("    // Find all matches\n");
-        code.push_str("    int match_count = 0;\n");
-        code.push_str("    while (start_offset < str_len) {\n");
-        code.push_str("        int rc = pcre_exec(regex->re, regex->extra, str, str_len, start_offset, 0, ovector, 30);\n");
-        code.push_str("        if (rc < 0) break;  // No more matches\n");
-        code.push_str("        \n");
-        code.push_str("        // Extract the matched substring\n");
-        code.push_str("        int match_len = ovector[1] - ovector[0];\n");
-        code.push_str("        char* match = (char*)malloc(match_len + 1);\n");
-        code.push_str("        if (!match) {\n");
-        code.push_str("            free(result);\n");
-        code.push_str("            return NULL;\n");
-        code.push_str("        }\n");
-        code.push_str("        \n");
-        code.push_str("        strncpy(match, str + ovector[0], match_len);\n");
-        code.push_str("        match[match_len] = '\0';\n");
-        code.push_str("        \n");
-        code.push_str("        // Add to JSON array\n");
-        code.push_str("        if (match_count == 0) {\n");
-        code.push_str("            // First match, replace empty array\n");
-        code.push_str("            free(result);\n");
-        code.push_str("            result = (char*)malloc(match_len + 5);  // Array format\n");
-        code.push_str("            if (!result) {\n");
-        code.push_str("                free(match);\n");
-        code.push_str("                return NULL;\n");
-        code.push_str("            }\n");
-        code.push_str("            sprintf(result, \"[\\\"%s\\\"]\", match);\n");
-        code.push_str("        } else {\n");
-        code.push_str("            // Append to existing array\n");
-        code.push_str("            int old_len = strlen(result);\n");
-        code.push_str("            char* new_result = (char*)malloc(old_len + match_len + 5);  // For appending\n");
-        code.push_str("            if (!new_result) {\n");
-        code.push_str("                free(match);\n");
-        code.push_str("                free(result);\n");
-        code.push_str("                return NULL;\n");
-        code.push_str("            }\n");
-        code.push_str("            // Remove trailing ]\n");
-        code.push_str("            result[old_len - 1] = '\0';\n");
-        code.push_str("            sprintf(new_result, \"%s,\\\"%s\\\"]\", result, match);\n");
-        code.push_str("            free(result);\n");
-        code.push_str("            result = new_result;\n");
-        code.push_str("        }\n");
-        code.push_str("        \n");
-        code.push_str("        free(match);\n");
-        code.push_str("        match_count++;\n");
-        code.push_str("        \n");
-        code.push_str("        // If not global, stop after first match\n");
-        code.push_str("        if (!global) break;\n");
-        code.push_str("        \n");
-        code.push_str("        // Move to position after the match\n");
-        code.push_str("        start_offset = ovector[1];\n");
-        code.push_str("        // Avoid infinite loop on zero-length matches\n");
-        code.push_str("        if (ovector[0] == ovector[1]) start_offset++;\n");
-        code.push_str("    }\n");
-        code.push_str("    \n");
-        code.push_str("    return result;\n");
-        code.push_str("}\n\n");
-        
-        code.push_str("// Replace matches in a string\n");
-        code.push_str("char* smash_regex_replace(SmashRegex* regex, const char* str, const char* replacement) {\n");
-        code.push_str("    if (!regex || !str || !replacement || !regex->re) return NULL;\n");
-        code.push_str("    \n");
-        code.push_str("    int ovector[30];  // Output vector for match offsets\n");
-        code.push_str("    int str_len = strlen(str);\n");
-        code.push_str("    int repl_len = strlen(replacement);\n");
-        code.push_str("    int start_offset = 0;\n");
-        code.push_str("    int global = strchr(regex->flags, 'g') != NULL;\n");
-        code.push_str("    \n");
-        code.push_str("    // Initial buffer size estimate\n");
-        code.push_str("    int buffer_size = str_len * 2;  // Start with twice the input size\n");
-        code.push_str("    if (buffer_size < 1024) buffer_size = 1024;  // Minimum buffer size\n");
-        
-        code.push_str("    char* result = (char*)malloc(buffer_size);\n");
-        code.push_str("    if (!result) return NULL;\n");
-        code.push_str("    \n");
-        code.push_str("    // Copy the input string to start with\n");
-        code.push_str("    strcpy(result, str);\n");
-        code.push_str("    \n");
-        code.push_str("    // Find and replace all matches\n");
-        code.push_str("    int match_count = 0;\n");
-        code.push_str("    char* current = result;\n");
-        code.push_str("    \n");
-        code.push_str("    while (1) {\n");
-        code.push_str("        int rc = pcre_exec(regex->re, regex->extra, current, strlen(current), 0, 0, ovector, 30);\n");
-        code.push_str("        if (rc < 0) break;  // No more matches\n");
-        code.push_str("        \n");
-        code.push_str("        // Calculate new string length\n");
-        code.push_str("        int match_len = ovector[1] - ovector[0];\n");
-        code.push_str("        int new_len = strlen(current) - match_len + repl_len;\n");
-        code.push_str("        \n");
-        code.push_str("        // Create temporary buffer for the replacement\n");
-        code.push_str("        char* temp = (char*)malloc(new_len + 1);\n");
-        code.push_str("        if (!temp) {\n");
-        code.push_str("            free(result);\n");
-        code.push_str("            return NULL;\n");
-        code.push_str("        }\n");
-        code.push_str("        \n");
-        code.push_str("        // Copy parts before match\n");
-        code.push_str("        strncpy(temp, current, ovector[0]);\n");
-        code.push_str("        temp[ovector[0]] = '\0';\n");
-        code.push_str("        \n");
-        code.push_str("        // Copy replacement\n");
-        code.push_str("        strcat(temp, replacement);\n");
-        code.push_str("        \n");
-        code.push_str("        // Copy parts after match\n");
-        code.push_str("        strcat(temp, current + ovector[1]);\n");
-        code.push_str("        \n");
-        code.push_str("        // Replace current with the new string\n");
-        code.push_str("        if (current == result) {\n");
-        code.push_str("            free(result);\n");
-        code.push_str("            result = temp;\n");
-        code.push_str("            current = result;\n");
-        code.push_str("        } else {\n");
-        code.push_str("            free(current);\n");
-        code.push_str("            current = temp;\n");
-        code.push_str("        }\n");
-        code.push_str("        \n");
-        code.push_str("        match_count++;\n");
-        code.push_str("        \n");
-        code.push_str("        // If not global, stop after first replacement\n");
-        code.push_str("        if (!global) break;\n");
-        code.push_str("    }\n");
-        code.push_str("    \n");
-        code.push_str("    // If no replacements were made, ensure we return a copy of the original\n");
-        code.push_str("    if (match_count == 0) {\n");
-        code.push_str("        free(result);\n");
-        code.push_str("        return strdup(str);\n");
-        code.push_str("    }\n");
-        code.push_str("    \n");
-        code.push_str("    return result;\n");
-        code.push_str("}\n\n");
-        
-        code.push_str("// Free a string returned by regex functions\n");
-        code.push_str("void smash_free_string(char* str) {\n");
-        code.push_str("    free(str);\n");
-        code.push_str("}\n\n");
-        
-        code.push_str("// No need to load external library, using embedded implementation\n");
-        code.push_str("int load_regex_library() {\n");
-        code.push_str("    return 1;  // Always succeeds with embedded implementation\n");
-        code.push_str("}\n");
-        
+        code.push_str("#include <dlfcn.h>\n");
+        code.push_str("#include \"simple_regex.h\"\n");  // Include our simple regex implementation
+        code.push_str("#include \"runtime.h\"\n");  // Include runtime.h which has all regex declarations
 
-        
-        // Helper functions for string methods that use regex
-        code.push_str("// Helper function for string.match with regex\n");
-        code.push_str("char* smash_string_match(const char* str, const char* pattern) {\n");
-        code.push_str("    // If pattern is a regex object (starts with 'SmashRegex:'), use it directly\n");
-        code.push_str("    // Otherwise, create a new regex object\n");
-        code.push_str("    SmashRegex* regex;\n");
-        code.push_str("    int should_free = 0;\n");
-        code.push_str("    \n");
-        code.push_str("    if (strncmp(pattern, \"SmashRegex:\", 11) == 0) {\n");
-        code.push_str("        // Extract the regex pointer from the string\n");
-        code.push_str("        sscanf(pattern + 11, \"%p\", &regex);\n");
-        code.push_str("    } else {\n");
-        code.push_str("        // Create a new regex object from the pattern string\n");
-        code.push_str("        regex = smash_regex_create(pattern, \"\");\n");
-        code.push_str("        should_free = 1;\n");
-        code.push_str("    }\n");
-        code.push_str("    \n");
-        code.push_str("    // Match the regex against the string\n");
-        code.push_str("    char* result = smash_regex_match(regex, str);\n");
-        code.push_str("    \n");
-        code.push_str("    // Free the regex if we created it\n");
-        code.push_str("    if (should_free) {\n");
-        code.push_str("        smash_regex_free(regex);\n");
-        code.push_str("    }\n");
-        code.push_str("    \n");
-        code.push_str("    return result;\n");
-        code.push_str("}\n\n");
-        
-        code.push_str("// Helper function for string.replace with regex\n");
-        code.push_str("char* smash_string_replace(const char* str, const char* pattern, const char* replacement) {\n");
-        code.push_str("    // If pattern is a regex object (starts with 'SmashRegex:'), use it directly\n");
-        code.push_str("    // Otherwise, create a new regex object\n");
-        code.push_str("    SmashRegex* regex;\n");
-        code.push_str("    int should_free = 0;\n");
-        code.push_str("    \n");
-        code.push_str("    if (strncmp(pattern, \"SmashRegex:\", 11) == 0) {\n");
-        code.push_str("        // Extract the regex pointer from the string\n");
-        code.push_str("        sscanf(pattern + 11, \"%p\", &regex);\n");
-        code.push_str("    } else {\n");
-        code.push_str("        // Create a new regex object from the pattern string\n");
-        code.push_str("        regex = smash_regex_create(pattern, \"\");\n");
-        code.push_str("        should_free = 1;\n");
-        code.push_str("    }\n");
-        code.push_str("    \n");
-        code.push_str("    // Replace matches in the string\n");
-        code.push_str("    char* result = smash_regex_replace(regex, str, replacement);\n");
-        code.push_str("    \n");
-        code.push_str("    // Free the regex if we created it\n");
-        code.push_str("    if (should_free) {\n");
-        code.push_str("        smash_regex_free(regex);\n");
-        code.push_str("    }\n");
-        code.push_str("    \n");
-        code.push_str("    return result;\n");
-        code.push_str("}\n\n");
-        
+        // Forward declare regex functions
+        code.push_str("// Forward declarations\n");
+        code.push_str("void smash_regex_free(SmashRegex* regex);\n");
+        code.push_str("SmashRegex* smash_regex_create(const char* pattern, const char* flags);\n");
+        code.push_str("char* smash_regex_match(SmashRegex* regex, const char* str);\n");
+        code.push_str("char* smash_regex_replace(SmashRegex* regex, const char* str, const char* replacement);\n\n");
+
+        // We'll collect code for inside the main function here
+        let mut node_code = String::new();
+
+        // Helper functions are defined in runtime.c
+        code.push_str("// Helper functions are defined in runtime.c\n\n");
+
         // Process each AST node
         let mut has_main_function = false;
         // We'll track if we have a main function
@@ -539,33 +172,33 @@ impl<'a> Module<'a> {
                         // Skip the main function call as we'll add it automatically
                     } else {
                         // Other function calls go inside main
-                        main_code.push_str(&self.generate_c_code_for_node(node, 1));
+                        node_code.push_str(&self.generate_c_code_for_node(node, 1));
                     }
                 },
                 _ => {
                     // Everything else goes inside main
-                    main_code.push_str(&self.generate_c_code_for_node(node, 1));
+                    node_code.push_str(&self.generate_c_code_for_node(node, 1));
                 }
             }
         }
         
         // If we have a main function, add a call to smash_main in our C main
         if has_main_function {
-            main_code.push_str("    char* result = smash_main();\n");
-            main_code.push_str("    if (result && strlen(result) > 0) {\n");
-            main_code.push_str("        printf(\"%s\\n\", result);\n");
-            main_code.push_str("    }\n");
+            node_code.push_str("    char* result = smash_main();\n");
+            node_code.push_str("    if (result && strlen(result) > 0) {\n");
+            node_code.push_str("        printf(\"%s\\n\", result);\n");
+            node_code.push_str("    }\n");
         }
         
-        // Add C main function with the collected code
+        // Add C main function with the collected code - ONLY PLACE where main is defined
         code.push_str("int main(int argc, char** argv) {\n");
         code.push_str("    // Initialize the regex library\n");
         code.push_str("    if (!load_regex_library()) {\n");
         code.push_str("        fprintf(stderr, \"Failed to load regex library. Regex operations will not work.\\n\");\n");
         code.push_str("    }\n\n");
-        code.push_str(&main_code);
+        code.push_str(&node_code);
         code.push_str("    return 0;\n");
-        code.push_str("};\n");
+        code.push_str("}\n");
         
         code
     }
@@ -596,19 +229,47 @@ impl<'a> Module<'a> {
                 if name == "print" {
                     // Special handling for print function
                     if args.len() > 0 {
+                        // Print the first argument
                         match &args[0] {
                             AstNode::String(s) => {
                                 // For string literals, print them directly
                                 let escaped = s.replace("\"", "\\\"");
-                                code.push_str(&format!("{indent}printf(\"%s\\n\", \"{}\");\n", escaped));
+                                code.push_str(&format!("{indent}printf(\"%s\", \"{}\");
+", escaped));
                             },
                             _ => {
                                 // For other expressions, evaluate them
-                                code.push_str(&format!("{indent}printf(\"%s\\n\", "));
+                                code.push_str(&format!("{indent}printf(\"%s\", "));
                                 code.push_str(&self.generate_c_code_for_expr(&args[0], indent_level));
-                                code.push_str(");\n");
+                                code.push_str(");
+");
                             }
                         }
+                        
+                        // Handle additional arguments if present
+                        for arg in args.iter().skip(1) {
+                            code.push_str(&format!("{indent}printf(\" \");
+"));  // Print a space separator
+                            match arg {
+                                AstNode::String(s) => {
+                                    // For string literals, print them directly
+                                    let escaped = s.replace("\"", "\\\"");
+                                    code.push_str(&format!("{indent}printf(\"%s\", \"{}\");
+", escaped));
+                                },
+                                _ => {
+                                    // For other expressions, evaluate them
+                                    code.push_str(&format!("{indent}printf(\"%s\", "));
+                                    code.push_str(&self.generate_c_code_for_expr(arg, indent_level));
+                                    code.push_str(");
+");
+                                }
+                            }
+                        }
+                        
+                        // Print newline at the end
+                        code.push_str(&format!("{indent}printf(\"\\n\");
+"));
                     }
                 } else {
                     // Regular function call
@@ -803,14 +464,14 @@ impl<'a> Module<'a> {
                         if arg_codes.len() < 1 {
                             format!("\"Error: match requires a string to match\"")
                         } else {
-                            format!("smash_regex_match({}, {})", obj_code, arg_codes[0])
+                            format!("smash_string_match({}, {})", obj_code, arg_codes[0])
                         }
                     },
                     "replace" => {
                         if arg_codes.len() < 2 {
                             format!("\"Error: replace requires a pattern and replacement\"")
                         } else {
-                            format!("smash_regex_replace({}, {}, {})", obj_code, arg_codes[0], arg_codes[1])
+                            format!("smash_string_replace({}, {}, {})", obj_code, arg_codes[0], arg_codes[1])
                         }
                     },
                     "map" => {
@@ -902,7 +563,6 @@ impl<'a> Module<'a> {
                             format!("smash_string_repeat({}, {})", obj_code, arg_codes[0])
                         }
                     },
-                    
                     // Number methods
                     "toFixed" => {
                         if arg_codes.len() < 1 {
@@ -925,8 +585,7 @@ impl<'a> Module<'a> {
                             format!("smash_number_to_exponential({}, {})", obj_code, arg_codes[0])
                         }
                     },
-                    
-                    // Array methods (some already implemented above)
+                    // Array methods
                     "forEach" => {
                         if arg_codes.len() < 1 {
                             format!("\"Error: forEach requires a callback function\"")
@@ -948,7 +607,6 @@ impl<'a> Module<'a> {
                     "reverse" => {
                         format!("smash_array_reverse({})", obj_code)
                     },
-                    
                     // Object methods
                     "hasOwnProperty" => {
                         if arg_codes.len() < 1 {
@@ -966,9 +624,6 @@ impl<'a> Module<'a> {
                     "entries" => {
                         format!("smash_object_entries({})", obj_code)
                     },
-                    
-                    // String methods that use regex
-                    
                     // Common methods that might be used by different types
                     "toString" => {
                         // Handle toString based on object type
@@ -996,7 +651,7 @@ impl<'a> Module<'a> {
                 // Parse the regex pattern and flags
                 let (pattern_str, flags) = parse_regex_pattern(pattern);
                 
-                // Create a regex object using our Rust implementation
+                // Create a regex object using the runtime implementation
                 format!("smash_regex_create(\"{}\", \"{}\")", pattern_str, flags)
             },
             _ => {
