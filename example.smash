@@ -69,26 +69,26 @@ let pattern = "smash.*";
 print(message);
 
 // Simple Promise test
-print("\nPromise test:");
+print("Promise test:");
 
 // Create a function that returns a promise
-function createPromise() {
-    return new Promise(function(resolve, reject) {
+fn createPromise() {
+    return new Promise((resolve, reject) => {
         // Resolve after a delay
-        setTimeout(function() {
+        setTimeout(() => {
             resolve("Promise resolved!");
         }, 1000);
     });
 }
 
 // Create a function to handle the Promise result
-function handlePromise(result) {
+fn handlePromise(result) {
     print("Promise result:", result);
     return "Processed: " + result;
 }
 
 // Create a function to handle errors
-function handleError(error) {
+fn handleError(error) {
     print("Promise error:", error);
 }
 
@@ -97,22 +97,56 @@ const promiseResult = createPromise();
 
 // Add handlers manually
 promiseResult.then(handlePromise);
-promiseResult.catch(handleError);
+promiseResult.onCatch(handleError);
+
+// Example of try/catch/finally blocks
+print("Try/Catch/Finally example:");
+try {
+    print("Inside try block");
+    // Throw an error
+    throw new Error("Something went wrong");
+    print("This will not be executed");
+} catch (error) {
+    print("Inside catch block");
+    print("Error message: " + error);
+} finally {
+    print("Inside finally block - this always executes");
+}
+
+// Example of fetch with Promise chaining
+print("Fetch example with Promise chaining:");
+
+// Using variable assignment for method chaining (recommended approach)
+const fetchResult = fetch("https://jsonplaceholder.typicode.com/todos/1");
+
+const jsonResult = fetchResult.then((response) => {
+    print("Response status: " + response.status);
+    return response.json();
+});
+
+const processedResult = jsonResult.then((data) => {
+    print("Todo title: " + data.title);
+    return data;
+});
+
+processedResult.onCatch((error) => {
+    print("Fetch error: " + error);
+});
 
 // Simple async/await test
-print("\nAsync/await test:");
+print("Async/await test:");
 
 // Helper function that returns a promise
-function createDelayPromise(ms, value) {
-    return new Promise(function(resolve, reject) {
-        setTimeout(function() {
+fn createDelayPromise(ms, value) {
+    return new Promise((resolve, reject) => {
+        setTimeout(() => {
             resolve(value);
         }, ms);
     });
 }
 
 // Define an async function
-async function processAsync() {
+async fn processAsync() {
     try {
         print("Starting async operation...");
         
