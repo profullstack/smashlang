@@ -1,73 +1,547 @@
 /**
- * Smashier - A code formatter and syntax highlighter for SmashLang
+ * SmashLang Smashier Package
  * 
- * This package provides formatting and syntax highlighting functionality
- * for SmashLang code, similar to Prettier for JavaScript.
+ * A powerful code formatter and linter for SmashLang.
+ * Helps maintain consistent code style, identifies potential issues,
+ * and automatically formats code according to configurable rules.
  */
 
-import { tokenizer } from './tokenizer.smash';
-import { formatter } from './formatter.smash';
-import { highlighter } from './highlighter.smash';
-import { defaultOptions } from './options.smash';
+// Default configuration
+const DEFAULT_CONFIG = {
+  printWidth: 80,
+  tabWidth: 2,
+  useTabs: false,
+  semi: true,
+  singleQuote: false,
+  quoteProps: "as-needed",
+  trailingComma: "es5",
+  bracketSpacing: true,
+  arrowParens: "always",
+  endOfLine: "lf",
+  insertPragma: false,
+  requirePragma: false,
+  proseWrap: "preserve",
+  htmlWhitespaceSensitivity: "css",
+  embeddedLanguageFormatting: "auto"
+};
+
+// Cache for resolved configurations
+const configCache = new Map();
 
 /**
- * Format SmashLang code according to standard style guidelines
- * @param {string} code - The SmashLang code to format
- * @param {Object} options - Formatting options (optional)
- * @returns {string} The formatted code
+ * Format a string of code
+ * @param {string} source - Source code to format
+ * @param {Object} options - Formatting options
+ * @returns {string} Formatted code
  */
-export fn format(code, options = {}) {
-  // Merge provided options with defaults
-  const mergedOptions = { ...defaultOptions, ...options };
+function format(source, options = {}) {
+  if (typeof source !== 'string') {
+    throw new Error("Source must be a string");
+  }
   
-  // Tokenize the code
-  const tokens = tokenizer.tokenize(code);
+  // Merge options with defaults
+  const config = { ...DEFAULT_CONFIG, ...options };
   
-  // Format the tokens
-  return formatter.format(tokens, mergedOptions);
+  try {
+    console.log(`Formatting code with options: ${JSON.stringify(config)}`);
+    
+    // In a real implementation, this would parse and format the code
+    // For this example, we'll simulate it with a basic formatter
+    const formatted = formatCode(source, config);
+    
+    return formatted;
+  } catch (error) {
+    throw new Error(`Formatting failed: ${error.message}`);
+  }
 }
 
 /**
- * Highlight SmashLang code with syntax coloring
- * @param {string} code - The SmashLang code to highlight
- * @param {string} theme - The color theme to use (default: 'default')
- * @returns {string} HTML string with syntax highlighting
+ * Check if code is formatted correctly
+ * @param {string} source - Source code to check
+ * @param {Object} options - Formatting options
+ * @returns {boolean} True if the code is formatted correctly
  */
-export fn highlight(code, theme = 'default') {
-  // Tokenize the code
-  const tokens = tokenizer.tokenize(code);
+function check(source, options = {}) {
+  if (typeof source !== 'string') {
+    throw new Error("Source must be a string");
+  }
   
-  // Apply syntax highlighting
-  return highlighter.highlight(tokens, theme);
+  // Merge options with defaults
+  const config = { ...DEFAULT_CONFIG, ...options };
+  
+  try {
+    console.log(`Checking code formatting with options: ${JSON.stringify(config)}`);
+    
+    // Format the code
+    const formatted = formatCode(source, config);
+    
+    // Compare with original
+    return source === formatted;
+  } catch (error) {
+    throw new Error(`Formatting check failed: ${error.message}`);
+  }
 }
 
 /**
- * Check if SmashLang code follows style guidelines
- * @param {string} code - The SmashLang code to check
- * @param {Object} options - Linting options (optional)
- * @returns {Array} Array of style issues found
+ * Get formatting differences
+ * @param {string} source - Source code to diff
+ * @param {Object} options - Formatting options
+ * @returns {string} Unified diff of formatting changes
  */
-export fn lint(code, options = {}) {
-  // Merge provided options with defaults
-  const mergedOptions = { ...defaultOptions, ...options };
+function diff(source, options = {}) {
+  if (typeof source !== 'string') {
+    throw new Error("Source must be a string");
+  }
   
-  // Tokenize the code
-  const tokens = tokenizer.tokenize(code);
+  // Merge options with defaults
+  const config = { ...DEFAULT_CONFIG, ...options };
   
-  // Check for style issues
-  return formatter.lint(tokens, mergedOptions);
+  try {
+    console.log(`Generating diff with options: ${JSON.stringify(config)}`);
+    
+    // Format the code
+    const formatted = formatCode(source, config);
+    
+    // If no changes, return empty string
+    if (source === formatted) {
+      return "";
+    }
+    
+    // Generate a unified diff
+    return generateDiff(source, formatted);
+  } catch (error) {
+    throw new Error(`Diff generation failed: ${error.message}`);
+  }
 }
 
 /**
- * Format and highlight SmashLang code in one operation
- * @param {string} code - The SmashLang code to process
- * @param {Object} options - Processing options (optional)
- * @returns {string} HTML string with formatted and highlighted code
+ * Resolve configuration for a file
+ * @param {string} filePath - Path to the file
+ * @returns {Promise<Object>} Promise resolving to config object
  */
-export fn formatAndHighlight(code, options = {}) {
-  const formatted = format(code, options);
-  return highlight(formatted, options.theme || 'default');
+async function resolveConfig(filePath) {
+  if (typeof filePath !== 'string') {
+    throw new Error("File path must be a string");
+  }
+  
+  // Check cache
+  if (configCache.has(filePath)) {
+    return configCache.get(filePath);
+  }
+  
+  try {
+    console.log(`Resolving configuration for ${filePath}`);
+    
+    // In a real implementation, this would search for config files
+    // For this example, we'll simulate it
+    await new Promise(resolve => setTimeout(resolve, 100));
+    
+    // Start with default config
+    let config = { ...DEFAULT_CONFIG };
+    
+    // Look for .smashierrc.json in the same directory
+    const configPath = `${filePath.substring(0, filePath.lastIndexOf("/"))}/.smashierrc.json`;
+    console.log(`Looking for config at ${configPath}`);
+    
+    // Simulate finding a config file
+    const hasConfig = Math.random() > 0.5;
+    
+    if (hasConfig) {
+      console.log(`Found config at ${configPath}`);
+      
+      // Simulate loading config
+      const loadedConfig = {
+        printWidth: 100,
+        tabWidth: 4,
+        singleQuote: true
+      };
+      
+      // Merge with defaults
+      config = { ...config, ...loadedConfig };
+    } else {
+      console.log(`No config found at ${configPath}, using defaults`);
+    }
+    
+    // Cache the config
+    configCache.set(filePath, config);
+    
+    return config;
+  } catch (error) {
+    throw new Error(`Config resolution failed: ${error.message}`);
+  }
 }
 
-// Export sub-modules for advanced usage
-export { tokenizer, formatter, highlighter, defaultOptions };
+/**
+ * Clear the configuration cache
+ */
+function clearConfigCache() {
+  configCache.clear();
+  console.log("Configuration cache cleared");
+}
+
+/**
+ * Get information about a file
+ * @param {string} filePath - Path to the file
+ * @returns {Promise<Object>} Promise resolving to file info
+ */
+async function getFileInfo(filePath) {
+  if (typeof filePath !== 'string') {
+    throw new Error("File path must be a string");
+  }
+  
+  try {
+    console.log(`Getting file info for ${filePath}`);
+    
+    // In a real implementation, this would check the file
+    // For this example, we'll simulate it
+    await new Promise(resolve => setTimeout(resolve, 100));
+    
+    // Extract file extension
+    const extension = filePath.substring(filePath.lastIndexOf(".") + 1);
+    
+    // Determine if the file should be ignored
+    const ignored = isIgnored(filePath);
+    
+    // Determine the parser to use
+    const parser = getParserForExtension(extension);
+    
+    return {
+      filePath,
+      ignored,
+      parser,
+      extension,
+      inferredParser: parser !== null
+    };
+  } catch (error) {
+    throw new Error(`File info retrieval failed: ${error.message}`);
+  }
+}
+
+/**
+ * Format code with the given configuration
+ * @private
+ */
+function formatCode(source, config) {
+  // In a real implementation, this would use a proper parser and formatter
+  // For this example, we'll implement a very basic formatter
+  
+  // Split into lines
+  const lines = source.split(/\r?\n/);
+  const formattedLines = [];
+  
+  // Track indentation level
+  let indentLevel = 0;
+  
+  // Process each line
+  for (let i = 0; i < lines.length; i++) {
+    let line = lines[i].trim();
+    
+    // Skip empty lines
+    if (line === "") {
+      formattedLines.push("");
+      continue;
+    }
+    
+    // Check for closing braces/brackets that decrease indent
+    if (line.startsWith("}") || line.startsWith("]") || line.startsWith(")")) {
+      indentLevel = Math.max(0, indentLevel - 1);
+    }
+    
+    // Add indentation
+    let indent = "";
+    if (config.useTabs) {
+      indent = "\t".repeat(indentLevel);
+    } else {
+      indent = " ".repeat(indentLevel * config.tabWidth);
+    }
+    
+    // Format quotes
+    if (config.singleQuote) {
+      line = line.replace(/"/g, "'");
+    } else {
+      // Only replace quotes that aren't inside single quotes
+      let inSingleQuote = false;
+      let newLine = "";
+      for (let j = 0; j < line.length; j++) {
+        const char = line[j];
+        if (char === "'" && (j === 0 || line[j-1] !== "\\")) {
+          inSingleQuote = !inSingleQuote;
+          newLine += char;
+        } else if (char === "'" && !inSingleQuote) {
+          newLine += "\"";
+        } else {
+          newLine += char;
+        }
+      }
+      line = newLine;
+    }
+    
+    // Add semicolons if required
+    if (config.semi) {
+      // Add semicolons to statements that need them
+      if (
+        !line.endsWith(";") && 
+        !line.endsWith("{") && 
+        !line.endsWith("}") && 
+        !line.endsWith("[") && 
+        !line.endsWith("]") && 
+        !line.endsWith(")") && 
+        !line.match(/^(if|for|while|function|class|import|export)\b/)
+      ) {
+        line += ";";
+      }
+    } else {
+      // Remove semicolons
+      if (line.endsWith(";")) {
+        line = line.substring(0, line.length - 1);
+      }
+    }
+    
+    // Handle trailing commas
+    if (line.match(/,\s*$/) && config.trailingComma === "none") {
+      line = line.replace(/,\s*$/, "");
+    }
+    
+    // Add bracket spacing
+    if (config.bracketSpacing) {
+      line = line.replace(/\{([^\s])/g, "{ $1");
+      line = line.replace(/([^\s])\}/g, "$1 }");
+    } else {
+      line = line.replace(/\{\s+/g, "{");
+      line = line.replace(/\s+\}/g, "}");
+    }
+    
+    // Handle arrow function parentheses
+    if (config.arrowParens === "always") {
+      line = line.replace(/([a-zA-Z0-9_]+)\s*=>/g, "($1) =>");
+    } else {
+      line = line.replace(/\(([a-zA-Z0-9_]+)\)\s*=>/g, "$1 =>");
+    }
+    
+    // Add the formatted line
+    formattedLines.push(indent + line);
+    
+    // Check for opening braces/brackets that increase indent
+    if (line.endsWith("{") || line.endsWith("[") || line.endsWith("(")) {
+      indentLevel++;
+    }
+  }
+  
+  // Join lines with the specified end of line
+  let eol = "\n";
+  if (config.endOfLine === "crlf") {
+    eol = "\r\n";
+  } else if (config.endOfLine === "cr") {
+    eol = "\r";
+  }
+  
+  return formattedLines.join(eol);
+}
+
+/**
+ * Generate a unified diff between two strings
+ * @private
+ */
+function generateDiff(original, formatted) {
+  // In a real implementation, this would use a proper diff algorithm
+  // For this example, we'll implement a very basic diff
+  
+  const originalLines = original.split(/\r?\n/);
+  const formattedLines = formatted.split(/\r?\n/);
+  
+  let diff = "--- Original\n+++ Formatted\n";
+  
+  // Find the first line that differs
+  let firstDiff = 0;
+  while (
+    firstDiff < originalLines.length && 
+    firstDiff < formattedLines.length && 
+    originalLines[firstDiff] === formattedLines[firstDiff]
+  ) {
+    firstDiff++;
+  }
+  
+  // Find the last line that differs
+  let lastOriginalDiff = originalLines.length - 1;
+  let lastFormattedDiff = formattedLines.length - 1;
+  while (
+    lastOriginalDiff >= 0 && 
+    lastFormattedDiff >= 0 && 
+    originalLines[lastOriginalDiff] === formattedLines[lastFormattedDiff]
+  ) {
+    lastOriginalDiff--;
+    lastFormattedDiff--;
+  }
+  
+  // Add context before
+  const contextBefore = Math.max(0, firstDiff - 3);
+  if (contextBefore < firstDiff) {
+    diff += `@@ -${contextBefore + 1},${lastOriginalDiff - contextBefore + 2} +${contextBefore + 1},${lastFormattedDiff - contextBefore + 2} @@\n`;
+    
+    // Add context lines
+    for (let i = contextBefore; i < firstDiff; i++) {
+      diff += ` ${originalLines[i]}\n`;
+    }
+  } else {
+    diff += `@@ -1,${originalLines.length} +1,${formattedLines.length} @@\n`;
+  }
+  
+  // Add differing lines
+  for (let i = firstDiff; i <= lastOriginalDiff || i <= lastFormattedDiff; i++) {
+    if (i <= lastOriginalDiff && i <= lastFormattedDiff) {
+      if (originalLines[i] === formattedLines[i]) {
+        diff += ` ${originalLines[i]}\n`;
+      } else {
+        diff += `-${originalLines[i]}\n`;
+        diff += `+${formattedLines[i]}\n`;
+      }
+    } else if (i <= lastOriginalDiff) {
+      diff += `-${originalLines[i]}\n`;
+    } else {
+      diff += `+${formattedLines[i]}\n`;
+    }
+  }
+  
+  // Add context after
+  const contextAfter = Math.min(originalLines.length - 1, lastOriginalDiff + 3);
+  if (contextAfter > lastOriginalDiff) {
+    for (let i = lastOriginalDiff + 1; i <= contextAfter; i++) {
+      diff += ` ${originalLines[i]}\n`;
+    }
+  }
+  
+  return diff;
+}
+
+/**
+ * Check if a file should be ignored
+ * @private
+ */
+function isIgnored(filePath) {
+  // In a real implementation, this would check against .smashierignore
+  // For this example, we'll use some common patterns
+  const ignorePatterns = [
+    /node_modules/,
+    /\.git\//,
+    /\.smashier\.cache/,
+    /\.min\.smash$/,
+    /\.bundle\.smash$/
+  ];
+  
+  return ignorePatterns.some(pattern => pattern.test(filePath));
+}
+
+/**
+ * Get the parser to use for a file extension
+ * @private
+ */
+function getParserForExtension(extension) {
+  const parsers = {
+    "smash": "smash",
+    "js": "javascript",
+    "jsx": "javascript",
+    "ts": "typescript",
+    "tsx": "typescript",
+    "json": "json",
+    "md": "markdown",
+    "html": "html",
+    "css": "css"
+  };
+  
+  return parsers[extension] || null;
+}
+
+/**
+ * Main Smashier API
+ */
+class SmashierAPI {
+  constructor() {
+    this.version = "1.0.0";
+    this.plugins = [];
+  }
+  
+  /**
+   * Format a string of code
+   * @param {string} source - Source code to format
+   * @param {Object} options - Formatting options
+   * @returns {string} Formatted code
+   */
+  format(source, options = {}) {
+    return format(source, options);
+  }
+  
+  /**
+   * Check if code is formatted correctly
+   * @param {string} source - Source code to check
+   * @param {Object} options - Formatting options
+   * @returns {boolean} True if the code is formatted correctly
+   */
+  check(source, options = {}) {
+    return check(source, options);
+  }
+  
+  /**
+   * Get formatting differences
+   * @param {string} source - Source code to diff
+   * @param {Object} options - Formatting options
+   * @returns {string} Unified diff of formatting changes
+   */
+  diff(source, options = {}) {
+    return diff(source, options);
+  }
+  
+  /**
+   * Resolve configuration for a file
+   * @param {string} filePath - Path to the file
+   * @returns {Promise<Object>} Promise resolving to config object
+   */
+  async resolveConfig(filePath) {
+    return resolveConfig(filePath);
+  }
+  
+  /**
+   * Clear the configuration cache
+   */
+  clearConfigCache() {
+    clearConfigCache();
+  }
+  
+  /**
+   * Get information about a file
+   * @param {string} filePath - Path to the file
+   * @returns {Promise<Object>} Promise resolving to file info
+   */
+  async getFileInfo(filePath) {
+    return getFileInfo(filePath);
+  }
+  
+  /**
+   * Register a plugin
+   * @param {Object} plugin - Plugin object
+   */
+  registerPlugin(plugin) {
+    if (!plugin || typeof plugin !== 'object' || !plugin.name) {
+      throw new Error("Invalid plugin");
+    }
+    
+    console.log(`Registering plugin: ${plugin.name}`);
+    this.plugins.push(plugin);
+  }
+  
+  /**
+   * Get the default configuration
+   * @returns {Object} Default configuration
+   */
+  getDefaultConfig() {
+    return { ...DEFAULT_CONFIG };
+  }
+}
+
+// Create a singleton instance
+export const smashier = new SmashierAPI();
+
+// Export functions directly
+export { format, check, diff, resolveConfig, clearConfigCache, getFileInfo };
+
+// Default export
+export default smashier;

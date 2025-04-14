@@ -1,0 +1,297 @@
+/**
+ * Advanced Smashier Package Example
+ * 
+ * This example demonstrates advanced features of the Smashier package,
+ * including plugins, custom configurations, and programmatic usage.
+ */
+
+import { smashier } from "../src/index.smash";
+
+// Sample code to format
+const sampleCode = `
+// This is a sample code file with various formatting issues
+import {Component1,Component2} from './components';
+import {util1,util2} from './utils';
+
+// Function with formatting issues
+function processData(data,options){
+  const {id,name,value}=data;
+  if(id===null||id===undefined){
+    throw new Error("Invalid ID");
+  }
+  
+  // Nested conditions with inconsistent formatting
+  if(name.length>0){
+      if(value>100){
+    console.log("High value item: "+name);
+      }else{
+    console.log("Standard item: "+name);
+      }
+  }
+  
+  // Array with inconsistent formatting
+  const items=[
+    {id:1,name:"Item 1"},
+  {id:2,name:"Item 2"},
+    {id:3,name:"Item 3"}
+  ];
+  
+  // Arrow function without parentheses
+  const processItem = item => {
+    return item.id*2;
+  };
+  
+  return items.map(processItem);
+}
+
+// Class with formatting issues
+class DataProcessor{
+  constructor(config){
+    this.config=config;
+    this.initialized=false;
+  }
+  
+  initialize(){
+    this.initialized=true;
+    return this;
+  }
+  
+  process(data){
+    if(!this.initialized){
+      this.initialize();
+    }
+    
+    return processData(data,this.config);
+  }
+}
+
+export default new DataProcessor({debug:true});
+`;
+
+// Custom plugin for max line length validation
+const maxLineLengthPlugin = {
+  name: "smashier-plugin-max-line-length",
+  rules: {
+    "max-line-length": {
+      create: (context) => {
+        return {
+          validate: (source, options) => {
+            const maxLength = options.maxLength || 80;
+            const lines = source.split(/\r?\n/);
+            const violations = [];
+            
+            lines.forEach((line, index) => {
+              if (line.length > maxLength) {
+                violations.push({
+                  line: index + 1,
+                  column: maxLength + 1,
+                  message: `Line exceeds maximum length of ${maxLength} characters (${line.length})`,
+                  severity: "warning"
+                });
+              }
+            });
+            
+            return violations;
+          }
+        };
+      }
+    }
+  }
+};
+
+// Custom plugin for function complexity
+const functionComplexityPlugin = {
+  name: "smashier-plugin-function-complexity",
+  rules: {
+    "function-complexity": {
+      create: (context) => {
+        return {
+          validate: (source, options) => {
+            const maxComplexity = options.maxComplexity || 5;
+            const violations = [];
+            
+            // This is a very simplified complexity calculation
+            // In a real plugin, this would use AST analysis
+            const functionMatches = source.match(/function\s+\w+\s*\([^)]*\)\s*{/g) || [];
+            const arrowFunctionMatches = source.match(/\([^)]*\)\s*=>\s*{/g) || [];
+            const allFunctions = [...functionMatches, ...arrowFunctionMatches];
+            
+            allFunctions.forEach((func, index) => {
+              // Count if statements as a very basic complexity metric
+              const functionBody = source.substring(source.indexOf(func));
+              const ifCount = (functionBody.match(/if\s*\(/g) || []).length;
+              
+              if (ifCount > maxComplexity) {
+                violations.push({
+                  message: `Function has a complexity of ${ifCount}, which exceeds the maximum of ${maxComplexity}`,
+                  severity: "error"
+                });
+              }
+            });
+            
+            return violations;
+          }
+        };
+      }
+    }
+  }
+};
+
+// Custom configuration file
+const customConfig = {
+  printWidth: 100,
+  tabWidth: 2,
+  useTabs: false,
+  semi: true,
+  singleQuote: true,
+  quoteProps: "as-needed",
+  trailingComma: "all",
+  bracketSpacing: true,
+  arrowParens: "always",
+  endOfLine: "lf",
+  plugins: [
+    "smashier-plugin-max-line-length",
+    "smashier-plugin-function-complexity"
+  ],
+  rules: {
+    "max-line-length": {
+      maxLength: 100
+    },
+    "function-complexity": {
+      maxComplexity: 3
+    }
+  }
+};
+
+// Function to run plugin validation
+function runPluginValidation(source, plugins, options) {
+  const violations = [];
+  
+  for (const plugin of plugins) {
+    for (const ruleName in plugin.rules) {
+      const rule = plugin.rules[ruleName];
+      const ruleOptions = options.rules && options.rules[ruleName] || {};
+      const context = { options: ruleOptions };
+      const ruleInstance = rule.create(context);
+      
+      if (ruleInstance.validate) {
+        const ruleViolations = ruleInstance.validate(source, ruleOptions);
+        violations.push(...ruleViolations.map(v => ({
+          ...v,
+          rule: ruleName,
+          plugin: plugin.name
+        })));
+      }
+    }
+  }
+  
+  return violations;
+}
+
+// Main async function to run all examples
+async function runExamples() {
+  console.log("=== Smashier Package Advanced Examples ===\n");
+  
+  // Example 1: Register and use plugins
+  console.log("=== Plugin Registration and Usage ===");
+  
+  // Register plugins
+  smashier.registerPlugin(maxLineLengthPlugin);
+  smashier.registerPlugin(functionComplexityPlugin);
+  
+  // Run plugin validation
+  const plugins = [maxLineLengthPlugin, functionComplexityPlugin];
+  const violations = runPluginValidation(sampleCode, plugins, customConfig);
+  
+  console.log(`Found ${violations.length} violations:`);
+  violations.forEach((violation, index) => {
+    console.log(`${index + 1}. [${violation.plugin}/${violation.rule}] ${violation.severity.toUpperCase()}: ${violation.message}`);
+    if (violation.line) {
+      console.log(`   Line ${violation.line}, Column ${violation.column}`);
+    }
+  });
+  console.log("---");
+  
+  // Example 2: Format with custom configuration
+  console.log("=== Formatting with Custom Configuration ===");
+  
+  // Format the code with custom config
+  const formattedWithCustomConfig = smashier.format(sampleCode, customConfig);
+  
+  console.log("First 10 lines of formatted code:");
+  const firstTenLines = formattedWithCustomConfig.split("\n").slice(0, 10).join("\n");
+  console.log(firstTenLines);
+  console.log("...");
+  console.log("---");
+  
+  // Example 3: Working with configuration files
+  console.log("=== Working with Configuration Files ===");
+  
+  // Simulate writing a configuration file
+  console.log("Writing .smashierrc.json configuration file:");
+  console.log(JSON.stringify(customConfig, null, 2));
+  
+  // Simulate reading a configuration file
+  console.log("\nResolving configuration from file:");
+  const resolvedConfig = await smashier.resolveConfig("./project/.smashierrc.json");
+  console.log("Resolved configuration (simulated):");
+  console.log(JSON.stringify(resolvedConfig, null, 2));
+  console.log("---");
+  
+  // Example 4: Processing multiple files
+  console.log("=== Processing Multiple Files ===");
+  
+  // Simulate a list of files
+  const files = [
+    "./src/components/Button.smash",
+    "./src/components/Input.smash",
+    "./src/utils/format.smash",
+    "./src/utils/validate.smash",
+    "./node_modules/external/index.smash" // Should be ignored
+  ];
+  
+  console.log("Processing files:");
+  
+  // Process each file
+  for (const file of files) {
+    // Get file info
+    const fileInfo = await smashier.getFileInfo(file);
+    
+    if (fileInfo.ignored) {
+      console.log(`- ${file}: IGNORED`);
+      continue;
+    }
+    
+    console.log(`- ${file}: Processing with ${fileInfo.parser} parser`);
+    
+    // Simulate formatting the file
+    if (Math.random() > 0.7) {
+      console.log(`  Changes needed`);
+    } else {
+      console.log(`  Already formatted correctly`);
+    }
+  }
+  console.log("---");
+  
+  // Example 5: Integration with build process
+  console.log("=== Integration with Build Process ===");
+  
+  console.log("Pre-commit hook example:");
+  console.log("1. Identifying changed files...");
+  console.log("2. Checking formatting of changed files...");
+  console.log("3. Automatically formatting files with issues...");
+  
+  // Simulate formatting results
+  const changedFiles = 5;
+  const formattedFiles = 3;
+  
+  console.log(`\nResults: Formatted ${formattedFiles} of ${changedFiles} changed files`);
+  console.log("---");
+  
+  console.log("All advanced examples completed!");
+}
+
+// Run the examples
+runExamples().catch(error => {
+  console.error("Error running advanced examples:", error);
+});

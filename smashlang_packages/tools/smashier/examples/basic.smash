@@ -1,0 +1,127 @@
+/**
+ * Basic Smashier Package Example
+ * 
+ * This example demonstrates the basic functionality of the Smashier package,
+ * including code formatting, checking, and diffing.
+ */
+
+import { smashier } from "../src/index.smash";
+
+// Sample code to format
+const unformattedCode = `
+// This is some unformatted code
+function calculateSum(a,b){
+return a+b;
+}
+
+const obj={prop1:"value1",prop2:"value2"};
+
+if(true){
+console.log("Hello World");
+}
+
+// Arrow function without parentheses
+const multiply = x => x * 2;
+
+// Missing semicolons
+const divide = function(a, b) {
+  return a / b
+}
+`;
+
+// Main function to run all examples
+function runExamples() {
+  console.log("=== Smashier Package Basic Examples ===\n");
+  
+  // Example 1: Format code with default options
+  console.log("=== Formatting Code with Default Options ===");
+  console.log("Original code:");
+  console.log(unformattedCode);
+  
+  const formattedDefault = smashier.format(unformattedCode);
+  
+  console.log("\nFormatted code (default options):");
+  console.log(formattedDefault);
+  console.log("---");
+  
+  // Example 2: Format code with custom options
+  console.log("=== Formatting Code with Custom Options ===");
+  
+  const customOptions = {
+    printWidth: 40,
+    tabWidth: 4,
+    useTabs: true,
+    singleQuote: true,
+    semi: false
+  };
+  
+  console.log("Custom options:", JSON.stringify(customOptions, null, 2));
+  
+  const formattedCustom = smashier.format(unformattedCode, customOptions);
+  
+  console.log("\nFormatted code (custom options):");
+  console.log(formattedCustom);
+  console.log("---");
+  
+  // Example 3: Check if code is formatted correctly
+  console.log("=== Checking Code Formatting ===");
+  
+  const isFormattedDefault = smashier.check(unformattedCode);
+  console.log(`Is original code formatted according to default style? ${isFormattedDefault}`);
+  
+  const isFormattedAfter = smashier.check(formattedDefault);
+  console.log(`Is formatted code formatted according to default style? ${isFormattedAfter}`);
+  
+  // Check with custom options
+  const isFormattedCustom = smashier.check(unformattedCode, customOptions);
+  console.log(`Is original code formatted according to custom style? ${isFormattedCustom}`);
+  
+  const isFormattedCustomAfter = smashier.check(formattedCustom, customOptions);
+  console.log(`Is custom formatted code formatted according to custom style? ${isFormattedCustomAfter}`);
+  console.log("---");
+  
+  // Example 4: Generate diff
+  console.log("=== Generating Diff ===");
+  
+  const diff = smashier.diff(unformattedCode);
+  console.log("Diff between original and formatted code:");
+  console.log(diff);
+  console.log("---");
+  
+  // Example 5: Get default configuration
+  console.log("=== Default Configuration ===");
+  
+  const defaultConfig = smashier.getDefaultConfig();
+  console.log("Default configuration:");
+  console.log(JSON.stringify(defaultConfig, null, 2));
+  console.log("---");
+  
+  // Example 6: File info and config resolution
+  console.log("=== File Info and Config Resolution ===");
+  
+  // These are async operations, so we'll use promises
+  const fileInfoPromise = smashier.getFileInfo("src/example.smash");
+  const configPromise = smashier.resolveConfig("src/example.smash");
+  
+  Promise.all([fileInfoPromise, configPromise])
+    .then(([fileInfo, config]) => {
+      console.log("File info for src/example.smash:");
+      console.log(JSON.stringify(fileInfo, null, 2));
+      
+      console.log("\nResolved configuration for src/example.smash:");
+      console.log(JSON.stringify(config, null, 2));
+      
+      // Clear the config cache
+      smashier.clearConfigCache();
+      console.log("\nConfiguration cache cleared");
+      
+      console.log("---");
+      console.log("All examples completed!");
+    })
+    .catch(error => {
+      console.error("Error:", error.message);
+    });
+}
+
+// Run the examples
+runExamples();

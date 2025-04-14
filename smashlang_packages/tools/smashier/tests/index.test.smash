@@ -1,25 +1,345 @@
-import { example } from 'tools/smashier';
-import { test, describe, expect, beforeEach, afterEach } from 'std/testing';
+/**
+ * Smashier Package Tests
+ * 
+ * This file contains tests for the Smashier package using the SmashLang testing framework.
+ */
 
-test('example fn returns correct greeting', () => {
-  expect(example()).toBe('Hello from SmashLang package!');
-});
+import { test, describe, expect, beforeEach, afterEach, mock } from "std/testing";
+import { smashier, format, check, diff, resolveConfig, clearConfigCache, getFileInfo } from "../src/index.smash";
 
-describe('Package: tools/smashier', () => {
-  beforeEach(() => {
-    // Setup code for each test
+describe("Smashier Package", () => {
+  // Sample code for testing
+  const unformattedCode = `
+function test(a,b){
+return a+b;
+}
+
+const obj={prop1:"value1",prop2:"value2"};
+
+if(true){
+console.log("Hello World");
+}
+`;
+
+  const expectedFormattedCode = `function test(a, b) {
+  return a + b;
+}
+
+const obj = { prop1: "value1", prop2: "value2" };
+
+if (true) {
+  console.log("Hello World");
+}
+`;
+
+  describe("format function", () => {
+    test("should format code according to default style", () => {
+      const formatted = format(unformattedCode);
+      
+      // We can't do an exact string comparison because the formatter might add/remove newlines
+      // Instead, check for key formatting changes
+      expect(formatted).toContain("function test(a, b) {");
+      expect(formatted).toContain("  return a + b;");
+      expect(formatted).toContain("const obj = { prop1: \"value1\", prop2: \"value2\" };");
+      expect(formatted).toContain("if (true) {");
+      expect(formatted).toContain("  console.log(\"Hello World\");");
+    });
+    
+    test("should format code according to custom style", () => {
+      const customOptions = {
+        tabWidth: 4,
+        useTabs: true,
+        singleQuote: true
+      };
+      
+      const formatted = format(unformattedCode, customOptions);
+      
+      expect(formatted).toContain("function test(a, b) {");
+      expect(formatted).toContain("\treturn a + b;"); // Tab instead of spaces
+      expect(formatted).toContain("const obj = { prop1: 'value1', prop2: 'value2' };"); // Single quotes
+      expect(formatted).toContain("if (true) {");
+      expect(formatted).toContain("\tconsole.log('Hello World');"); // Tab and single quotes
+    });
+    
+    test("should throw an error for invalid input", () => {
+      expect(() => format(null)).toThrow("Source must be a string");
+      expect(() => format(123)).toThrow("Source must be a string");
+      expect(() => format({})).toThrow("Source must be a string");
+    });
   });
-
-  afterEach(() => {
-    // Cleanup code for each test
+  
+  describe("check function", () => {
+    test("should return false for unformatted code", () => {
+      const result = check(unformattedCode);
+      expect(result).toBe(false);
+    });
+    
+    test("should return true for already formatted code", () => {
+      // First format the code
+      const formatted = format(unformattedCode);
+      
+      // Then check if it's formatted
+      const result = check(formatted);
+      expect(result).toBe(true);
+    });
+    
+    test("should check against custom style", () => {
+      const customOptions = {
+        tabWidth: 4,
+        useTabs: true,
+        singleQuote: true
+      };
+      
+      // Format with custom options
+      const formatted = format(unformattedCode, customOptions);
+      
+      // Check against default style (should fail)
+      const resultDefault = check(formatted);
+      expect(resultDefault).toBe(false);
+      
+      // Check against custom style (should pass)
+      const resultCustom = check(formatted, customOptions);
+      expect(resultCustom).toBe(true);
+    });
+    
+    test("should throw an error for invalid input", () => {
+      expect(() => check(null)).toThrow("Source must be a string");
+      expect(() => check(123)).toThrow("Source must be a string");
+      expect(() => check({})).toThrow("Source must be a string");
+    });
   });
-
-  test('can be imported correctly', () => {
-    expect(typeof example).toBe('function');
+  
+  describe("diff function", () => {
+    test("should return an empty string for already formatted code", () => {
+      // First format the code
+      const formatted = format(unformattedCode);
+      
+      // Then get the diff
+      const result = diff(formatted);
+      expect(result).toBe("");
+    });
+    
+    test("should return a diff for unformatted code", () => {
+      const result = diff(unformattedCode);
+      
+      expect(result).toContain("--- Original");
+      expect(result).toContain("+++ Formatted");
+      expect(result).toContain("-function test(a,b){");
+      expect(result).toContain("+function test(a, b) {");
+      expect(result).toContain("-return a+b;");
+      expect(result).toContain("+  return a + b;");
+    });
+    
+    test("should throw an error for invalid input", () => {
+      expect(() => diff(null)).toThrow("Source must be a string");
+      expect(() => diff(123)).toThrow("Source must be a string");
+      expect(() => diff({})).toThrow("Source must be a string");
+    });
   });
-
-  test('returns a string', () => {
-    const result = example();
-    expect(typeof result).toBe('string');
+  
+  describe("resolveConfig function", () => {
+    beforeEach(() => {
+      // Clear the config cache before each test
+      clearConfigCache();
+    });
+    
+    test("should resolve configuration for a file", async () => {
+      const config = await resolveConfig("src/example.smash");
+      
+      expect(config).toEqual(expect.objectContaining({
+        printWidth: expect.any(Number),
+        tabWidth: expect.any(Number),
+        useTabs: expect.any(Boolean),
+        semi: expect.any(Boolean),
+        singleQuote: expect.any(Boolean)
+      }));
+    });
+    
+    test("should cache resolved configurations", async () => {
+      // Mock console.log to check if it's called
+      const consoleSpy = mock.spyOn(console, "log");
+      
+      // First call should search for config
+      await resolveConfig("src/example.smash");
+      
+      // Second call should use cache
+      await resolveConfig("src/example.smash");
+      
+      // Check that the "Resolving configuration" message was logged only once
+      const resolveLogCalls = consoleSpy.mock.calls.filter(
+        call => call[0].includes("Resolving configuration")
+      );
+      
+      expect(resolveLogCalls.length).toBe(1);
+      
+      consoleSpy.mockRestore();
+    });
+    
+    test("should throw an error for invalid input", async () => {
+      await expect(resolveConfig(null)).rejects.toThrow("File path must be a string");
+      await expect(resolveConfig(123)).rejects.toThrow("File path must be a string");
+      await expect(resolveConfig({})).rejects.toThrow("File path must be a string");
+    });
+  });
+  
+  describe("clearConfigCache function", () => {
+    test("should clear the configuration cache", async () => {
+      // Mock console.log to check if it's called
+      const consoleSpy = mock.spyOn(console, "log");
+      
+      // First call should search for config
+      await resolveConfig("src/example.smash");
+      
+      // Clear the cache
+      clearConfigCache();
+      
+      // Second call should search for config again
+      await resolveConfig("src/example.smash");
+      
+      // Check that the "Resolving configuration" message was logged twice
+      const resolveLogCalls = consoleSpy.mock.calls.filter(
+        call => call[0].includes("Resolving configuration")
+      );
+      
+      expect(resolveLogCalls.length).toBe(2);
+      
+      consoleSpy.mockRestore();
+    });
+  });
+  
+  describe("getFileInfo function", () => {
+    test("should return information about a file", async () => {
+      const info = await getFileInfo("src/example.smash");
+      
+      expect(info).toEqual(expect.objectContaining({
+        filePath: "src/example.smash",
+        ignored: expect.any(Boolean),
+        parser: "smash",
+        extension: "smash",
+        inferredParser: true
+      }));
+    });
+    
+    test("should identify ignored files", async () => {
+      const info = await getFileInfo("node_modules/package/index.smash");
+      
+      expect(info.ignored).toBe(true);
+    });
+    
+    test("should identify the correct parser for different file extensions", async () => {
+      const smashInfo = await getFileInfo("src/example.smash");
+      expect(smashInfo.parser).toBe("smash");
+      
+      const jsInfo = await getFileInfo("src/example.js");
+      expect(jsInfo.parser).toBe("javascript");
+      
+      const tsInfo = await getFileInfo("src/example.ts");
+      expect(tsInfo.parser).toBe("typescript");
+      
+      const jsonInfo = await getFileInfo("src/example.json");
+      expect(jsonInfo.parser).toBe("json");
+      
+      const unknownInfo = await getFileInfo("src/example.xyz");
+      expect(unknownInfo.parser).toBeNull();
+    });
+    
+    test("should throw an error for invalid input", async () => {
+      await expect(getFileInfo(null)).rejects.toThrow("File path must be a string");
+      await expect(getFileInfo(123)).rejects.toThrow("File path must be a string");
+      await expect(getFileInfo({})).rejects.toThrow("File path must be a string");
+    });
+  });
+  
+  describe("SmashierAPI", () => {
+    test("should have a version property", () => {
+      expect(smashier.version).toBeDefined();
+      expect(typeof smashier.version).toBe("string");
+    });
+    
+    test("should have a plugins array", () => {
+      expect(smashier.plugins).toBeDefined();
+      expect(Array.isArray(smashier.plugins)).toBe(true);
+    });
+    
+    test("registerPlugin should add a plugin to the plugins array", () => {
+      const initialPluginCount = smashier.plugins.length;
+      
+      const plugin = {
+        name: "test-plugin",
+        rules: {}
+      };
+      
+      smashier.registerPlugin(plugin);
+      
+      expect(smashier.plugins.length).toBe(initialPluginCount + 1);
+      expect(smashier.plugins).toContain(plugin);
+    });
+    
+    test("registerPlugin should throw for invalid plugins", () => {
+      expect(() => smashier.registerPlugin(null)).toThrow("Invalid plugin");
+      expect(() => smashier.registerPlugin({})).toThrow("Invalid plugin");
+      expect(() => smashier.registerPlugin({ rules: {} })).toThrow("Invalid plugin");
+    });
+    
+    test("getDefaultConfig should return a copy of the default configuration", () => {
+      const config = smashier.getDefaultConfig();
+      
+      expect(config).toEqual(expect.objectContaining({
+        printWidth: 80,
+        tabWidth: 2,
+        useTabs: false,
+        semi: true,
+        singleQuote: false
+      }));
+      
+      // Verify it's a copy by modifying it and checking the original
+      const originalPrintWidth = config.printWidth;
+      config.printWidth = 120;
+      
+      const newConfig = smashier.getDefaultConfig();
+      expect(newConfig.printWidth).toBe(originalPrintWidth);
+    });
+    
+    test("format method should call the format function", () => {
+      // Mock the format function
+      const originalFormat = format;
+      global.format = mock.fn().mockReturnValue("formatted code");
+      
+      const result = smashier.format("code", { option: "value" });
+      
+      expect(global.format).toHaveBeenCalledWith("code", { option: "value" });
+      expect(result).toBe("formatted code");
+      
+      // Restore the original function
+      global.format = originalFormat;
+    });
+    
+    test("check method should call the check function", () => {
+      // Mock the check function
+      const originalCheck = check;
+      global.check = mock.fn().mockReturnValue(true);
+      
+      const result = smashier.check("code", { option: "value" });
+      
+      expect(global.check).toHaveBeenCalledWith("code", { option: "value" });
+      expect(result).toBe(true);
+      
+      // Restore the original function
+      global.check = originalCheck;
+    });
+    
+    test("diff method should call the diff function", () => {
+      // Mock the diff function
+      const originalDiff = diff;
+      global.diff = mock.fn().mockReturnValue("diff output");
+      
+      const result = smashier.diff("code", { option: "value" });
+      
+      expect(global.diff).toHaveBeenCalledWith("code", { option: "value" });
+      expect(result).toBe("diff output");
+      
+      // Restore the original function
+      global.diff = originalDiff;
+    });
   });
 });
