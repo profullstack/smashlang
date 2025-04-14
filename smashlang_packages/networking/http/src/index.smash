@@ -3,198 +3,618 @@
  * 
  * A comprehensive HTTP client for SmashLang applications.
  * Provides functionality for making HTTP requests, handling responses,
- * and working with various HTTP features.
+ * and managing cookies and sessions.
  */
 
 // HTTP methods
-const HTTP_METHODS = {
+export const METHODS = {
   GET: 'GET',
   POST: 'POST',
   PUT: 'PUT',
   DELETE: 'DELETE',
   PATCH: 'PATCH',
   HEAD: 'HEAD',
-  OPTIONS: 'OPTIONS'
+  OPTIONS: 'OPTIONS',
+  TRACE: 'TRACE',
+  CONNECT: 'CONNECT'
 };
+
+// HTTP status codes
+export const STATUS_CODES = {
+  // 1xx Informational
+  CONTINUE: 100,
+  SWITCHING_PROTOCOLS: 101,
+  PROCESSING: 102,
+  EARLY_HINTS: 103,
+  
+  // 2xx Success
+  OK: 200,
+  CREATED: 201,
+  ACCEPTED: 202,
+  NON_AUTHORITATIVE_INFORMATION: 203,
+  NO_CONTENT: 204,
+  RESET_CONTENT: 205,
+  PARTIAL_CONTENT: 206,
+  MULTI_STATUS: 207,
+  ALREADY_REPORTED: 208,
+  IM_USED: 226,
+  
+  // 3xx Redirection
+  MULTIPLE_CHOICES: 300,
+  MOVED_PERMANENTLY: 301,
+  FOUND: 302,
+  SEE_OTHER: 303,
+  NOT_MODIFIED: 304,
+  USE_PROXY: 305,
+  TEMPORARY_REDIRECT: 307,
+  PERMANENT_REDIRECT: 308,
+  
+  // 4xx Client Error
+  BAD_REQUEST: 400,
+  UNAUTHORIZED: 401,
+  PAYMENT_REQUIRED: 402,
+  FORBIDDEN: 403,
+  NOT_FOUND: 404,
+  METHOD_NOT_ALLOWED: 405,
+  NOT_ACCEPTABLE: 406,
+  PROXY_AUTHENTICATION_REQUIRED: 407,
+  REQUEST_TIMEOUT: 408,
+  CONFLICT: 409,
+  GONE: 410,
+  LENGTH_REQUIRED: 411,
+  PRECONDITION_FAILED: 412,
+  PAYLOAD_TOO_LARGE: 413,
+  URI_TOO_LONG: 414,
+  UNSUPPORTED_MEDIA_TYPE: 415,
+  RANGE_NOT_SATISFIABLE: 416,
+  EXPECTATION_FAILED: 417,
+  IM_A_TEAPOT: 418,
+  MISDIRECTED_REQUEST: 421,
+  UNPROCESSABLE_ENTITY: 422,
+  LOCKED: 423,
+  FAILED_DEPENDENCY: 424,
+  TOO_EARLY: 425,
+  UPGRADE_REQUIRED: 426,
+  PRECONDITION_REQUIRED: 428,
+  TOO_MANY_REQUESTS: 429,
+  REQUEST_HEADER_FIELDS_TOO_LARGE: 431,
+  UNAVAILABLE_FOR_LEGAL_REASONS: 451,
+  
+  // 5xx Server Error
+  INTERNAL_SERVER_ERROR: 500,
+  NOT_IMPLEMENTED: 501,
+  BAD_GATEWAY: 502,
+  SERVICE_UNAVAILABLE: 503,
+  GATEWAY_TIMEOUT: 504,
+  HTTP_VERSION_NOT_SUPPORTED: 505,
+  VARIANT_ALSO_NEGOTIATES: 506,
+  INSUFFICIENT_STORAGE: 507,
+  LOOP_DETECTED: 508,
+  NOT_EXTENDED: 510,
+  NETWORK_AUTHENTICATION_REQUIRED: 511
+};
+
+/**
+ * Get the status text for a status code
+ * @param {number} status - Status code
+ * @returns {string} Status text
+ */
+function getStatusText(status) {
+  const statusTexts = {
+    100: 'Continue',
+    101: 'Switching Protocols',
+    102: 'Processing',
+    103: 'Early Hints',
+    200: 'OK',
+    201: 'Created',
+    202: 'Accepted',
+    203: 'Non-Authoritative Information',
+    204: 'No Content',
+    205: 'Reset Content',
+    206: 'Partial Content',
+    207: 'Multi-Status',
+    208: 'Already Reported',
+    226: 'IM Used',
+    300: 'Multiple Choices',
+    301: 'Moved Permanently',
+    302: 'Found',
+    303: 'See Other',
+    304: 'Not Modified',
+    305: 'Use Proxy',
+    307: 'Temporary Redirect',
+    308: 'Permanent Redirect',
+    400: 'Bad Request',
+    401: 'Unauthorized',
+    402: 'Payment Required',
+    403: 'Forbidden',
+    404: 'Not Found',
+    405: 'Method Not Allowed',
+    406: 'Not Acceptable',
+    407: 'Proxy Authentication Required',
+    408: 'Request Timeout',
+    409: 'Conflict',
+    410: 'Gone',
+    411: 'Length Required',
+    412: 'Precondition Failed',
+    413: 'Payload Too Large',
+    414: 'URI Too Long',
+    415: 'Unsupported Media Type',
+    416: 'Range Not Satisfiable',
+    417: 'Expectation Failed',
+    418: 'I\'m a Teapot',
+    421: 'Misdirected Request',
+    422: 'Unprocessable Entity',
+    423: 'Locked',
+    424: 'Failed Dependency',
+    425: 'Too Early',
+    426: 'Upgrade Required',
+    428: 'Precondition Required',
+    429: 'Too Many Requests',
+    431: 'Request Header Fields Too Large',
+    451: 'Unavailable For Legal Reasons',
+    500: 'Internal Server Error',
+    501: 'Not Implemented',
+    502: 'Bad Gateway',
+    503: 'Service Unavailable',
+    504: 'Gateway Timeout',
+    505: 'HTTP Version Not Supported',
+    506: 'Variant Also Negotiates',
+    507: 'Insufficient Storage',
+    508: 'Loop Detected',
+    510: 'Not Extended',
+    511: 'Network Authentication Required'
+  };
+  
+  return statusTexts[status] || 'Unknown Status';
+}
+
+/**
+ * Generate a random session ID
+ * @returns {string} Session ID
+ */
+function generateSessionId() {
+  return Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
+}
+
+/**
+ * Headers class for managing HTTP headers
+ */
+export class Headers {
+  /**
+   * Create a new Headers object
+   * @param {Object} [init] - Initial headers
+   */
+  constructor(init = {}) {
+    this._headers = {};
+    
+    if (init) {
+      for (const [name, value] of Object.entries(init)) {
+        this.set(name, value);
+      }
+    }
+  }
+  
+  /**
+   * Set a header
+   * @param {string} name - Header name
+   * @param {string} value - Header value
+   * @returns {Headers} This headers object
+   */
+  set(name, value) {
+    const normalizedName = name.toLowerCase();
+    this._headers[normalizedName] = String(value);
+    return this;
+  }
+  
+  /**
+   * Get a header
+   * @param {string} name - Header name
+   * @returns {string|null} Header value
+   */
+  get(name) {
+    const normalizedName = name.toLowerCase();
+    return this._headers[normalizedName] || null;
+  }
+  
+  /**
+   * Check if a header exists
+   * @param {string} name - Header name
+   * @returns {boolean} True if the header exists
+   */
+  has(name) {
+    const normalizedName = name.toLowerCase();
+    return normalizedName in this._headers;
+  }
+  
+  /**
+   * Delete a header
+   * @param {string} name - Header name
+   * @returns {boolean} True if the header was deleted
+   */
+  delete(name) {
+    const normalizedName = name.toLowerCase();
+    if (normalizedName in this._headers) {
+      delete this._headers[normalizedName];
+      return true;
+    }
+    return false;
+  }
+  
+  /**
+   * Append a value to a header
+   * @param {string} name - Header name
+   * @param {string} value - Header value
+   * @returns {Headers} This headers object
+   */
+  append(name, value) {
+    const normalizedName = name.toLowerCase();
+    const currentValue = this._headers[normalizedName];
+    
+    if (currentValue) {
+      this._headers[normalizedName] = `${currentValue}, ${value}`;
+    } else {
+      this._headers[normalizedName] = String(value);
+    }
+    
+    return this;
+  }
+  
+  /**
+   * Get all headers as an object
+   * @returns {Object} Headers object
+   */
+  toObject() {
+    return { ...this._headers };
+  }
+  
+  /**
+   * Get all header names
+   * @returns {string[]} Header names
+   */
+  keys() {
+    return Object.keys(this._headers);
+  }
+  
+  /**
+   * Get all header values
+   * @returns {string[]} Header values
+   */
+  values() {
+    return Object.values(this._headers);
+  }
+  
+  /**
+   * Get all header entries
+   * @returns {Array<[string, string]>} Header entries
+   */
+  entries() {
+    return Object.entries(this._headers);
+  }
+  
+  /**
+   * Iterate over all headers
+   * @param {Function} callback - Callback function
+   */
+  forEach(callback) {
+    for (const [name, value] of this.entries()) {
+      callback(value, name, this);
+    }
+  }
+}
+
+/**
+ * Request class representing an HTTP request
+ */
+export class Request {
+  /**
+   * Create a new Request
+   * @param {string} url - Request URL
+   * @param {Object} [options] - Request options
+   */
+  constructor(url, options = {}) {
+    this.url = url;
+    this.method = options.method || METHODS.GET;
+    this.headers = new Headers(options.headers);
+    this.body = options.body || null;
+    this.timeout = options.timeout || 30000;
+    this.credentials = options.credentials || 'same-origin';
+    this.mode = options.mode || 'cors';
+    this.cache = options.cache || 'default';
+    this.redirect = options.redirect || 'follow';
+    this.referrer = options.referrer || 'client';
+    this.integrity = options.integrity || '';
+    this.keepalive = options.keepalive || false;
+    this.signal = options.signal || null;
+  }
+  
+  /**
+   * Clone the request
+   * @returns {Request} Cloned request
+   */
+  clone() {
+    return new Request(this.url, {
+      method: this.method,
+      headers: this.headers.toObject(),
+      body: this.body,
+      timeout: this.timeout,
+      credentials: this.credentials,
+      mode: this.mode,
+      cache: this.cache,
+      redirect: this.redirect,
+      referrer: this.referrer,
+      integrity: this.integrity,
+      keepalive: this.keepalive,
+      signal: this.signal
+    });
+  }
+}
 
 /**
  * Response class representing an HTTP response
  */
 export class Response {
-  constructor(status, statusText, headers, body, url) {
-    this.status = status;
-    this.statusText = statusText;
-    this.headers = headers;
-    this._body = body;
-    this.url = url;
-    this._bodyText = null;
-    this._bodyJson = null;
-    this._bodyBlob = null;
-    this._bodyArrayBuffer = null;
-  }
-  
   /**
-   * Whether the response was successful (status in the range 200-299)
+   * Create a new Response
+   * @param {string|Object|ArrayBuffer} body - Response body
+   * @param {Object} [options] - Response options
    */
-  get ok() {
-    return this.status >= 200 && this.status < 300;
+  constructor(body = null, options = {}) {
+    this.body = body;
+    this.status = options.status || STATUS_CODES.OK;
+    this.statusText = options.statusText || getStatusText(this.status);
+    this.headers = new Headers(options.headers);
+    this.url = options.url || '';
+    this.redirected = options.redirected || false;
+    this.type = options.type || 'default';
+    this.ok = this.status >= 200 && this.status < 300;
   }
   
   /**
-   * Get the response body as text
-   */
-  async text() {
-    if (this._bodyText !== null) {
-      return this._bodyText;
-    }
-    
-    if (typeof this._body === 'string') {
-      this._bodyText = this._body;
-    } else if (this._body instanceof ArrayBuffer) {
-      // Convert ArrayBuffer to string
-      this._bodyText = new TextDecoder().decode(this._body);
-    } else if (this._body instanceof Blob) {
-      // Convert Blob to string
-      this._bodyText = await new Promise((resolve, reject) => {
-        const reader = new FileReader();
-        reader.onload = () => resolve(reader.result);
-        reader.onerror = reject;
-        reader.readAsText(this._body);
-      });
-    } else if (this._body === null || this._body === undefined) {
-      this._bodyText = '';
-    } else {
-      // Try to convert to string
-      this._bodyText = String(this._body);
-    }
-    
-    return this._bodyText;
-  }
-  
-  /**
-   * Get the response body as JSON
+   * Parse the response body as JSON
+   * @returns {Promise<Object>} Parsed JSON
    */
   async json() {
-    if (this._bodyJson !== null) {
-      return this._bodyJson;
+    if (!this.body) {
+      return null;
     }
     
-    const text = await this.text();
-    try {
-      this._bodyJson = JSON.parse(text);
-    } catch (error) {
-      throw new Error(`Failed to parse response as JSON: ${error.message}`);
+    if (typeof this.body === 'string') {
+      try {
+        return JSON.parse(this.body);
+      } catch (error) {
+        throw new Error(`Failed to parse JSON: ${error.message}`);
+      }
+    } else if (typeof this.body === 'object') {
+      return this.body;
     }
     
-    return this._bodyJson;
+    throw new Error('Response body is not JSON');
   }
   
   /**
-   * Get the response body as a Blob
+   * Parse the response body as text
+   * @returns {Promise<string>} Body text
    */
-  async blob() {
-    if (this._bodyBlob !== null) {
-      return this._bodyBlob;
+  async text() {
+    if (!this.body) {
+      return '';
     }
     
-    if (this._body instanceof Blob) {
-      this._bodyBlob = this._body;
-    } else if (this._body instanceof ArrayBuffer) {
-      this._bodyBlob = new Blob([this._body]);
-    } else {
-      const text = await this.text();
-      this._bodyBlob = new Blob([text]);
+    if (typeof this.body === 'string') {
+      return this.body;
+    } else if (typeof this.body === 'object') {
+      return JSON.stringify(this.body);
     }
     
-    return this._bodyBlob;
+    return String(this.body);
   }
   
   /**
-   * Get the response body as an ArrayBuffer
+   * Parse the response body as form data
+   * @returns {Promise<Object>} Parsed form data
+   */
+  async formData() {
+    if (!this.body) {
+      return {};
+    }
+    
+    if (typeof this.body === 'string') {
+      try {
+        const formData = {};
+        const pairs = this.body.split('&');
+        
+        for (const pair of pairs) {
+          const [key, value] = pair.split('=');
+          formData[decodeURIComponent(key)] = decodeURIComponent(value || '');
+        }
+        
+        return formData;
+      } catch (error) {
+        throw new Error(`Failed to parse form data: ${error.message}`);
+      }
+    } else if (typeof this.body === 'object') {
+      return this.body;
+    }
+    
+    throw new Error('Response body is not form data');
+  }
+  
+  /**
+   * Parse the response body as an ArrayBuffer
+   * @returns {Promise<ArrayBuffer>} Body as ArrayBuffer
    */
   async arrayBuffer() {
-    if (this._bodyArrayBuffer !== null) {
-      return this._bodyArrayBuffer;
+    if (!this.body) {
+      return new ArrayBuffer(0);
     }
     
-    if (this._body instanceof ArrayBuffer) {
-      this._bodyArrayBuffer = this._body;
-    } else if (this._body instanceof Blob) {
-      this._bodyArrayBuffer = await new Promise((resolve, reject) => {
-        const reader = new FileReader();
-        reader.onload = () => resolve(reader.result);
-        reader.onerror = reject;
-        reader.readAsArrayBuffer(this._body);
-      });
-    } else {
-      const text = await this.text();
-      this._bodyArrayBuffer = new TextEncoder().encode(text).buffer;
+    if (this.body instanceof ArrayBuffer) {
+      return this.body;
     }
     
-    return this._bodyArrayBuffer;
+    throw new Error('Response body is not an ArrayBuffer');
+  }
+  
+  /**
+   * Clone the response
+   * @returns {Response} Cloned response
+   */
+  clone() {
+    return new Response(this.body, {
+      status: this.status,
+      statusText: this.statusText,
+      headers: this.headers.toObject(),
+      url: this.url,
+      redirected: this.redirected,
+      type: this.type
+    });
   }
 }
 
 /**
- * Cookie jar for storing cookies between requests
+ * Cookie class for managing HTTP cookies
+ */
+export class Cookie {
+  /**
+   * Create a new Cookie
+   * @param {string} name - Cookie name
+   * @param {string} value - Cookie value
+   * @param {Object} [options] - Cookie options
+   */
+  constructor(name, value, options = {}) {
+    this.name = name;
+    this.value = value;
+    this.domain = options.domain || '';
+    this.path = options.path || '/';
+    this.expires = options.expires || null;
+    this.maxAge = options.maxAge || null;
+    this.secure = options.secure || false;
+    this.httpOnly = options.httpOnly || false;
+    this.sameSite = options.sameSite || 'Lax';
+  }
+  
+  /**
+   * Convert the cookie to a string
+   * @returns {string} Cookie string
+   */
+  toString() {
+    let str = `${encodeURIComponent(this.name)}=${encodeURIComponent(this.value)}`;
+    
+    if (this.domain) {
+      str += `; Domain=${this.domain}`;
+    }
+    
+    if (this.path) {
+      str += `; Path=${this.path}`;
+    }
+    
+    if (this.expires) {
+      str += `; Expires=${this.expires.toUTCString()}`;
+    }
+    
+    if (this.maxAge !== null) {
+      str += `; Max-Age=${this.maxAge}`;
+    }
+    
+    if (this.secure) {
+      str += '; Secure';
+    }
+    
+    if (this.httpOnly) {
+      str += '; HttpOnly';
+    }
+    
+    if (this.sameSite) {
+      str += `; SameSite=${this.sameSite}`;
+    }
+    
+    return str;
+  }
+  
+  /**
+   * Parse a cookie string
+   * @param {string} str - Cookie string
+   * @returns {Cookie} Parsed cookie
+   */
+  static parse(str) {
+    const parts = str.split(';');
+    const [name, value] = parts[0].split('=').map(s => s.trim());
+    const options = {};
+    
+    for (let i = 1; i < parts.length; i++) {
+      const part = parts[i].trim();
+      const [key, val] = part.split('=').map(s => s.trim());
+      
+      switch (key.toLowerCase()) {
+        case 'domain':
+          options.domain = val;
+          break;
+        case 'path':
+          options.path = val;
+          break;
+        case 'expires':
+          options.expires = new Date(val);
+          break;
+        case 'max-age':
+          options.maxAge = parseInt(val, 10);
+          break;
+        case 'secure':
+          options.secure = true;
+          break;
+        case 'httponly':
+          options.httpOnly = true;
+          break;
+        case 'samesite':
+          options.sameSite = val;
+          break;
+      }
+    }
+    
+    return new Cookie(decodeURIComponent(name), decodeURIComponent(value), options);
+  }
+}
+
+/**
+ * CookieJar class for managing multiple cookies
  */
 export class CookieJar {
+  /**
+   * Create a new CookieJar
+   */
   constructor() {
     this.cookies = {};
   }
   
   /**
-   * Set a cookie in the jar
-   * @param {string} cookie - Cookie string
-   * @param {string} url - URL the cookie is associated with
+   * Set a cookie
+   * @param {Cookie} cookie - Cookie to set
+   * @returns {CookieJar} This cookie jar
    */
-  setCookie(cookie, url) {
-    const domain = new URL(url).hostname;
-    
-    if (!this.cookies[domain]) {
-      this.cookies[domain] = [];
-    }
-    
-    // Parse the cookie string
-    const [nameValue] = cookie.split(';');
-    const [name] = nameValue.split('=');
-    
-    // Remove existing cookie with the same name
-    this.cookies[domain] = this.cookies[domain].filter(c => {
-      const [existingNameValue] = c.split(';');
-      const [existingName] = existingNameValue.split('=');
-      return existingName.trim() !== name.trim();
-    });
-    
-    // Add the new cookie
-    this.cookies[domain].push(cookie);
+  set(cookie) {
+    this.cookies[cookie.name] = cookie;
+    return this;
   }
   
   /**
-   * Get cookies for a URL
-   * @param {string} url - URL to get cookies for
-   * @returns {Array<string>} Array of cookie strings
+   * Get a cookie
+   * @param {string} name - Cookie name
+   * @returns {Cookie|null} Cookie
    */
-  getCookies(url) {
-    const domain = new URL(url).hostname;
-    return this.cookies[domain] || [];
+  get(name) {
+    return this.cookies[name] || null;
   }
   
   /**
-   * Get cookies as a header string for a URL
-   * @param {string} url - URL to get cookies for
-   * @returns {string} Cookie header string
+   * Delete a cookie
+   * @param {string} name - Cookie name
+   * @returns {boolean} True if the cookie was deleted
    */
-  getCookieHeader(url) {
-    const cookies = this.getCookies(url);
-    if (cookies.length === 0) {
-      return '';
+  delete(name) {
+    if (name in this.cookies) {
+      delete this.cookies[name];
+      return true;
     }
-    
-    return cookies.map(cookie => {
-      const [nameValue] = cookie.split(';');
-      return nameValue.trim();
-    }).join('; ');
+    return false;
   }
   
   /**
@@ -205,227 +625,454 @@ export class CookieJar {
   }
   
   /**
-   * Clear cookies for a specific domain
-   * @param {string} domain - Domain to clear cookies for
+   * Get all cookies as an array
+   * @returns {Cookie[]} Cookies
    */
-  clearDomain(domain) {
-    delete this.cookies[domain];
+  getAll() {
+    return Object.values(this.cookies);
+  }
+  
+  /**
+   * Get all cookies for a URL
+   * @param {string} url - URL
+   * @returns {Cookie[]} Cookies for the URL
+   */
+  getAllForUrl(url) {
+    const urlObj = new URL(url);
+    const domain = urlObj.hostname;
+    const path = urlObj.pathname;
+    
+    return this.getAll().filter(cookie => {
+      // Check domain
+      if (cookie.domain && !domain.endsWith(cookie.domain)) {
+        return false;
+      }
+      
+      // Check path
+      if (cookie.path && !path.startsWith(cookie.path)) {
+        return false;
+      }
+      
+      // Check expiration
+      if (cookie.expires && cookie.expires < new Date()) {
+        return false;
+      }
+      
+      // Check secure
+      if (cookie.secure && urlObj.protocol !== 'https:') {
+        return false;
+      }
+      
+      return true;
+    });
+  }
+  
+  /**
+   * Get all cookies for a URL as a string
+   * @param {string} url - URL
+   * @returns {string} Cookie string
+   */
+  getCookieStringForUrl(url) {
+    const cookies = this.getAllForUrl(url);
+    return cookies.map(cookie => `${cookie.name}=${cookie.value}`).join('; ');
+  }
+  
+  /**
+   * Parse cookies from a Set-Cookie header
+   * @param {string} header - Set-Cookie header
+   * @returns {Cookie} Parsed cookie
+   */
+  parseSetCookieHeader(header) {
+    const cookie = Cookie.parse(header);
+    this.set(cookie);
+    return cookie;
+  }
+  
+  /**
+   * Parse cookies from multiple Set-Cookie headers
+   * @param {string[]} headers - Set-Cookie headers
+   * @returns {Cookie[]} Parsed cookies
+   */
+  parseSetCookieHeaders(headers) {
+    return headers.map(header => this.parseSetCookieHeader(header));
   }
 }
 
 /**
- * Main HTTP client class
+ * Session class for managing HTTP sessions
  */
-class HttpClient {
+export class Session {
   /**
-   * Make an HTTP request
-   * @param {string} url - The URL to request
-   * @param {Object} options - Request options
-   * @returns {Promise<Response>} Promise resolving to a Response object
+   * Create a new Session
+   * @param {Object} [options] - Session options
    */
-  async request(url, options = {}) {
-    const {
-      method = 'GET',
-      headers = {},
-      body = null,
-      timeout = 30000,
-      retries = 0,
-      retryDelay = 1000,
-      followRedirects = true,
-      maxRedirects = 5,
-      validateStatus = status => status >= 200 && status < 300,
-      proxy = null,
-      cookieJar = null,
-      stream = false
-    } = options;
-    
-    // Validate method
-    if (!Object.values(HTTP_METHODS).includes(method.toUpperCase())) {
-      throw new Error(`Invalid HTTP method: ${method}`);
+  constructor(options = {}) {
+    this.id = options.id || generateSessionId();
+    this.data = options.data || {};
+    this.cookieJar = options.cookieJar || new CookieJar();
+    this.created = options.created || new Date();
+    this.lastAccessed = options.lastAccessed || new Date();
+    this.maxAge = options.maxAge || 3600; // 1 hour
+  }
+  
+  /**
+   * Get a session value
+   * @param {string} key - Key
+   * @returns {*} Value
+   */
+  get(key) {
+    return this.data[key];
+  }
+  
+  /**
+   * Set a session value
+   * @param {string} key - Key
+   * @param {*} value - Value
+   * @returns {Session} This session
+   */
+  set(key, value) {
+    this.data[key] = value;
+    this.lastAccessed = new Date();
+    return this;
+  }
+  
+  /**
+   * Delete a session value
+   * @param {string} key - Key
+   * @returns {boolean} True if the value was deleted
+   */
+  delete(key) {
+    if (key in this.data) {
+      delete this.data[key];
+      this.lastAccessed = new Date();
+      return true;
     }
-    
-    // Prepare headers
-    const requestHeaders = { ...headers };
-    
-    // Add cookies from jar if provided
-    if (cookieJar instanceof CookieJar) {
-      const cookieHeader = cookieJar.getCookieHeader(url);
-      if (cookieHeader) {
-        requestHeaders['Cookie'] = cookieHeader;
-      }
-    }
-    
-    // Prepare request options
-    const requestOptions = {
-      method: method.toUpperCase(),
-      headers: requestHeaders,
-      redirect: followRedirects ? 'follow' : 'manual',
-      signal: timeout ? AbortSignal.timeout(timeout) : null
-    };
-    
-    // Add body if provided
-    if (body !== null && method !== 'GET' && method !== 'HEAD') {
-      if (body instanceof FormData) {
-        // FormData is handled automatically
-        requestOptions.body = body;
-      } else if (typeof body === 'object' && !(body instanceof Blob) && !(body instanceof ArrayBuffer)) {
-        // Convert object to JSON
-        requestOptions.body = JSON.stringify(body);
-        if (!requestHeaders['Content-Type']) {
-          requestHeaders['Content-Type'] = 'application/json';
-        }
-      } else {
-        // Use body as is
-        requestOptions.body = body;
-      }
-    }
-    
-    // Add proxy if provided
-    if (proxy) {
-      // This would require additional implementation for proxy support
-      console.warn('Proxy support is not fully implemented');
-    }
-    
-    // Make the request with retries
-    let response;
-    let retryCount = 0;
-    let redirectCount = 0;
-    let currentUrl = url;
-    
-    while (true) {
-      try {
-        response = await fetch(currentUrl, requestOptions);
-        
-        // Handle redirects manually if needed
-        if (followRedirects && [301, 302, 303, 307, 308].includes(response.status) && 
-            redirectCount < maxRedirects && response.headers.has('Location')) {
-          redirectCount++;
-          currentUrl = new URL(response.headers.get('Location'), currentUrl).toString();
-          continue;
-        }
-        
-        // Store cookies in jar if provided
-        if (cookieJar instanceof CookieJar && response.headers.has('Set-Cookie')) {
-          const cookies = response.headers.getAll('Set-Cookie');
-          for (const cookie of cookies) {
-            cookieJar.setCookie(cookie, currentUrl);
-          }
-        }
-        
-        // Check if response status is valid
-        if (!validateStatus(response.status)) {
-          throw new Error(`Request failed with status code ${response.status}`);
-        }
-        
-        break;
-      } catch (error) {
-        if (retryCount >= retries) {
-          throw error;
-        }
-        
-        retryCount++;
-        await new Promise(resolve => setTimeout(resolve, retryDelay));
-      }
-    }
-    
-    // Get response body
-    let responseBody;
-    if (stream) {
-      responseBody = response.body;
-    } else {
-      if (response.headers.get('Content-Type')?.includes('application/json')) {
-        responseBody = await response.json();
-      } else {
-        responseBody = await response.text();
-      }
-    }
-    
-    // Create response object
-    return new Response(
-      response.status,
-      response.statusText,
-      Object.fromEntries(response.headers.entries()),
-      responseBody,
-      currentUrl
-    );
+    return false;
   }
   
   /**
-   * Make a GET request
-   * @param {string} url - The URL to request
-   * @param {Object} options - Request options
-   * @returns {Promise<Response>} Promise resolving to a Response object
+   * Clear all session data
    */
-  async get(url, options = {}) {
-    return this.request(url, { ...options, method: 'GET' });
+  clear() {
+    this.data = {};
+    this.lastAccessed = new Date();
   }
   
   /**
-   * Make a POST request
-   * @param {string} url - The URL to request
-   * @param {Object} options - Request options
-   * @returns {Promise<Response>} Promise resolving to a Response object
+   * Check if the session is expired
+   * @returns {boolean} True if the session is expired
    */
-  async post(url, options = {}) {
-    return this.request(url, { ...options, method: 'POST' });
+  isExpired() {
+    const now = new Date();
+    const expiresAt = new Date(this.lastAccessed.getTime() + this.maxAge * 1000);
+    return now > expiresAt;
   }
   
   /**
-   * Make a PUT request
-   * @param {string} url - The URL to request
-   * @param {Object} options - Request options
-   * @returns {Promise<Response>} Promise resolving to a Response object
+   * Refresh the session
    */
-  async put(url, options = {}) {
-    return this.request(url, { ...options, method: 'PUT' });
+  refresh() {
+    this.lastAccessed = new Date();
   }
   
   /**
-   * Make a DELETE request
-   * @param {string} url - The URL to request
-   * @param {Object} options - Request options
-   * @returns {Promise<Response>} Promise resolving to a Response object
+   * Get the session cookie
+   * @param {string} name - Cookie name
+   * @returns {Cookie} Session cookie
    */
-  async delete(url, options = {}) {
-    return this.request(url, { ...options, method: 'DELETE' });
-  }
-  
-  /**
-   * Make a PATCH request
-   * @param {string} url - The URL to request
-   * @param {Object} options - Request options
-   * @returns {Promise<Response>} Promise resolving to a Response object
-   */
-  async patch(url, options = {}) {
-    return this.request(url, { ...options, method: 'PATCH' });
-  }
-  
-  /**
-   * Make a HEAD request
-   * @param {string} url - The URL to request
-   * @param {Object} options - Request options
-   * @returns {Promise<Response>} Promise resolving to a Response object
-   */
-  async head(url, options = {}) {
-    return this.request(url, { ...options, method: 'HEAD' });
-  }
-  
-  /**
-   * Make an OPTIONS request
-   * @param {string} url - The URL to request
-   * @param {Object} options - Request options
-   * @returns {Promise<Response>} Promise resolving to a Response object
-   */
-  async options(url, options = {}) {
-    return this.request(url, { ...options, method: 'OPTIONS' });
+  getCookie(name = 'session') {
+    const expires = new Date(this.lastAccessed.getTime() + this.maxAge * 1000);
+    
+    return new Cookie(name, this.id, {
+      path: '/',
+      expires,
+      httpOnly: true,
+      sameSite: 'Lax'
+    });
   }
 }
 
-// Create a singleton instance
-export const http = new HttpClient();
-
-// Export HTTP methods
-export const { GET, POST, PUT, DELETE, PATCH, HEAD, OPTIONS } = HTTP_METHODS;
-
-// Default export
-export default http;
+/**
+ * HTTP client class
+ */
+export class HttpClient {
+  /**
+   * Create a new HttpClient
+   * @param {Object} [options] - Client options
+   */
+  constructor(options = {}) {
+    this.baseUrl = options.baseUrl || '';
+    this.defaultHeaders = new Headers(options.headers);
+    this.timeout = options.timeout || 30000;
+    this.cookieJar = options.cookieJar || new CookieJar();
+    this.session = options.session || null;
+    this.interceptors = {
+      request: [],
+      response: []
+    };
+  }
+  
+  /**
+   * Add a request interceptor
+   * @param {Function} interceptor - Interceptor function
+   * @returns {number} Interceptor ID
+   */
+  addRequestInterceptor(interceptor) {
+    return this.interceptors.request.push(interceptor) - 1;
+  }
+  
+  /**
+   * Add a response interceptor
+   * @param {Function} interceptor - Interceptor function
+   * @returns {number} Interceptor ID
+   */
+  addResponseInterceptor(interceptor) {
+    return this.interceptors.response.push(interceptor) - 1;
+  }
+  
+  /**
+   * Remove a request interceptor
+   * @param {number} id - Interceptor ID
+   * @returns {boolean} True if the interceptor was removed
+   */
+  removeRequestInterceptor(id) {
+    if (id >= 0 && id < this.interceptors.request.length) {
+      this.interceptors.request.splice(id, 1);
+      return true;
+    }
+    return false;
+  }
+  
+  /**
+   * Remove a response interceptor
+   * @param {number} id - Interceptor ID
+   * @returns {boolean} True if the interceptor was removed
+   */
+  removeResponseInterceptor(id) {
+    if (id >= 0 && id < this.interceptors.response.length) {
+      this.interceptors.response.splice(id, 1);
+      return true;
+    }
+    return false;
+  }
+  
+  /**
+   * Create a request
+   * @param {string} url - Request URL
+   * @param {Object} [options] - Request options
+   * @returns {Request} Request
+   */
+  createRequest(url, options = {}) {
+    // Resolve URL
+    const resolvedUrl = this.baseUrl ? new URL(url, this.baseUrl).toString() : url;
+    
+    // Merge headers
+    const headers = new Headers(this.defaultHeaders.toObject());
+    
+    if (options.headers) {
+      for (const [name, value] of Object.entries(options.headers)) {
+        headers.set(name, value);
+      }
+    }
+    
+    // Add cookies
+    if (this.cookieJar) {
+      const cookieString = this.cookieJar.getCookieStringForUrl(resolvedUrl);
+      
+      if (cookieString) {
+        headers.set('Cookie', cookieString);
+      }
+    }
+    
+    // Add session cookie
+    if (this.session) {
+      const sessionCookie = this.session.getCookie();
+      headers.set('Cookie', `${headers.get('Cookie') || ''}; ${sessionCookie.name}=${sessionCookie.value}`);
+    }
+    
+    // Create request
+    return new Request(resolvedUrl, {
+      ...options,
+      headers,
+      timeout: options.timeout || this.timeout
+    });
+  }
+  
+  /**
+   * Send a request
+   * @param {Request} request - Request
+   * @returns {Promise<Response>} Response
+   */
+  async sendRequest(request) {
+    // Apply request interceptors
+    let interceptedRequest = request;
+    
+    for (const interceptor of this.interceptors.request) {
+      interceptedRequest = await interceptor(interceptedRequest);
+    }
+    
+    // Send request
+    print(`Sending ${interceptedRequest.method} request to ${interceptedRequest.url}`);
+    
+    // In a real implementation, this would use the fetch API or XMLHttpRequest
+    // For this example, we'll simulate it
+    const response = await this._simulateRequest(interceptedRequest);
+    
+    // Process cookies
+    if (this.cookieJar && response.headers.has('Set-Cookie')) {
+      const setCookieHeaders = response.headers.get('Set-Cookie').split(',');
+      this.cookieJar.parseSetCookieHeaders(setCookieHeaders);
+    }
+    
+    // Apply response interceptors
+    let interceptedResponse = response;
+    
+    for (const interceptor of this.interceptors.response) {
+      interceptedResponse = await interceptor(interceptedResponse, interceptedRequest);
+    }
+    
+    return interceptedResponse;
+  }
+  
+  /**
+   * Send a GET request
+   * @param {string} url - Request URL
+   * @param {Object} [options] - Request options
+   * @returns {Promise<Response>} Response
+   */
+  async get(url, options = {}) {
+    const request = this.createRequest(url, {
+      ...options,
+      method: METHODS.GET
+    });
+    
+    return this.sendRequest(request);
+  }
+  
+  /**
+   * Send a POST request
+   * @param {string} url - Request URL
+   * @param {*} data - Request data
+   * @param {Object} [options] - Request options
+   * @returns {Promise<Response>} Response
+   */
+  async post(url, data, options = {}) {
+    const request = this.createRequest(url, {
+      ...options,
+      method: METHODS.POST,
+      body: data
+    });
+    
+    return this.sendRequest(request);
+  }
+  
+  /**
+   * Send a PUT request
+   * @param {string} url - Request URL
+   * @param {*} data - Request data
+   * @param {Object} [options] - Request options
+   * @returns {Promise<Response>} Response
+   */
+  async put(url, data, options = {}) {
+    const request = this.createRequest(url, {
+      ...options,
+      method: METHODS.PUT,
+      body: data
+    });
+    
+    return this.sendRequest(request);
+  }
+  
+  /**
+   * Send a DELETE request
+   * @param {string} url - Request URL
+   * @param {Object} [options] - Request options
+   * @returns {Promise<Response>} Response
+   */
+  async delete(url, options = {}) {
+    const request = this.createRequest(url, {
+      ...options,
+      method: METHODS.DELETE
+    });
+    
+    return this.sendRequest(request);
+  }
+  
+  /**
+   * Send a PATCH request
+   * @param {string} url - Request URL
+   * @param {*} data - Request data
+   * @param {Object} [options] - Request options
+   * @returns {Promise<Response>} Response
+   */
+  async patch(url, data, options = {}) {
+    const request = this.createRequest(url, {
+      ...options,
+      method: METHODS.PATCH,
+      body: data
+   * @param {Object} [options] - Request options
+   * @returns {Promise<Response>} Response
+   */
+  async options(url, options = {}) {
+    const request = this.createRequest(url, {
+      ...options,
+      method: METHODS.OPTIONS
+    });
+    
+    return this.sendRequest(request);
+  }
+  
+  /**
+   * Create a new session
+   * @param {Object} [options] - Session options
+   * @returns {Session} Session
+   */
+  createSession(options = {}) {
+    this.session = new Session(options);
+    return this.session;
+  }
+  
+  /**
+   * Set the session
+   * @param {Session} session - Session
+   * @returns {HttpClient} This client
+   */
+  setSession(session) {
+    this.session = session;
+    return this;
+  }
+  
+  /**
+   * Clear the session
+   * @returns {HttpClient} This client
+   */
+  clearSession() {
+    this.session = null;
+    return this;
+  }
+  
+  /**
+   * Simulate an HTTP request
+   * @private
+   */
+  async _simulateRequest(request) {
+    // Simulate network latency
+    await new Promise(resolve => setTimeout(resolve, Math.random() * 500 + 100));
+    
+    // Simulate response
+    const headers = new Headers({
+      'Content-Type': 'application/json',
+      'Date': new Date().toUTCString()
+    });
+    
+    let status = STATUS_CODES.OK;
+    let body = null;
+    
+    // Simulate different responses based on URL and method
+    const url = request.url.toLowerCase();
+    
+    if (url.includes('404') || url.includes('notfound')) {
+      status = STATUS_CODES.NOT_FOUND;
+      body = { error: 'Not Found', message: 'The requested resource was not found' };
+    } else if (url.includes('500') || url.includes('error')) {
+      status = STATUS_CODES.INTERNAL_SERVER_ERROR;
