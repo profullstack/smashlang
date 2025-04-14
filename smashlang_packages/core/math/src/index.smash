@@ -1,552 +1,486 @@
 /**
  * SmashLang Math Package
  * 
- * A comprehensive mathematical library for SmashLang applications.
- * Provides basic arithmetic, advanced mathematical functions, and
- * support for vectors and matrices.
+ * A comprehensive mathematics library for SmashLang applications.
+ * Provides basic and advanced mathematical functions, constants,
+ * and utilities for numerical computations.
  */
 
-// Basic arithmetic functions
-export const add = (a, b) => a + b;
-export const subtract = (a, b) => a - b;
-export const multiply = (a, b) => a * b;
-export const divide = (a, b) => {
-  if (b === 0) {
-    throw new Error("Division by zero");
-  }
-  return a / b;
-};
-export const mod = (a, b) => a % b;
-export const power = (a, b) => a ** b;
+// Mathematical constants
+export const PI = Math.PI;
+export const E = Math.E;
+export const LN2 = Math.LN2;
+export const LN10 = Math.LN10;
+export const LOG2E = Math.LOG2E;
+export const LOG10E = Math.LOG10E;
+export const SQRT1_2 = Math.SQRT1_2;
+export const SQRT2 = Math.SQRT2;
+export const EPSILON = Number.EPSILON || 2.220446049250313e-16;
+export const MAX_SAFE_INTEGER = Number.MAX_SAFE_INTEGER || 9007199254740991;
+export const MIN_SAFE_INTEGER = Number.MIN_SAFE_INTEGER || -9007199254740991;
+export const MAX_VALUE = Number.MAX_VALUE;
+export const MIN_VALUE = Number.MIN_VALUE;
+export const INFINITY = Infinity;
+export const NaN = Number.NaN;
 
-// Advanced mathematical functions
-export const sqrt = (x) => {
+/**
+ * Basic arithmetic operations
+ */
+
+/**
+ * Add two or more numbers
+ * @param {...number} args - Numbers to add
+ * @returns {number} Sum of the numbers
+ */
+export fn add(...args) {
+  return args.reduce((sum, value) => sum + value, 0);
+}
+
+/**
+ * Subtract numbers from the first argument
+ * @param {...number} args - Numbers to subtract
+ * @returns {number} Result of the subtraction
+ */
+export fn subtract(...args) {
+  if (args.length === 0) return 0;
+  if (args.length === 1) return args[0];
+  
+  return args.slice(1).reduce((result, value) => result - value, args[0]);
+}
+
+/**
+ * Multiply two or more numbers
+ * @param {...number} args - Numbers to multiply
+ * @returns {number} Product of the numbers
+ */
+export fn multiply(...args) {
+  return args.reduce((product, value) => product * value, 1);
+}
+
+/**
+ * Divide the first argument by the rest
+ * @param {...number} args - Numbers to divide
+ * @returns {number} Result of the division
+ */
+export fn divide(...args) {
+  if (args.length === 0) return 0;
+  if (args.length === 1) return args[0];
+  
+  return args.slice(1).reduce((result, value) => {
+    if (value === 0) {
+      throw new Error("Division by zero");
+    }
+    return result / value;
+  }, args[0]);
+}
+
+/**
+ * Calculate the modulo of two numbers
+ * @param {number} a - Dividend
+ * @param {number} b - Divisor
+ * @returns {number} Remainder of the division
+ */
+export fn mod(a, b) {
+  if (b === 0) {
+    throw new Error("Modulo by zero");
+  }
+  
+  return a % b;
+}
+
+/**
+ * Calculate the power of a number
+ * @param {number} base - Base
+ * @param {number} exponent - Exponent
+ * @returns {number} Base raised to the power of exponent
+ */
+export fn pow(base, exponent) {
+  return Math.pow(base, exponent);
+}
+
+/**
+ * Calculate the square root of a number
+ * @param {number} x - Number
+ * @returns {number} Square root of the number
+ */
+export fn sqrt(x) {
   if (x < 0) {
     throw new Error("Cannot calculate square root of negative number");
   }
+  
   return Math.sqrt(x);
-};
+}
 
-export const abs = (x) => Math.abs(x);
-export const floor = (x) => Math.floor(x);
-export const ceil = (x) => Math.ceil(x);
-export const round = (x) => Math.round(x);
-export const trunc = (x) => Math.trunc(x);
+/**
+ * Calculate the cube root of a number
+ * @param {number} x - Number
+ * @returns {number} Cube root of the number
+ */
+export fn cbrt(x) {
+  return Math.cbrt(x);
+}
 
-// Trigonometric functions
-export const sin = (x) => Math.sin(x);
-export const cos = (x) => Math.cos(x);
-export const tan = (x) => Math.tan(x);
-export const asin = (x) => Math.asin(x);
-export const acos = (x) => Math.acos(x);
-export const atan = (x) => Math.atan(x);
-export const atan2 = (y, x) => Math.atan2(y, x);
+/**
+ * Calculate the absolute value of a number
+ * @param {number} x - Number
+ * @returns {number} Absolute value of the number
+ */
+export fn abs(x) {
+  return Math.abs(x);
+}
 
-// Logarithmic functions
-export const log = (x, base = Math.E) => {
-  if (x <= 0) {
-    throw new Error("Cannot calculate logarithm of non-positive number");
+/**
+ * Round a number to the nearest integer
+ * @param {number} x - Number
+ * @returns {number} Rounded number
+ */
+export fn round(x) {
+  return Math.round(x);
+}
+
+/**
+ * Round a number down to the nearest integer
+ * @param {number} x - Number
+ * @returns {number} Rounded down number
+ */
+export fn floor(x) {
+  return Math.floor(x);
+}
+
+/**
+ * Round a number up to the nearest integer
+ * @param {number} x - Number
+ * @returns {number} Rounded up number
+ */
+export fn ceil(x) {
+  return Math.ceil(x);
+}
+
+/**
+ * Truncate the decimal part of a number
+ * @param {number} x - Number
+ * @returns {number} Truncated number
+ */
+export fn trunc(x) {
+  return Math.trunc(x);
+}
+
+/**
+ * Get the sign of a number
+ * @param {number} x - Number
+ * @returns {number} 1 if positive, -1 if negative, 0 if zero
+ */
+export fn sign(x) {
+  return Math.sign(x);
+}
+
+/**
+ * Check if a number is an integer
+ * @param {number} x - Number
+ * @returns {boolean} True if the number is an integer
+ */
+export fn isInteger(x) {
+  return Number.isInteger(x);
+}
+
+/**
+ * Check if a number is a safe integer
+ * @param {number} x - Number
+ * @returns {boolean} True if the number is a safe integer
+ */
+export fn isSafeInteger(x) {
+  return Number.isSafeInteger(x);
+}
+
+/**
+ * Check if a value is NaN
+ * @param {*} x - Value
+ * @returns {boolean} True if the value is NaN
+ */
+export fn isNaN(x) {
+  return Number.isNaN(x);
+}
+
+/**
+ * Check if a value is finite
+ * @param {*} x - Value
+ * @returns {boolean} True if the value is finite
+ */
+export fn isFinite(x) {
+  return Number.isFinite(x);
+}
+
+/**
+ * Clamp a number between a minimum and maximum value
+ * @param {number} x - Number
+ * @param {number} min - Minimum value
+ * @param {number} max - Maximum value
+ * @returns {number} Clamped number
+ */
+export fn clamp(x, min, max) {
+  return Math.min(Math.max(x, min), max);
+}
+
+/**
+ * Get the minimum of two or more numbers
+ * @param {...number} args - Numbers
+ * @returns {number} Minimum number
+ */
+export fn min(...args) {
+  return Math.min(...args);
+}
+
+/**
+ * Get the maximum of two or more numbers
+ * @param {...number} args - Numbers
+ * @returns {number} Maximum number
+ */
+export fn max(...args) {
+  return Math.max(...args);
+}
+
+/**
+ * Calculate the sum of an array of numbers
+ * @param {number[]} arr - Array of numbers
+ * @returns {number} Sum of the numbers
+ */
+export fn sum(arr) {
+  if (!Array.isArray(arr)) {
+    throw new Error("Input must be an array");
   }
-  if (base <= 0 || base === 1) {
-    throw new Error("Invalid logarithm base");
+  
+  return arr.reduce((sum, value) => sum + value, 0);
+}
+
+/**
+ * Calculate the product of an array of numbers
+ * @param {number[]} arr - Array of numbers
+ * @returns {number} Product of the numbers
+ */
+export fn product(arr) {
+  if (!Array.isArray(arr)) {
+    throw new Error("Input must be an array");
   }
-  return Math.log(x) / Math.log(base);
-};
+  
+  return arr.reduce((product, value) => product * value, 1);
+}
 
-export const ln = (x) => log(x, Math.E);
-export const log10 = (x) => log(x, 10);
-export const log2 = (x) => log(x, 2);
-
-// Constants
-export const PI = Math.PI;
-export const E = Math.E;
-export const SQRT2 = Math.SQRT2;
-export const SQRT1_2 = Math.SQRT1_2;
-export const LN2 = Math.LN2;
-export const LN10 = Math.LN10;
-
-// Random number generation
-export const random = () => Math.random();
-export const randomInt = (min, max) => {
-  min = Math.ceil(min);
-  max = Math.floor(max);
-  return Math.floor(Math.random() * (max - min + 1)) + min;
-};
-export const randomFloat = (min, max) => Math.random() * (max - min) + min;
-
-// Statistical functions
-export const sum = (arr) => arr.reduce((acc, val) => acc + val, 0);
-export const mean = (arr) => {
-  if (arr.length === 0) return 0;
+/**
+ * Calculate the average of an array of numbers
+ * @param {number[]} arr - Array of numbers
+ * @returns {number} Average of the numbers
+ */
+export fn average(arr) {
+  if (!Array.isArray(arr) || arr.length === 0) {
+    throw new Error("Input must be a non-empty array");
+  }
+  
   return sum(arr) / arr.length;
-};
-export const median = (arr) => {
-  if (arr.length === 0) return 0;
+}
+
+/**
+ * Calculate the median of an array of numbers
+ * @param {number[]} arr - Array of numbers
+ * @returns {number} Median of the numbers
+ */
+export fn median(arr) {
+  if (!Array.isArray(arr) || arr.length === 0) {
+    throw new Error("Input must be a non-empty array");
+  }
   
   const sorted = [...arr].sort((a, b) => a - b);
-  const mid = Math.floor(sorted.length / 2);
+  const middle = Math.floor(sorted.length / 2);
   
-  return sorted.length % 2 === 0
-    ? (sorted[mid - 1] + sorted[mid]) / 2
-    : sorted[mid];
-};
-export const mode = (arr) => {
-  if (arr.length === 0) return null;
+  if (sorted.length % 2 === 0) {
+    return (sorted[middle - 1] + sorted[middle]) / 2;
+  } else {
+    return sorted[middle];
+  }
+}
+
+/**
+ * Calculate the mode of an array of numbers
+ * @param {number[]} arr - Array of numbers
+ * @returns {number[]} Mode(s) of the numbers
+ */
+export fn mode(arr) {
+  if (!Array.isArray(arr) || arr.length === 0) {
+    throw new Error("Input must be a non-empty array");
+  }
   
   const counts = {};
   let maxCount = 0;
-  let modes = [];
   
-  for (const val of arr) {
-    counts[val] = (counts[val] || 0) + 1;
-    if (counts[val] > maxCount) {
-      maxCount = counts[val];
-      modes = [val];
-    } else if (counts[val] === maxCount) {
-      modes.push(val);
-    }
+  for (const value of arr) {
+    counts[value] = (counts[value] || 0) + 1;
+    maxCount = Math.max(maxCount, counts[value]);
   }
   
-  return modes.length === arr.length ? null : modes.length === 1 ? modes[0] : modes;
-};
-export const variance = (arr) => {
-  if (arr.length <= 1) return 0;
-  
-  const avg = mean(arr);
-  return mean(arr.map(x => (x - avg) ** 2));
-};
-export const stdDev = (arr) => Math.sqrt(variance(arr));
-export const min = (arr) => Math.min(...arr);
-export const max = (arr) => Math.max(...arr);
-export const range = (arr) => max(arr) - min(arr);
-
-// Vector class
-export class Vector {
-  constructor(components) {
-    this.components = Array.isArray(components) ? [...components] : [];
-  }
-  
-  get dimension() {
-    return this.components.length;
-  }
-  
-  get(index) {
-    if (index < 0 || index >= this.dimension) {
-      throw new Error("Index out of bounds");
-    }
-    return this.components[index];
-  }
-  
-  set(index, value) {
-    if (index < 0 || index >= this.dimension) {
-      throw new Error("Index out of bounds");
-    }
-    const newComponents = [...this.components];
-    newComponents[index] = value;
-    return new Vector(newComponents);
-  }
-  
-  add(v) {
-    if (!(v instanceof Vector)) {
-      throw new Error("Can only add another vector");
-    }
-    if (this.dimension !== v.dimension) {
-      throw new Error("Vectors must have the same dimension");
-    }
-    
-    const result = this.components.map((val, i) => val + v.components[i]);
-    return new Vector(result);
-  }
-  
-  subtract(v) {
-    if (!(v instanceof Vector)) {
-      throw new Error("Can only subtract another vector");
-    }
-    if (this.dimension !== v.dimension) {
-      throw new Error("Vectors must have the same dimension");
-    }
-    
-    const result = this.components.map((val, i) => val - v.components[i]);
-    return new Vector(result);
-  }
-  
-  scale(scalar) {
-    const result = this.components.map(val => val * scalar);
-    return new Vector(result);
-  }
-  
-  dot(v) {
-    if (!(v instanceof Vector)) {
-      throw new Error("Can only calculate dot product with another vector");
-    }
-    if (this.dimension !== v.dimension) {
-      throw new Error("Vectors must have the same dimension");
-    }
-    
-    return this.components.reduce((sum, val, i) => sum + val * v.components[i], 0);
-  }
-  
-  cross(v) {
-    if (!(v instanceof Vector)) {
-      throw new Error("Can only calculate cross product with another vector");
-    }
-    if (this.dimension !== 3 || v.dimension !== 3) {
-      throw new Error("Cross product is only defined for 3D vectors");
-    }
-    
-    const [a1, a2, a3] = this.components;
-    const [b1, b2, b3] = v.components;
-    
-    return new Vector([
-      a2 * b3 - a3 * b2,
-      a3 * b1 - a1 * b3,
-      a1 * b2 - a2 * b1
-    ]);
-  }
-  
-  magnitude() {
-    return Math.sqrt(this.components.reduce((sum, val) => sum + val * val, 0));
-  }
-  
-  normalize() {
-    const mag = this.magnitude();
-    if (mag === 0) {
-      throw new Error("Cannot normalize zero vector");
-    }
-    
-    return this.scale(1 / mag);
-  }
-  
-  toString() {
-    return `Vector(${this.components.join(", ")})`;
-  }
+  return Object.keys(counts)
+    .filter(value => counts[value] === maxCount)
+    .map(value => Number(value));
 }
 
-// Matrix class
-export class Matrix {
-  constructor(data) {
-    if (!Array.isArray(data) || data.length === 0 || !Array.isArray(data[0])) {
-      this.data = [[0]];
-    } else {
-      // Deep copy the data
-      this.data = data.map(row => [...row]);
-    }
+/**
+ * Calculate the variance of an array of numbers
+ * @param {number[]} arr - Array of numbers
+ * @param {boolean} [population=false] - Whether to calculate population variance
+ * @returns {number} Variance of the numbers
+ */
+export fn variance(arr, population = false) {
+  if (!Array.isArray(arr) || arr.length === 0) {
+    throw new Error("Input must be a non-empty array");
   }
   
-  get rows() {
-    return this.data.length;
+  if (arr.length === 1) {
+    return 0;
   }
   
-  get columns() {
-    return this.data[0].length;
-  }
+  const avg = average(arr);
+  const squaredDifferences = arr.map(value => Math.pow(value - avg, 2));
+  const divisor = population ? arr.length : arr.length - 1;
   
-  get(row, col) {
-    if (row < 0 || row >= this.rows || col < 0 || col >= this.columns) {
-      throw new Error("Index out of bounds");
-    }
-    return this.data[row][col];
-  }
-  
-  set(row, col, value) {
-    if (row < 0 || row >= this.rows || col < 0 || col >= this.columns) {
-      throw new Error("Index out of bounds");
-    }
-    
-    const newData = this.data.map(r => [...r]);
-    newData[row][col] = value;
-    return new Matrix(newData);
-  }
-  
-  add(m) {
-    if (!(m instanceof Matrix)) {
-      throw new Error("Can only add another matrix");
-    }
-    if (this.rows !== m.rows || this.columns !== m.columns) {
-      throw new Error("Matrices must have the same dimensions");
-    }
-    
-    const result = this.data.map((row, i) => 
-      row.map((val, j) => val + m.data[i][j])
-    );
-    
-    return new Matrix(result);
-  }
-  
-  subtract(m) {
-    if (!(m instanceof Matrix)) {
-      throw new Error("Can only subtract another matrix");
-    }
-    if (this.rows !== m.rows || this.columns !== m.columns) {
-      throw new Error("Matrices must have the same dimensions");
-    }
-    
-    const result = this.data.map((row, i) => 
-      row.map((val, j) => val - m.data[i][j])
-    );
-    
-    return new Matrix(result);
-  }
-  
-  multiply(m) {
-    if (!(m instanceof Matrix)) {
-      throw new Error("Can only multiply by another matrix");
-    }
-    if (this.columns !== m.rows) {
-      throw new Error("Number of columns in first matrix must equal number of rows in second matrix");
-    }
-    
-    const result = [];
-    for (let i = 0; i < this.rows; i++) {
-      result[i] = [];
-      for (let j = 0; j < m.columns; j++) {
-        let sum = 0;
-        for (let k = 0; k < this.columns; k++) {
-          sum += this.data[i][k] * m.data[k][j];
-        }
-        result[i][j] = sum;
-      }
-    }
-    
-    return new Matrix(result);
-  }
-  
-  scale(scalar) {
-    const result = this.data.map(row => 
-      row.map(val => val * scalar)
-    );
-    
-    return new Matrix(result);
-  }
-  
-  transpose() {
-    const result = [];
-    for (let j = 0; j < this.columns; j++) {
-      result[j] = [];
-      for (let i = 0; i < this.rows; i++) {
-        result[j][i] = this.data[i][j];
-      }
-    }
-    
-    return new Matrix(result);
-  }
-  
-  determinant() {
-    if (this.rows !== this.columns) {
-      throw new Error("Determinant is only defined for square matrices");
-    }
-    
-    if (this.rows === 1) {
-      return this.data[0][0];
-    }
-    
-    if (this.rows === 2) {
-      return this.data[0][0] * this.data[1][1] - this.data[0][1] * this.data[1][0];
-    }
-    
-    let det = 0;
-    for (let j = 0; j < this.columns; j++) {
-      det += this.data[0][j] * this.cofactor(0, j);
-    }
-    
-    return det;
-  }
-  
-  minor(row, col) {
-    const subMatrix = [];
-    for (let i = 0; i < this.rows; i++) {
-      if (i === row) continue;
-      
-      const newRow = [];
-      for (let j = 0; j < this.columns; j++) {
-        if (j === col) continue;
-        newRow.push(this.data[i][j]);
-      }
-      
-      subMatrix.push(newRow);
-    }
-    
-    return new Matrix(subMatrix).determinant();
-  }
-  
-  cofactor(row, col) {
-    const sign = (row + col) % 2 === 0 ? 1 : -1;
-    return sign * this.minor(row, col);
-  }
-  
-  adjugate() {
-    if (this.rows !== this.columns) {
-      throw new Error("Adjugate is only defined for square matrices");
-    }
-    
-    const result = [];
-    for (let i = 0; i < this.rows; i++) {
-      result[i] = [];
-      for (let j = 0; j < this.columns; j++) {
-        result[i][j] = this.cofactor(j, i); // Note: i and j are swapped for transpose
-      }
-    }
-    
-    return new Matrix(result);
-  }
-  
-  inverse() {
-    const det = this.determinant();
-    if (det === 0) {
-      throw new Error("Matrix is not invertible");
-    }
-    
-    return this.adjugate().scale(1 / det);
-  }
-  
-  toString() {
-    return this.data.map(row => row.join("\t")).join("\n");
-  }
+  return sum(squaredDifferences) / divisor;
 }
 
-// Create a namespace for statistical functions
-export const stats = {
-  sum,
-  mean,
-  median,
-  mode,
-  variance,
-  stdDev,
-  min,
-  max,
-  range,
-  
-  // Additional statistical functions
-  quartiles: (arr) => {
-    if (arr.length === 0) return [0, 0, 0];
-    
-    const sorted = [...arr].sort((a, b) => a - b);
-    const q2 = median(sorted);
-    
-    const lowerHalf = sorted.slice(0, Math.floor(sorted.length / 2));
-    const upperHalf = sorted.slice(Math.ceil(sorted.length / 2));
-    
-    const q1 = median(lowerHalf);
-    const q3 = median(upperHalf);
-    
-    return [q1, q2, q3];
-  },
-  
-  iqr: (arr) => {
-    const [q1, , q3] = stats.quartiles(arr);
-    return q3 - q1;
-  },
-  
-  percentile: (arr, p) => {
-    if (arr.length === 0) return 0;
-    if (p < 0 || p > 100) {
-      throw new Error("Percentile must be between 0 and 100");
-    }
-    
-    const sorted = [...arr].sort((a, b) => a - b);
-    const index = (p / 100) * (sorted.length - 1);
-    const lower = Math.floor(index);
-    const upper = Math.ceil(index);
-    
-    if (lower === upper) {
-      return sorted[lower];
-    }
-    
-    const weight = index - lower;
-    return (1 - weight) * sorted[lower] + weight * sorted[upper];
-  },
-  
-  correlation: (x, y) => {
-    if (x.length !== y.length || x.length === 0) {
-      throw new Error("Arrays must have the same non-zero length");
-    }
-    
-    const meanX = mean(x);
-    const meanY = mean(y);
-    
-    let numerator = 0;
-    let denomX = 0;
-    let denomY = 0;
-    
-    for (let i = 0; i < x.length; i++) {
-      const xDiff = x[i] - meanX;
-      const yDiff = y[i] - meanY;
-      
-      numerator += xDiff * yDiff;
-      denomX += xDiff * xDiff;
-      denomY += yDiff * yDiff;
-    }
-    
-    if (denomX === 0 || denomY === 0) {
-      return 0;
-    }
-    
-    return numerator / Math.sqrt(denomX * denomY);
-  }
-};
+/**
+ * Calculate the standard deviation of an array of numbers
+ * @param {number[]} arr - Array of numbers
+ * @param {boolean} [population=false] - Whether to calculate population standard deviation
+ * @returns {number} Standard deviation of the numbers
+ */
+export fn standardDeviation(arr, population = false) {
+  return Math.sqrt(variance(arr, population));
+}
 
-// Export a namespace for all math functions
-export const math = {
-  // Basic arithmetic
-  add,
-  subtract,
-  multiply,
-  divide,
-  mod,
-  power,
+/**
+ * Calculate the factorial of a number
+ * @param {number} n - Number
+ * @returns {number} Factorial of the number
+ */
+export fn factorial(n) {
+  if (!isInteger(n) || n < 0) {
+    throw new Error("Input must be a non-negative integer");
+  }
   
-  // Advanced functions
-  sqrt,
-  abs,
-  floor,
-  ceil,
-  round,
-  trunc,
+  if (n === 0 || n === 1) {
+    return 1;
+  }
   
-  // Trigonometric functions
-  sin,
-  cos,
-  tan,
-  asin,
-  acos,
-  atan,
-  atan2,
+  let result = 1;
+  for (let i = 2; i <= n; i++) {
+    result *= i;
+  }
   
-  // Logarithmic functions
-  log,
-  ln,
-  log10,
-  log2,
+  return result;
+}
+
+/**
+ * Calculate the greatest common divisor (GCD) of two numbers
+ * @param {number} a - First number
+ * @param {number} b - Second number
+ * @returns {number} Greatest common divisor
+ */
+export fn gcd(a, b) {
+  a = Math.abs(a);
+  b = Math.abs(b);
   
+  while (b !== 0) {
+    const temp = b;
+    b = a % b;
+    a = temp;
+  }
+  
+  return a;
+}
+
+/**
+ * Calculate the least common multiple (LCM) of two numbers
+ * @param {number} a - First number
+ * @param {number} b - Second number
+ * @returns {number} Least common multiple
+ */
+export fn lcm(a, b) {
+  return Math.abs(a * b) / gcd(a, b);
+}
+
+/**
+ * Check if a number is prime
+ * @param {number} n - Number
+ * @returns {boolean} True if the number is prime
+ */
+export fn isPrime(n) {
+  if (!isInteger(n) || n < 2) {
+    return false;
+  }
+  
+  if (n === 2 || n === 3) {
+    return true;
+  }
+  
+  if (n % 2 === 0 || n % 3 === 0) {
+    return false;
+  }
+  
+  for (let i = 5; i * i <= n; i += 6) {
+    if (n % i === 0 || n % (i + 2) === 0) {
+      return false;
+    }
+  }
+  
+  return true;
+}
+
+/**
+ * Generate an array of prime numbers up to a limit
+ * @param {number} limit - Upper limit
+ * @returns {number[]} Array of prime numbers
+ */
+export fn generatePrimes(limit) {
+  if (!isInteger(limit) || limit < 2) {
+    return [];
+  }
+  
+  const primes = [];
+  const sieve = new Array(limit + 1).fill(true);
+  
+  for (let p = 2; p * p <= limit; p++) {
+    if (sieve[p]) {
+      for (let i = p * p; i <= limit; i += p) {
+        sieve[i] = false;
+      }
+    }
+  }
+  
+  for (let p = 2; p <= limit; p++) {
+    if (sieve[p]) {
+      primes.push(p);
+    }
+  }
+  
+  return primes;
+}
+
+// Create a namespace for the package
+const math = {
   // Constants
-  PI,
-  E,
-  SQRT2,
-  SQRT1_2,
-  LN2,
-  LN10,
+  PI, E, LN2, LN10, LOG2E, LOG10E, SQRT1_2, SQRT2,
+  EPSILON, MAX_SAFE_INTEGER, MIN_SAFE_INTEGER, MAX_VALUE, MIN_VALUE,
+  INFINITY, NaN,
   
-  // Random number generation
-  random,
-  randomInt,
-  randomFloat,
+  // Basic arithmetic
+  add, subtract, multiply, divide, mod, pow, sqrt, cbrt,
+  abs, round, floor, ceil, trunc, sign,
+  isInteger, isSafeInteger, isNaN, isFinite,
+  clamp, min, max,
   
   // Statistical functions
-  sum,
-  mean,
-  median,
-  mode,
-  variance,
-  stdDev,
-  min,
-  max,
-  range
+  sum, product, average, median, mode,
+  variance, standardDeviation,
+  
+  // Number theory
+  factorial, gcd, lcm, isPrime, generatePrimes
 };
 
 // Default export
-export default {
-  math,
-  stats,
-  Vector,
-  Matrix
-};
+export default math;

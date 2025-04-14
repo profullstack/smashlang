@@ -2,114 +2,91 @@
  * Basic Math Package Example
  * 
  * This example demonstrates the basic functionality of the math package,
- * including arithmetic operations, mathematical functions, and constants.
+ * including arithmetic operations, statistical functions, and more.
  */
 
-import { math, Vector, Matrix } from "../src/index.smash";
+import math from "../src/index.smash";
 
-// Basic arithmetic
-console.log("=== Basic Arithmetic ===");
-console.log(`Addition: 5 + 3 = ${math.add(5, 3)}`);
-console.log(`Subtraction: 5 - 3 = ${math.subtract(5, 3)}`);
-console.log(`Multiplication: 5 * 3 = ${math.multiply(5, 3)}`);
-console.log(`Division: 6 / 3 = ${math.divide(6, 3)}`);
-console.log(`Modulo: 7 % 3 = ${math.mod(7, 3)}`);
-console.log(`Power: 2^3 = ${math.power(2, 3)}`);
-console.log();
+// Basic arithmetic operations
+print("=== Basic Arithmetic ===");
+print(`Addition: 2 + 3 = ${math.add(2, 3)}`);
+print(`Subtraction: 5 - 2 = ${math.subtract(5, 2)}`);
+print(`Multiplication: 4 * 3 = ${math.multiply(4, 3)}`);
+print(`Division: 10 / 2 = ${math.divide(10, 2)}`);
+print(`Modulo: 10 % 3 = ${math.mod(10, 3)}`);
+print(`Power: 2^3 = ${math.pow(2, 3)}`);
+print(`Square root of 16 = ${math.sqrt(16)}`);
+print(`Cube root of 27 = ${math.cbrt(27)}`);
+print(`Absolute value of -5 = ${math.abs(-5)}`);
+print();
 
-// Mathematical constants
-console.log("=== Mathematical Constants ===");
-console.log(`PI: ${math.PI}`);
-console.log(`E: ${math.E}`);
-console.log(`Square root of 2: ${math.SQRT2}`);
-console.log();
+// Rounding functions
+print("=== Rounding Functions ===");
+print(`Round 3.7 = ${math.round(3.7)}`);
+print(`Floor 3.7 = ${math.floor(3.7)}`);
+print(`Ceil 3.2 = ${math.ceil(3.2)}`);
+print(`Truncate 3.7 = ${math.trunc(3.7)}`);
+print();
 
-// Advanced mathematical functions
-console.log("=== Advanced Mathematical Functions ===");
-console.log(`Square root of 16: ${math.sqrt(16)}`);
-console.log(`Absolute value of -5: ${math.abs(-5)}`);
-console.log(`Sine of PI/2: ${math.sin(math.PI / 2)}`);
-console.log(`Cosine of PI: ${math.cos(math.PI)}`);
-console.log(`Natural logarithm of 10: ${math.ln(10)}`);
-console.log(`Base-10 logarithm of 100: ${math.log10(100)}`);
-console.log();
-
-// Random number generation
-console.log("=== Random Numbers ===");
-console.log(`Random number between 0 and 1: ${math.random()}`);
-console.log(`Random integer between 1 and 10: ${math.randomInt(1, 10)}`);
-console.log(`Random float between 0 and 100: ${math.randomFloat(0, 100)}`);
-console.log();
+// Min/Max functions
+print("=== Min/Max Functions ===");
+print(`Min of 5, 2, 8, 1 = ${math.min(5, 2, 8, 1)}`);
+print(`Max of 5, 2, 8, 1 = ${math.max(5, 2, 8, 1)}`);
+print(`Clamp 15 between 0 and 10 = ${math.clamp(15, 0, 10)}`);
+print();
 
 // Statistical functions
-console.log("=== Statistical Functions ===");
-const data = [2, 4, 6, 8, 10];
-console.log(`Data: [${data.join(", ")}]`);
-console.log(`Sum: ${math.sum(data)}`);
-console.log(`Mean (average): ${math.mean(data)}`);
-console.log(`Median: ${math.median(data)}`);
-console.log(`Minimum: ${math.min(data)}`);
-console.log(`Maximum: ${math.max(data)}`);
-console.log(`Range: ${math.range(data)}`);
-console.log(`Variance: ${math.variance(data)}`);
-console.log(`Standard Deviation: ${math.stdDev(data)}`);
-console.log();
+print("=== Statistical Functions ===");
+const numbers = [2, 4, 6, 8, 10];
+print(`Numbers: ${numbers}`);
+print(`Sum: ${math.sum(numbers)}`);
+print(`Product: ${math.product(numbers)}`);
+print(`Average: ${math.average(numbers)}`);
+print(`Median: ${math.median(numbers)}`);
+print(`Mode: ${math.mode([1, 2, 2, 3, 4, 4, 4, 5])}`);
+print(`Variance: ${math.variance(numbers)}`);
+print(`Standard Deviation: ${math.standardDeviation(numbers)}`);
+print();
+
+// Number theory
+print("=== Number Theory ===");
+print(`Factorial of 5 = ${math.factorial(5)}`);
+print(`GCD of 48 and 18 = ${math.gcd(48, 18)}`);
+print(`LCM of 12 and 18 = ${math.lcm(12, 18)}`);
+print(`Is 17 prime? ${math.isPrime(17)}`);
+print(`Is 20 prime? ${math.isPrime(20)}`);
+print(`Prime numbers up to 20: ${math.generatePrimes(20)}`);
+print();
+
+// Constants
+print("=== Mathematical Constants ===");
+print(`PI = ${math.PI}`);
+print(`E = ${math.E}`);
+print(`Square root of 2 = ${math.SQRT2}`);
+print();
+
+// Check if functions
+print("=== Check Functions ===");
+print(`Is 5 an integer? ${math.isInteger(5)}`);
+print(`Is 5.5 an integer? ${math.isInteger(5.5)}`);
+print(`Is NaN a number? ${math.isNaN(NaN)}`);
+print(`Is 5 a finite number? ${math.isFinite(5)}`);
+print(`Is Infinity a finite number? ${math.isFinite(Infinity)}`);
+print();
 
 // Vector operations
-console.log("=== Vector Operations ===");
-const v1 = new Vector([1, 2, 3]);
-const v2 = new Vector([4, 5, 6]);
-console.log(`Vector 1: ${v1}`);
-console.log(`Vector 2: ${v2}`);
-console.log(`Vector 1 + Vector 2: ${v1.add(v2)}`);
-console.log(`Vector 1 - Vector 2: ${v1.subtract(v2)}`);
-console.log(`Vector 1 scaled by 2: ${v1.scale(2)}`);
-console.log(`Dot product: ${v1.dot(v2)}`);
-console.log(`Cross product: ${v1.cross(v2)}`);
-console.log(`Magnitude of Vector 1: ${v1.magnitude()}`);
-console.log(`Normalized Vector 1: ${v1.normalize()}`);
-console.log();
+print("=== Vector Operations ===");
+const v1 = [1, 2, 3];
+const v2 = [4, 5, 6];
+print(`Vector 1: [${v1}]`);
+print(`Vector 2: [${v2}]`);
+print(`Vector Addition: [${math.vectorAdd(v1, v2)}]`);
+print(`Vector Subtraction: [${math.vectorSubtract(v1, v2)}]`);
+print(`Dot Product: ${math.dotProduct(v1, v2)}`);
+print(`Cross Product: [${math.crossProduct(v1, v2)}]`);
+print(`Magnitude of v1: ${math.vectorMagnitude(v1)}`);
+print(`Normalized v1: [${math.vectorNormalize(v1)}]`);
+print(`Scaled v1 (by 2): [${math.vectorScale(v1, 2)}]`);
+print();
 
-// Matrix operations
-console.log("=== Matrix Operations ===");
-const m1 = new Matrix([
-  [1, 2],
-  [3, 4]
-]);
-const m2 = new Matrix([
-  [5, 6],
-  [7, 8]
-]);
-console.log("Matrix 1:");
-console.log(m1.toString());
-console.log();
-
-console.log("Matrix 2:");
-console.log(m2.toString());
-console.log();
-
-console.log("Matrix 1 + Matrix 2:");
-console.log(m1.add(m2).toString());
-console.log();
-
-console.log("Matrix 1 * Matrix 2:");
-console.log(m1.multiply(m2).toString());
-console.log();
-
-console.log("Transpose of Matrix 1:");
-console.log(m1.transpose().toString());
-console.log();
-
-console.log("Determinant of Matrix 1:", m1.determinant());
-console.log();
-
-console.log("Inverse of Matrix 1:");
-console.log(m1.inverse().toString());
-console.log();
-
-// Verify the inverse
-console.log("Matrix 1 * Inverse (should be identity matrix):");
-console.log(m1.multiply(m1.inverse()).toString());
-console.log();
-
-console.log("Example completed successfully!");
+print("Math package example completed!");

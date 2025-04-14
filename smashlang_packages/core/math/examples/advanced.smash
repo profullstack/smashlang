@@ -1,0 +1,234 @@
+/**
+ * Advanced Math Package Example
+ * 
+ * This example demonstrates advanced functionality of the math package,
+ * including matrix operations, complex calculations, and practical applications.
+ */
+
+import math from "../src/index.smash";
+
+// Matrix operations
+print("=== Matrix Operations ===");
+
+// Create a 3x3 matrix
+const matrixA = math.matrix(3, 3, (i, j) => i * 3 + j + 1);
+print("Matrix A:");
+printMatrix(matrixA);
+
+// Create another 3x3 matrix
+const matrixB = math.matrix(3, 3, (i, j) => (i + j) * 2);
+print("\nMatrix B:");
+printMatrix(matrixB);
+
+// Matrix addition
+const matrixSum = math.matrixAdd(matrixA, matrixB);
+print("\nMatrix A + B:");
+printMatrix(matrixSum);
+
+// Matrix subtraction
+const matrixDiff = math.matrixSubtract(matrixA, matrixB);
+print("\nMatrix A - B:");
+printMatrix(matrixDiff);
+
+// Create an identity matrix
+const identityMatrix = math.identityMatrix(3);
+print("\nIdentity Matrix (3x3):");
+printMatrix(identityMatrix);
+
+// Helper function to print a matrix
+function printMatrix(matrix) {
+  for (const row of matrix) {
+    print(`[${row.join(', ')}]`);
+  }
+}
+
+// Statistical analysis
+print("\n=== Statistical Analysis ===");
+
+// Generate random data
+const sampleSize = 100;
+const data = [];
+for (let i = 0; i < sampleSize; i++) {
+  // Generate random values with normal-like distribution using central limit theorem
+  let sum = 0;
+  for (let j = 0; j < 10; j++) {
+    sum += Math.random();
+  }
+  data.push(sum - 5); // Center around 0
+}
+
+// Calculate statistics
+const mean = math.average(data);
+const median = math.median(data);
+const stdDev = math.standardDeviation(data);
+const variance = math.variance(data);
+
+print(`Sample size: ${sampleSize}`);
+print(`Mean: ${mean.toFixed(4)}`);
+print(`Median: ${median.toFixed(4)}`);
+print(`Standard Deviation: ${stdDev.toFixed(4)}`);
+print(`Variance: ${variance.toFixed(4)}`);
+
+// Create a simple histogram
+const histogram = createHistogram(data, 10, -5, 5);
+print("\nHistogram:");
+for (let i = 0; i < histogram.bins.length; i++) {
+  const binStart = histogram.min + i * histogram.binWidth;
+  const binEnd = binStart + histogram.binWidth;
+  const count = histogram.bins[i];
+  const bar = "#".repeat(Math.round(count / 2));
+  print(`[${binStart.toFixed(1)}, ${binEnd.toFixed(1)}): ${bar} (${count})`);
+}
+
+// Helper function to create a histogram
+function createHistogram(data, numBins, min, max) {
+  const bins = new Array(numBins).fill(0);
+  const binWidth = (max - min) / numBins;
+  
+  for (const value of data) {
+    if (value >= min && value < max) {
+      const binIndex = Math.floor((value - min) / binWidth);
+      bins[binIndex]++;
+    }
+  }
+  
+  return { bins, min, max, binWidth };
+}
+
+// Numerical methods
+print("\n=== Numerical Methods ===");
+
+// Newton's method for finding square root
+print("Newton's method for finding square root of 16:");
+const sqrtResult = newtonSqrt(16, 5);
+print(`Iterations: ${sqrtResult.iterations}`);
+print(`Approximations: ${sqrtResult.approximations.map(x => x.toFixed(6)).join(', ')}`);
+print(`Final result: ${sqrtResult.result}`);
+
+// Helper function for Newton's method to find square root
+function newtonSqrt(n, maxIterations = 10) {
+  let x = n / 2; // Initial guess
+  const approximations = [x];
+  let iterations = 0;
+  
+  while (iterations < maxIterations) {
+    const nextX = 0.5 * (x + n / x);
+    approximations.push(nextX);
+    
+    if (Math.abs(nextX - x) < 1e-10) {
+      break;
+    }
+    
+    x = nextX;
+    iterations++;
+  }
+  
+  return {
+    result: x,
+    iterations,
+    approximations
+  };
+}
+
+// Monte Carlo method to estimate π
+print("\nMonte Carlo method to estimate π:");
+const piEstimations = [];
+const sampleSizes = [100, 1000, 10000];
+
+for (const samples of sampleSizes) {
+  const piEstimate = estimatePi(samples);
+  piEstimations.push({ samples, estimate: piEstimate });
+  print(`With ${samples} samples: π ≈ ${piEstimate.toFixed(6)} (error: ${Math.abs(piEstimate - Math.PI).toFixed(6)})`);
+}
+
+// Helper function to estimate π using Monte Carlo method
+function estimatePi(numSamples) {
+  let insideCircle = 0;
+  
+  for (let i = 0; i < numSamples; i++) {
+    const x = Math.random() * 2 - 1; // Random x between -1 and 1
+    const y = Math.random() * 2 - 1; // Random y between -1 and 1
+    
+    // Check if point is inside unit circle
+    if (x*x + y*y <= 1) {
+      insideCircle++;
+    }
+  }
+  
+  // Area of circle / Area of square = π/4
+  return 4 * insideCircle / numSamples;
+}
+
+// Practical application: Projectile motion
+print("\n=== Practical Application: Projectile Motion ===");
+
+// Parameters
+const initialVelocity = 20; // m/s
+const launchAngle = 45; // degrees
+const gravity = 9.81; // m/s²
+const timeStep = 0.1; // seconds
+
+// Calculate trajectory
+const trajectory = calculateTrajectory(initialVelocity, launchAngle, gravity, timeStep);
+
+print(`Initial velocity: ${initialVelocity} m/s`);
+print(`Launch angle: ${launchAngle}°`);
+print(`Maximum height: ${trajectory.maxHeight.toFixed(2)} m`);
+print(`Range: ${trajectory.range.toFixed(2)} m`);
+print(`Time of flight: ${trajectory.timeOfFlight.toFixed(2)} s`);
+
+// Print trajectory at selected points
+print("\nTrajectory (selected points):");
+print("Time (s) | Position (x, y) | Velocity (vx, vy)");
+print("---------|-----------------|-----------------");
+
+for (let i = 0; i < trajectory.points.length; i += 10) {
+  const point = trajectory.points[i];
+  print(`${point.time.toFixed(1)} | (${point.x.toFixed(1)}, ${point.y.toFixed(1)}) | (${point.vx.toFixed(1)}, ${point.vy.toFixed(1)})`);
+}
+
+// Helper function to calculate projectile trajectory
+function calculateTrajectory(v0, angleDegrees, g, dt) {
+  const angleRadians = math.degreesToRadians(angleDegrees);
+  const vx = v0 * Math.cos(angleRadians);
+  const vy = v0 * Math.sin(angleRadians);
+  
+  // Analytical solutions
+  const timeOfFlight = 2 * vy / g;
+  const range = vx * timeOfFlight;
+  const maxHeight = vy * vy / (2 * g);
+  
+  // Numerical simulation
+  const points = [];
+  let t = 0;
+  let x = 0;
+  let y = 0;
+  let currentVy = vy;
+  
+  while (y >= 0) {
+    points.push({
+      time: t,
+      x: x,
+      y: y,
+      vx: vx,
+      vy: currentVy
+    });
+    
+    t += dt;
+    x = vx * t;
+    y = vy * t - 0.5 * g * t * t;
+    currentVy = vy - g * t;
+    
+    // Break if we've gone too far to prevent infinite loops
+    if (t > 100) break;
+  }
+  
+  return {
+    points,
+    timeOfFlight,
+    range,
+    maxHeight
+  };
+}
+
+print("\nAdvanced math example completed!");
