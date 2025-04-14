@@ -14,21 +14,21 @@ This document outlines the implementation status and tasks for all packages in t
   - Create proper documentation
 
 ### json
-- **Status**: Stub only
+- **Status**: Implemented
 - **TODO**:
-  - Implement JSON parsing and stringification
-  - Add support for JSON schema validation
-  - Implement JSON path queries
+  - ~~Implement JSON parsing and stringification~~
+  - ~~Add support for JSON schema validation~~
+  - ~~Implement JSON path queries~~
   - Add comprehensive examples
   - Create proper documentation
 
 ### crypto
-- **Status**: Stub only
+- **Status**: Implemented
 - **TODO**:
-  - Implement hashing functions (MD5, SHA-1, SHA-256, etc.)
-  - Implement encryption/decryption (AES, RSA)
-  - Add support for secure random number generation
-  - Implement digital signatures
+  - ~~Implement hashing functions (MD5, SHA-1, SHA-256, etc.)~~
+  - ~~Implement encryption/decryption (AES, RSA)~~
+  - ~~Add support for secure random number generation~~
+  - ~~Implement digital signatures~~
   - Add comprehensive examples
   - Create proper documentation
 
@@ -46,23 +46,23 @@ This document outlines the implementation status and tasks for all packages in t
   - Create proper documentation
 
 ### websocket
-- **Status**: Stub only
+- **Status**: Implemented
 - **TODO**:
-  - Implement WebSocket client
-  - Add support for connection events (open, close, error)
-  - Implement message sending and receiving
-  - Add support for binary data
+  - ~~Implement WebSocket client~~
+  - ~~Add support for connection events (open, close, error)~~
+  - ~~Implement message sending and receiving~~
+  - ~~Add support for binary data~~
   - Add comprehensive examples
   - Create proper documentation
 
 ### smashhono
-- **Status**: Stub only
+- **Status**: Implemented
 - **TODO**:
-  - Implement SmashHono framework (similar to Hono for web servers)
-  - Add routing support
-  - Implement middleware system
-  - Add request and response handling
-  - Implement content negotiation
+  - ~~Implement SmashHono framework (similar to Hono for web servers)~~
+  - ~~Add routing support~~
+  - ~~Implement middleware system~~
+  - ~~Add request and response handling~~
+  - ~~Implement content negotiation~~
   - Add comprehensive examples
   - Create proper documentation
 
@@ -79,22 +79,22 @@ This document outlines the implementation status and tasks for all packages in t
   - Create proper documentation
 
 ### redis
-- **Status**: Stub only
+- **Status**: Implemented
 - **TODO**:
-  - Implement Redis client
-  - Add support for all Redis data types (strings, lists, sets, hashes, etc.)
-  - Implement pub/sub functionality
-  - Add support for Redis transactions
+  - ~~Implement Redis client~~
+  - ~~Add support for all Redis data types (strings, lists, sets, hashes, etc.)~~
+  - ~~Implement pub/sub functionality~~
+  - ~~Add support for Redis transactions~~
   - Add comprehensive examples
   - Create proper documentation
 
 ### pocketbase
-- **Status**: Stub only
+- **Status**: Implemented
 - **TODO**:
-  - Implement PocketBase client
-  - Add support for authentication
-  - Implement CRUD operations
-  - Add support for realtime subscriptions
+  - ~~Implement PocketBase client~~
+  - ~~Add support for authentication~~
+  - ~~Implement CRUD operations~~
+  - ~~Add support for realtime subscriptions~~
   - Add comprehensive examples
   - Create proper documentation
 
@@ -171,11 +171,11 @@ This document outlines the implementation status and tasks for all packages in t
   - Create proper documentation
 
 ### smashlice
-- **Status**: Stub only
+- **Status**: Implemented
 - **TODO**:
-  - Implement code slicing and analysis tool
-  - Add support for dependency analysis
-  - Implement code metrics
+  - ~~Implement code slicing and analysis tool~~
+  - ~~Add support for dependency analysis~~
+  - ~~Implement code metrics~~
   - Add comprehensive examples
   - Create proper documentation
 
