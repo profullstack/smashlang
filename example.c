@@ -13,8 +13,9 @@ SmashValue* test_func_23(SmashValue* this_value, int argc, SmashValue** args);
 SmashValue* createPromise_func_38(SmashValue* this_value, int argc, SmashValue** args);
 SmashValue* handlePromise_func_39(SmashValue* this_value, int argc, SmashValue** args);
 SmashValue* handleError_func_41(SmashValue* this_value, int argc, SmashValue** args);
-SmashValue* createDelayPromise_func_48(SmashValue* this_value, int argc, SmashValue** args);
-SmashValue* processAsync_func_49(SmashValue* this_value, int argc, SmashValue** args);
+SmashValue* fetchPosts_func_51(SmashValue* this_value, int argc, SmashValue** args);
+SmashValue* createDelayPromise_func_53(SmashValue* this_value, int argc, SmashValue** args);
+SmashValue* processAsync_func_54(SmashValue* this_value, int argc, SmashValue** args);
 
 
 // Function implementations
@@ -78,7 +79,18 @@ SmashValue* handleError_func_41(SmashValue* this_value, int argc, SmashValue** a
     return smash_value_create_null();
 }
 
-SmashValue* createDelayPromise_func_48(SmashValue* this_value, int argc, SmashValue** args) {
+SmashValue* fetchPosts_func_51(SmashValue* this_value, int argc, SmashValue** args) {
+    // Create a new promise to return
+    SmashValue* promise = smash_promise_create();
+    // Parameter handling
+    // Function body
+        // TODO: Not implemented for statement node: Try { body: [ConstDecl { name: "response", value: AwaitExpr { expr: FunctionCall { name: "fetch", args: [String("https://jsonplaceholder.typicode.com/posts?userId=1")] } } }, If { condition: UnaryOp { op: "!", expr: PropertyAccess { object: Identifier("response"), property: "ok" } }, then_branch: Block([Throw(NewExpr { constructor: "Error", args: [BinaryOp { left: String("Failed to fetch posts: "), op: "+", right: PropertyAccess { object: Identifier("response"), property: "status" } }] })]), else_branch: None }, ConstDecl { name: "posts", value: AwaitExpr { expr: MethodCall { object: Identifier("response"), method: "json", args: [] } } }, FunctionCall { name: "print", args: [BinaryOp { left: String("Number of posts: "), op: "+", right: PropertyAccess { object: Identifier("posts"), property: "length" } }] }, If { condition: BinaryOp { left: PropertyAccess { object: Identifier("posts"), property: "length" }, op: ">", right: Number(0) }, then_branch: Block([ConstDecl { name: "firstPost", value: ComputedPropertyAccess { object: Identifier("posts"), property: Number(0) } }, FunctionCall { name: "print", args: [BinaryOp { left: String("First post title: "), op: "+", right: PropertyAccess { object: Identifier("firstPost"), property: "title" } }] }, FunctionCall { name: "print", args: [BinaryOp { left: String("First post body: "), op: "+", right: PropertyAccess { object: Identifier("firstPost"), property: "body" } }] }]), else_branch: None }, Return(Identifier("posts"))], catch_param: Some("error"), catch_body: [FunctionCall { name: "print", args: [BinaryOp { left: String("Error fetching posts: "), op: "+", right: Identifier("error") }] }, Return(ArrayLiteral([]))], finally_body: None }
+        // Default return for async function
+    smash_promise_resolve(promise, smash_value_create_null());
+    return promise;
+}
+
+SmashValue* createDelayPromise_func_53(SmashValue* this_value, int argc, SmashValue** args) {
     // Parameter handling
     SmashValue* ms = (argc > 0) ? args[0] : smash_value_create_null();
     SmashValue* value = (argc > 1) ? args[1] : smash_value_create_null();
@@ -88,7 +100,7 @@ SmashValue* createDelayPromise_func_48(SmashValue* this_value, int argc, SmashVa
     return smash_value_create_null();
 }
 
-SmashValue* processAsync_func_49(SmashValue* this_value, int argc, SmashValue** args) {
+SmashValue* processAsync_func_54(SmashValue* this_value, int argc, SmashValue** args) {
     // Create a new promise to return
     SmashValue* promise = smash_promise_create();
     // Parameter handling
@@ -122,10 +134,10 @@ int main(int argc, char** argv) {
     smash_array_push(smash_arr_4, smash_bool_8);
     SmashValue* y = smash_arr_4;
     SmashValue* smash_obj_9 = smash_value_create_object(); // Create object
-    SmashValue* smash_num_10 = smash_value_create_number(33); // Expr Number
-    smash_object_set(smash_obj_9, "age", smash_num_10); // Set property
-    SmashValue* smash_str_11 = smash_value_create_string("chovy"); // Expr String
-    smash_object_set(smash_obj_9, "name", smash_str_11); // Set property
+    SmashValue* smash_str_10 = smash_value_create_string("chovy"); // Expr String
+    smash_object_set(smash_obj_9, "name", smash_str_10); // Set property
+    SmashValue* smash_num_11 = smash_value_create_number(33); // Expr Number
+    smash_object_set(smash_obj_9, "age", smash_num_11); // Set property
     SmashValue* user = smash_obj_9;
     SmashValue* smash_str_12 = smash_value_create_string("age:"); // Expr String
     SmashValue* prop_13 = smash_object_get(user, "age"); // Property access
@@ -233,27 +245,43 @@ int main(int argc, char** argv) {
     // TODO: Not implemented for statement node: Try { body: [FunctionCall { name: "print", args: [String("Inside try block")] }, Throw(NewExpr { constructor: "Error", args: [String("Something went wrong")] }), FunctionCall { name: "print", args: [String("This will not be executed")] }], catch_param: Some("error"), catch_body: [FunctionCall { name: "print", args: [String("Inside catch block")] }, FunctionCall { name: "print", args: [BinaryOp { left: String("Error message: "), op: "+", right: Identifier("error") }] }], finally_body: Some([FunctionCall { name: "print", args: [String("Inside finally block - this always executes")] }]) }
     SmashValue* smash_str_44 = smash_value_create_string("Fetch example with Promise chaining:"); // Expr String
     print(1, smash_str_44); // Print function call
-    // Error generating expression for const fetchResult: C code generation not implemented for expression node: FunctionCall { name: "fetch", args: [String("https://jsonplaceholder.typicode.com/todos/1")] }
-    SmashValue* fetchResult = smash_value_create_null(); // Error fallback
-    // Error generating expression for const jsonResult: C code generation not implemented for expression node: ArrowFunction { params: ["response"], body: [FunctionCall { name: "print", args: [BinaryOp { left: String("Response status: "), op: "+", right: PropertyAccess { object: Identifier("response"), property: "status" } }] }, Return(MethodCall { object: Identifier("response"), method: "json", args: [] })], expression: false, is_async: false }
-    SmashValue* jsonResult = smash_value_create_null(); // Error fallback
-    // Error generating expression for const processedResult: C code generation not implemented for expression node: ArrowFunction { params: ["data"], body: [FunctionCall { name: "print", args: [BinaryOp { left: String("Todo title: "), op: "+", right: PropertyAccess { object: Identifier("data"), property: "title" } }] }, Return(Identifier("data"))], expression: false, is_async: false }
-    SmashValue* processedResult = smash_value_create_null(); // Error fallback
-    // TODO: Not implemented for statement node: MethodCall { object: Identifier("processedResult"), method: "onCatch", args: [ArrowFunction { params: ["error"], body: [FunctionCall { name: "print", args: [BinaryOp { left: String("Fetch error: "), op: "+", right: Identifier("error") }] }], expression: false, is_async: false }] }
-    SmashValue* smash_str_47 = smash_value_create_string("Async/await test:"); // Expr String
+    // Error generating expression for const fetchTodoResult: C code generation not implemented for expression node: FunctionCall { name: "fetch", args: [String("https://jsonplaceholder.typicode.com/todos/1")] }
+    SmashValue* fetchTodoResult = smash_value_create_null(); // Error fallback
+    // Error generating expression for const jsonTodoResult: C code generation not implemented for expression node: ArrowFunction { params: ["response"], body: [FunctionCall { name: "print", args: [BinaryOp { left: String("Todo response status: "), op: "+", right: PropertyAccess { object: Identifier("response"), property: "status" } }] }, Return(MethodCall { object: Identifier("response"), method: "json", args: [] })], expression: false, is_async: false }
+    SmashValue* jsonTodoResult = smash_value_create_null(); // Error fallback
+    // Error generating expression for const processedTodoResult: C code generation not implemented for expression node: ArrowFunction { params: ["data"], body: [FunctionCall { name: "print", args: [BinaryOp { left: String("Todo title: "), op: "+", right: PropertyAccess { object: Identifier("data"), property: "title" } }] }, FunctionCall { name: "print", args: [BinaryOp { left: String("Todo completed: "), op: "+", right: PropertyAccess { object: Identifier("data"), property: "completed" } }] }, Return(Identifier("data"))], expression: false, is_async: false }
+    SmashValue* processedTodoResult = smash_value_create_null(); // Error fallback
+    // TODO: Not implemented for statement node: MethodCall { object: Identifier("processedTodoResult"), method: "onCatch", args: [ArrowFunction { params: ["error"], body: [FunctionCall { name: "print", args: [BinaryOp { left: String("Fetch todo error: "), op: "+", right: Identifier("error") }] }], expression: false, is_async: false }] }
+    SmashValue* smash_str_47 = smash_value_create_string("Fetching user data:"); // Expr String
     print(1, smash_str_47); // Print function call
-    // Create function object for createDelayPromise
-    SmashValue* createDelayPromise = smash_value_create_function(createDelayPromise_func_48);
-    // Create function object for processAsync
-    SmashValue* processAsync = smash_value_create_function(processAsync_func_49);
-    SmashValue* smash_str_50 = smash_value_create_string("Before calling async function"); // Expr String
+    // Error generating expression for const fetchUserResult: C code generation not implemented for expression node: FunctionCall { name: "fetch", args: [String("https://jsonplaceholder.typicode.com/users/1")] }
+    SmashValue* fetchUserResult = smash_value_create_null(); // Error fallback
+    // Error generating expression for const jsonUserResult: C code generation not implemented for expression node: ArrowFunction { params: ["response"], body: [If { condition: UnaryOp { op: "!", expr: PropertyAccess { object: Identifier("response"), property: "ok" } }, then_branch: Block([Throw(NewExpr { constructor: "Error", args: [BinaryOp { left: String("Network response was not ok: "), op: "+", right: PropertyAccess { object: Identifier("response"), property: "status" } }] })]), else_branch: None }, Return(MethodCall { object: Identifier("response"), method: "json", args: [] })], expression: false, is_async: false }
+    SmashValue* jsonUserResult = smash_value_create_null(); // Error fallback
+    // Error generating expression for const processedUserResult: C code generation not implemented for expression node: ArrowFunction { params: ["userData"], body: [FunctionCall { name: "print", args: [BinaryOp { left: String("User name: "), op: "+", right: PropertyAccess { object: Identifier("userData"), property: "name" } }] }, FunctionCall { name: "print", args: [BinaryOp { left: String("User email: "), op: "+", right: PropertyAccess { object: Identifier("userData"), property: "email" } }] }, FunctionCall { name: "print", args: [BinaryOp { left: String("User company: "), op: "+", right: PropertyAccess { object: PropertyAccess { object: Identifier("userData"), property: "company" }, property: "name" } }] }, Return(Identifier("userData"))], expression: false, is_async: false }
+    SmashValue* processedUserResult = smash_value_create_null(); // Error fallback
+    // TODO: Not implemented for statement node: MethodCall { object: Identifier("processedUserResult"), method: "onCatch", args: [ArrowFunction { params: ["error"], body: [FunctionCall { name: "print", args: [BinaryOp { left: String("Fetch user error: "), op: "+", right: Identifier("error") }] }], expression: false, is_async: false }] }
+    SmashValue* smash_str_50 = smash_value_create_string("Fetching posts with async/await:"); // Expr String
     print(1, smash_str_50); // Print function call
+    // Create function object for fetchPosts
+    SmashValue* fetchPosts = smash_value_create_function(fetchPosts_func_51);
+    // Error generating expression for const postsResult: C code generation not implemented for expression node: AwaitExpr { expr: FunctionCall { name: "fetchPosts", args: [] } }
+    SmashValue* postsResult = smash_value_create_null(); // Error fallback
+    print(1, postsResult); // Print function call
+    SmashValue* smash_str_52 = smash_value_create_string("Async/await test:"); // Expr String
+    print(1, smash_str_52); // Print function call
+    // Create function object for createDelayPromise
+    SmashValue* createDelayPromise = smash_value_create_function(createDelayPromise_func_53);
+    // Create function object for processAsync
+    SmashValue* processAsync = smash_value_create_function(processAsync_func_54);
+    SmashValue* smash_str_55 = smash_value_create_string("Before calling async function"); // Expr String
+    print(1, smash_str_55); // Print function call
     // Error generating expression for const asyncResult: C code generation not implemented for expression node: AwaitExpr { expr: FunctionCall { name: "processAsync", args: [] } }
     SmashValue* asyncResult = smash_value_create_null(); // Error fallback
-    SmashValue* smash_str_51 = smash_value_create_string("After async function"); // Expr String
-    print(1, smash_str_51); // Print function call
-    SmashValue* smash_str_52 = smash_value_create_string("Final result:"); // Expr String
-    print(2, smash_str_52, asyncResult); // Print function call
+    SmashValue* smash_str_56 = smash_value_create_string("After async function"); // Expr String
+    print(1, smash_str_56); // Print function call
+    SmashValue* smash_str_57 = smash_value_create_string("Final result:"); // Expr String
+    print(2, smash_str_57, asyncResult); // Print function call
 
     // Cleanup if needed
     return 0;
