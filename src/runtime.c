@@ -532,13 +532,6 @@ char* smash_array_filter(const char* array_str, const char* callback) {
     return strdup("[Filtered array]");
 }
 
-// Push an element to an array
-char* smash_array_push(const char* array_str, const char* element) {
-    // This is a simplified implementation
-    // In a real implementation, you would parse the array, add the element, and return the new array
-    return strdup("[Array with pushed element]");
-}
-
 // Pop an element from an array
 char* smash_array_pop(const char* array_str) {
     // This is a simplified implementation

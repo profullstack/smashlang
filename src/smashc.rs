@@ -8,7 +8,7 @@ use std::io;
 use smashlang::lexer::tokenize;
 use smashlang::parser::Parser;
 // Import removed to fix warning
-use smashlang::codegen::{generate_llvm_ir, FileType};
+use smashlang::codegen::CodeGenerator;
 
 fn main() -> io::Result<()> {
     let args: Vec<String> = env::args().collect();
@@ -106,17 +106,22 @@ fn main() -> io::Result<()> {
     let c_file = format!("{}.c", output_file);
     println!("{} C file will be saved at {}", "Info:".blue(), c_file);
     
-    // Generate code using our codegen module
-    let (module, target_machine) = generate_llvm_ir(&ast, target.as_deref());
+    // Generate C code from the AST
+    println!("{} Generating code...", "Compiler:".blue());
+    let mut generator = CodeGenerator::new();
+    let c_code = match generator.generate(&ast) {
+        Ok(code) => code,
+        Err(e) => {
+            println!("{} Failed to generate C code: {}", "Error:".red(), e);
+            return Err(io::Error::new(io::ErrorKind::Other, e));
+        }
+    };
     
     // Print the AST for debugging
     println!("AST: {:?}", ast);
     
     // Save a copy of the C code for inspection
     let debug_c_file = format!("/tmp/smash_debug_{}.c", std::process::id());
-    let c_code = module.to_c_code();
-    
-    // Write the C code to the debug file
     match fs::write(&debug_c_file, &c_code) {
         Ok(_) => {
             println!("Saved C code to {}", debug_c_file);
@@ -126,10 +131,11 @@ fn main() -> io::Result<()> {
         }
     }
     
-    if let Err(e) = target_machine.write_to_file(&module, FileType::Object, &c_file) {
-        eprintln!("{}: {}", "Code generation error".red(), e);
-        process::exit(1);
-    };
+    // Write the generated C code to the output file
+    if let Err(e) = fs::write(&c_file, &c_code) {
+        println!("{} Failed to write C code to file: {}", "Error:".red(), e);
+        return Err(e);
+    }
     
     // Read and print the generated C file for debugging
     match fs::read_to_string(&c_file) {

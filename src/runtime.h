@@ -82,7 +82,6 @@ SmashValue* smash_array_get(SmashValue* array_value, int index); // New
 // Existing char* based stubs (mark for deprecation/update)
 char* smash_array_map(const char* array_str, const char* callback); 
 char* smash_array_filter(const char* array_str, const char* callback);
-char* smash_array_push(const char* array_str, const char* element);
 char* smash_array_pop(const char* array_str);
 char* smash_array_for_each(const char* array_str, const char* callback);
 char* smash_array_find(const char* array_str, const char* callback);

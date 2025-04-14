@@ -4,7 +4,7 @@ use std::fs;
 use colored::*;
 use crate::lexer;
 use crate::parser::Parser;
-use crate::codegen::{generate_llvm_ir, FileType};
+use crate::codegen::CodeGenerator;
 
 pub fn compile(output: &str, obj_file: &str, target: Option<&str>) -> std::io::Result<()> {
     let output_file = if cfg!(target_os = "windows") || target == Some("windows-x64") {
@@ -47,20 +47,28 @@ pub fn compile(output: &str, obj_file: &str, target: Option<&str>) -> std::io::R
     println!("{} Generating code...", "Compiler:".blue());
     
     // Generate C code from the AST
-    let (module, target_machine) = generate_llvm_ir(&ast, target);
-    
+    println!("Generating intermediate code");
+    let mut generator = CodeGenerator::new();
+    let c_code = match generator.generate(&ast) {
+        Ok(code) => code,
+        Err(e) => return Err(std::io::Error::new(std::io::ErrorKind::Other, format!("Code generation failed: {}", e))),
+    };
+
     // Create a temporary C file
-    let c_file = format!("{}.c", output);
-    if let Err(e) = target_machine.write_to_file(&module, FileType::Object, &c_file) {
-        println!("{} Failed to generate C code: {}", "Error:".red(), e);
-        return Err(std::io::Error::new(std::io::ErrorKind::Other, e));
+    let c_file_path = format!("{}.c", output);
+    if let Err(e) = fs::write(&c_file_path, c_code) {
+        println!("{} Failed to write C code to file: {}", "Error:".red(), e);
+        return Err(e);
     }
     
     println!("{} Linking executable...", "Compiler:".blue());
     
-    // Compile the generated C code
+    // Use clang to compile the C code and link with the runtime
     let mut clang = Command::new("clang");
-    clang.arg(&c_file).arg("-o").arg(&output_file);
+    clang.arg(&c_file_path)
+         .arg("src/runtime.c") // Include runtime.c
+         .arg("-o").arg(&output_file)
+         .arg("-Isrc"); // Include directory for runtime.h
 
     // Add target-specific flags
     if let Some(target_triple) = target {
