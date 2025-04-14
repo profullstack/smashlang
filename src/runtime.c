@@ -1076,6 +1076,194 @@ SmashValue* smash_promise_catch(SmashValue* promise_value, SmashValue* on_reject
     return smash_promise_then(promise_value, NULL, on_rejected);
 }
 
+// Add onCatch handler to a promise (alias for catch to avoid keyword conflict)
+SmashValue* smash_promise_on_catch(SmashValue* promise_value, SmashValue* on_rejected) {
+    return smash_promise_then(promise_value, NULL, on_rejected);
+}
+
+// --- Event Loop and Task Queue Implementation ---
+
+// Global task queues
+SmashTask* microtask_queue_head = NULL;
+SmashTask* microtask_queue_tail = NULL;
+SmashTask* task_queue_head = NULL;
+SmashTask* task_queue_tail = NULL;
+
+// Event loop control
+int event_loop_running = 0;
+
+// Initialize the event loop
+void smash_event_loop_init() {
+    microtask_queue_head = NULL;
+    microtask_queue_tail = NULL;
+    task_queue_head = NULL;
+    task_queue_tail = NULL;
+    event_loop_running = 0;
+}
+
+// Add a task to the microtask queue (for Promise callbacks)
+void smash_queue_microtask(SmashTaskCallback callback, void* data) {
+    SmashTask* task = (SmashTask*)malloc(sizeof(SmashTask));
+    if (!task) {
+        fprintf(stderr, "Error: Failed to allocate memory for microtask\n");
+        return;
+    }
+    
+    task->callback = callback;
+    task->data = data;
+    task->next = NULL;
+    
+    if (!microtask_queue_head) {
+        microtask_queue_head = task;
+        microtask_queue_tail = task;
+    } else {
+        microtask_queue_tail->next = task;
+        microtask_queue_tail = task;
+    }
+}
+
+// Add a task to the main task queue (for setTimeout, etc.)
+void smash_queue_task(SmashTaskCallback callback, void* data) {
+    SmashTask* task = (SmashTask*)malloc(sizeof(SmashTask));
+    if (!task) {
+        fprintf(stderr, "Error: Failed to allocate memory for task\n");
+        return;
+    }
+    
+    task->callback = callback;
+    task->data = data;
+    task->next = NULL;
+    
+    if (!task_queue_head) {
+        task_queue_head = task;
+        task_queue_tail = task;
+    } else {
+        task_queue_tail->next = task;
+        task_queue_tail = task;
+    }
+}
+
+// Process all tasks in the microtask queue
+static void process_microtask_queue() {
+    while (microtask_queue_head) {
+        SmashTask* task = microtask_queue_head;
+        microtask_queue_head = task->next;
+        
+        if (!microtask_queue_head) {
+            microtask_queue_tail = NULL;
+        }
+        
+        if (task->callback) {
+            task->callback(task->data);
+        }
+        
+        free(task);
+    }
+}
+
+// Process one task from the main task queue
+static int process_task_queue() {
+    if (!task_queue_head) {
+        return 0; // No tasks to process
+    }
+    
+    SmashTask* task = task_queue_head;
+    task_queue_head = task->next;
+    
+    if (!task_queue_head) {
+        task_queue_tail = NULL;
+    }
+    
+    if (task->callback) {
+        task->callback(task->data);
+    }
+    
+    free(task);
+    return 1; // Task processed
+}
+
+// Run the event loop
+void smash_event_loop_run() {
+    event_loop_running = 1;
+    
+    while (event_loop_running) {
+        // First process all microtasks (Promise callbacks)
+        process_microtask_queue();
+        
+        // Then process one task from the main queue
+        int task_processed = process_task_queue();
+        
+        // If no tasks were processed, we can sleep briefly to avoid busy waiting
+        if (!task_processed) {
+            // Sleep for a short time (1ms) to avoid busy waiting
+            struct timespec ts;
+            ts.tv_sec = 0;
+            ts.tv_nsec = 1000000; // 1ms
+            nanosleep(&ts, NULL);
+        }
+    }
+}
+
+// Stop the event loop
+void smash_event_loop_stop() {
+    event_loop_running = 0;
+}
+
+// --- Async/Await Implementation ---
+
+// Wrapper for async functions
+SmashValue* smash_async_function_wrapper(SmashFunction func, int argc, SmashValue** args) {
+    // Create a new Promise that will be returned by the async function
+    SmashValue* promise = smash_promise_create();
+    
+    // Create a task to execute the function asynchronously
+    typedef struct {
+        SmashFunction func;
+        SmashValue* promise;
+        int argc;
+        SmashValue** args;
+    } AsyncFunctionData;
+    
+    AsyncFunctionData* data = (AsyncFunctionData*)malloc(sizeof(AsyncFunctionData));
+    data->func = func;
+    data->promise = promise;
+    data->argc = argc;
+    data->args = args;
+    
+    // Queue the task to run the function
+    smash_queue_microtask((SmashTaskCallback)async_function_executor, data);
+    
+    return promise;
+}
+
+// Execute an async function
+void async_function_executor(void* data) {
+    AsyncFunctionData* async_data = (AsyncFunctionData*)data;
+    
+    // Call the function
+    SmashValue* result = async_data->func(NULL, async_data->argc, async_data->args);
+    
+    // Resolve the promise with the result
+    smash_promise_resolve(async_data->promise, result);
+    
+    // Clean up
+    smash_value_free(result);
+    free(async_data);
+}
+
+// Handle await expressions
+SmashValue* smash_await_expression(SmashValue* promise_value) {
+    if (!promise_value || promise_value->type != SMASH_TYPE_PROMISE) {
+        // If not a promise, wrap it in a resolved promise
+        SmashValue* new_promise = smash_promise_create();
+        smash_promise_resolve(new_promise, promise_value);
+        return new_promise;
+    }
+    
+    // Return the promise directly
+    return smash_value_clone(promise_value);
+}
+
 // --- Fetch API Implementation ---
 
 // Struct to hold HTTP response data
@@ -1161,30 +1349,34 @@ typedef struct {
     SmashValue* headers;
 } FetchData;
 
-// Thread function for async fetch (simplified)
-void* fetch_thread_func(void* arg) {
+// Executor function for fetch tasks
+void fetch_executor(void* arg) {
     FetchData* data = (FetchData*)arg;
-    if (!data) return NULL;
+    if (!data) {
+        return;
+    }
     
     // Perform the HTTP request
-    HttpResponse* http_response = perform_http_request(data->url, data->method, data->body, data->headers);
+    HttpResponse* response = perform_http_request(
+        data->url,
+        data->method ? data->method : "GET",
+        data->body,
+        data->headers
+    );
     
-    if (http_response) {
-        // Create response object
-        SmashValue* response = create_response_object(http_response);
+    if (response) {
+        // Create a Response object
+        SmashValue* response_obj = create_response_object(response);
         
-        // Resolve the promise with the response
-        smash_promise_resolve(data->promise, response);
+        // Resolve the promise with the Response object
+        smash_promise_resolve(data->promise, response_obj);
         
         // Clean up
-        smash_value_free(response);
-        free_http_response(http_response);
+        smash_value_free(response_obj);
+        free_http_response(response);
     } else {
-        // Create error object
-        SmashValue* error = smash_value_create_object();
-        SmashValue* message = smash_value_create_string("Network error");
-        smash_object_set(error, "message", message);
-        smash_value_free(message);
+        // Create error object for network failure
+        SmashValue* error = smash_value_create_string("Network request failed");
         
         // Reject the promise with the error
         smash_promise_reject(data->promise, error);
@@ -1199,23 +1391,17 @@ void* fetch_thread_func(void* arg) {
     if (data->body) free(data->body);
     if (data->headers) smash_value_free(data->headers);
     free(data);
-    
-    return NULL;
 }
 
 // Fetch API implementation
 SmashValue* smash_fetch(const char* url, SmashValue* options) {
-    // Create a promise to return
+    // Create a new Promise
     SmashValue* promise = smash_promise_create();
     
-    // Prepare fetch data
+    // Create fetch data
     FetchData* data = (FetchData*)malloc(sizeof(FetchData));
     if (!data) {
-        SmashValue* error = smash_value_create_object();
-        SmashValue* message = smash_value_create_string("Memory allocation failed");
-        smash_object_set(error, "message", message);
-        smash_value_free(message);
-        
+        SmashValue* error = smash_value_create_string("Failed to allocate memory for fetch");
         smash_promise_reject(promise, error);
         smash_value_free(error);
         return promise;
@@ -1223,7 +1409,7 @@ SmashValue* smash_fetch(const char* url, SmashValue* options) {
     
     data->promise = promise;
     data->url = strdup(url);
-    data->method = NULL;
+    data->method = strdup("GET"); // Default method
     data->body = NULL;
     data->headers = NULL;
     
@@ -1232,22 +1418,14 @@ SmashValue* smash_fetch(const char* url, SmashValue* options) {
         // Get method
         SmashValue* method = smash_object_get(options, "method");
         if (method && method->type == SMASH_TYPE_STRING) {
+            free(data->method);
             data->method = strdup(method->data.string);
-        } else {
-            data->method = strdup("GET");  // Default to GET
         }
         
         // Get body
         SmashValue* body = smash_object_get(options, "body");
-        if (body) {
-            if (body->type == SMASH_TYPE_STRING) {
-                data->body = strdup(body->data.string);
-            } else {
-                // Convert body to JSON string if it's an object
-                // This would require a JSON stringify function
-                // For now, we'll just use a placeholder
-                data->body = strdup("{}");
-            }
+        if (body && body->type == SMASH_TYPE_STRING) {
+            data->body = strdup(body->data.string);
         }
         
         // Get headers
@@ -1255,14 +1433,10 @@ SmashValue* smash_fetch(const char* url, SmashValue* options) {
         if (headers && headers->type == SMASH_TYPE_OBJECT) {
             data->headers = smash_value_clone(headers);
         }
-    } else {
-        // Default to GET method
-        data->method = strdup("GET");
     }
     
-    // In a real implementation, we would spawn a thread to perform the fetch
-    // For simplicity, we'll just call the function directly
-    fetch_thread_func(data);
+    // Queue the fetch task to be executed asynchronously
+    smash_queue_task((SmashTaskCallback)fetch_executor, data);
     
     return promise;
 }

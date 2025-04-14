@@ -120,6 +120,27 @@ void smash_promise_resolve(SmashValue* promise, SmashValue* value);
 void smash_promise_reject(SmashValue* promise, SmashValue* reason);
 SmashValue* smash_promise_then(SmashValue* promise, SmashValue* on_fulfilled, SmashValue* on_rejected);
 SmashValue* smash_promise_catch(SmashValue* promise, SmashValue* on_rejected);
+SmashValue* smash_promise_on_catch(SmashValue* promise, SmashValue* on_rejected);  // Alias for catch to avoid keyword conflict
+
+// --- Async/Await Support ---
+SmashValue* smash_async_function_wrapper(SmashFunction func, int argc, SmashValue** args);
+SmashValue* smash_await_expression(SmashValue* promise);
+
+// --- Event Loop and Task Queue ---
+typedef struct SmashTask SmashTask;
+typedef void (*SmashTaskCallback)(void* data);
+
+struct SmashTask {
+    SmashTaskCallback callback;
+    void* data;
+    SmashTask* next;
+};
+
+void smash_event_loop_init();
+void smash_event_loop_run();
+void smash_event_loop_stop();
+void smash_queue_microtask(SmashTaskCallback callback, void* data);
+void smash_queue_task(SmashTaskCallback callback, void* data);
 
 // --- Fetch API ---
 SmashValue* smash_fetch(const char* url, SmashValue* options);

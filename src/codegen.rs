@@ -381,6 +381,133 @@ int main(int argc, char** argv) {{
                 
                 Ok((code, result_var))
             },
+            AstNode::MethodCall { object, method, args } => {
+                // Generate code for the object expression
+                let (obj_code, obj_var) = self.generate_c_code_for_expr(object, indent_level)?;
+                code.push_str(&obj_code);
+                
+                let result_var = format!("method_call_{}", self.temp_var_counter);
+                self.temp_var_counter += 1;
+                
+                // Handle specific method calls
+                match method.as_str() {
+                    "then" => {
+                        // Promise.then() implementation
+                        if args.len() >= 1 {
+                            // Generate code for the callback function
+                            let callback_func_name = format!("then_callback_{}", self.temp_var_counter);
+                            self.temp_var_counter += 1;
+                            
+                            // Generate function prototype
+                            let prototype = format!("SmashValue* {}(SmashValue* this_val, int argc, SmashValue** args);", callback_func_name);
+                            self.function_prototypes.push(prototype);
+                            
+                            // Generate function implementation
+                            let mut func_impl = format!("SmashValue* {}(SmashValue* this_val, int argc, SmashValue** args) {{\n", callback_func_name);
+                            func_impl.push_str("    // Extract the value from args[0]\n");
+                            func_impl.push_str("    SmashValue* value = argc > 0 ? args[0] : smash_value_create_null();\n");
+                            
+                            // Generate the callback body based on the arrow function
+                            if let AstNode::ArrowFunction { params, body, expression, is_async } = &args[0] {
+                                if !params.is_empty() {
+                                    let param_name = &params[0];
+                                    func_impl.push_str(&format!("    // Assign parameter {} to the argument value\n", param_name));
+                                    func_impl.push_str(&format!("    SmashValue* {} = value;\n", param_name));
+                                    
+                                    // Generate code for the function body
+                                    for stmt in body {
+                                        let (stmt_code, _) = self.generate_c_code_for_node(stmt, 1)?;
+                                        func_impl.push_str(&stmt_code);
+                                    }
+                                }
+                            }
+                            
+                            func_impl.push_str("    return smash_value_create_null(); // Default return value\n");
+                            func_impl.push_str("}\n");
+                            
+                            self.function_implementations.push(func_impl);
+                            
+                            // Create a function value for the callback
+                            code.push_str(&format!("{}SmashValue* {}_value = smash_value_create_function({});\n", 
+                                                indent, callback_func_name, callback_func_name));
+                            
+                            // Call then on the promise
+                            code.push_str(&format!("{}SmashValue* {} = smash_promise_then({}, {}_value, NULL);\n", 
+                                                indent, result_var, obj_var, callback_func_name));
+                        } else {
+                            // No callback provided, just chain the promise
+                            code.push_str(&format!("{}SmashValue* {} = smash_promise_then({}, NULL, NULL);\n", 
+                                                indent, result_var, obj_var));
+                        }
+                    },
+                    "catch" | "onCatch" => {
+                        // Promise.catch() implementation
+                        if args.len() >= 1 {
+                            // Generate code for the callback function
+                            let callback_func_name = format!("catch_callback_{}", self.temp_var_counter);
+                            self.temp_var_counter += 1;
+                            
+                            // Generate function prototype
+                            let prototype = format!("SmashValue* {}(SmashValue* this_val, int argc, SmashValue** args);", callback_func_name);
+                            self.function_prototypes.push(prototype);
+                            
+                            // Generate function implementation
+                            let mut func_impl = format!("SmashValue* {}(SmashValue* this_val, int argc, SmashValue** args) {{\n", callback_func_name);
+                            func_impl.push_str("    // Extract the error from args[0]\n");
+                            func_impl.push_str("    SmashValue* error = argc > 0 ? args[0] : smash_value_create_null();\n");
+                            
+                            // Generate the callback body based on the arrow function
+                            if let AstNode::ArrowFunction { params, body, expression, is_async } = &args[0] {
+                                if !params.is_empty() {
+                                    let param_name = &params[0];
+                                    func_impl.push_str(&format!("    // Assign parameter {} to the error value\n", param_name));
+                                    func_impl.push_str(&format!("    SmashValue* {} = error;\n", param_name));
+                                    
+                                    // Generate code for the function body
+                                    for stmt in body {
+                                        let (stmt_code, _) = self.generate_c_code_for_node(stmt, 1)?;
+                                        func_impl.push_str(&stmt_code);
+                                    }
+                                }
+                            }
+                            
+                            func_impl.push_str("    return smash_value_create_null(); // Default return value\n");
+                            func_impl.push_str("}\n");
+                            
+                            self.function_implementations.push(func_impl);
+                            
+                            // Create a function value for the callback
+                            code.push_str(&format!("{}SmashValue* {}_value = smash_value_create_function({});\n", 
+                                                indent, callback_func_name, callback_func_name));
+                            
+                            // Call catch/onCatch on the promise
+                            if method == "catch" {
+                                code.push_str(&format!("{}SmashValue* {} = smash_promise_catch({}, {}_value);\n", 
+                                                    indent, result_var, obj_var, callback_func_name));
+                            } else {
+                                code.push_str(&format!("{}SmashValue* {} = smash_promise_on_catch({}, {}_value);\n", 
+                                                    indent, result_var, obj_var, callback_func_name));
+                            }
+                        } else {
+                            // No callback provided, just chain the promise
+                            if method == "catch" {
+                                code.push_str(&format!("{}SmashValue* {} = smash_promise_catch({}, NULL);\n", 
+                                                    indent, result_var, obj_var));
+                            } else {
+                                code.push_str(&format!("{}SmashValue* {} = smash_promise_on_catch({}, NULL);\n", 
+                                                    indent, result_var, obj_var));
+                            }
+                        }
+                    },
+                    _ => {
+                        // Generic method call
+                    self.temp_var_counter += 1;
+                    code.push_str(&format!("{}SmashValue* {} = smash_async_function_wrapper({});\n", indent, async_var, result_var));
+                    return Ok((code, async_var));
+                }
+                
+                Ok((code, result_var))
+            },
             // Add other expression types as needed (FunctionCall returning value, BinaryOp, etc.)
             _ => Err(format!("C code generation not implemented for expression node: {:?}", expr)),
         }
