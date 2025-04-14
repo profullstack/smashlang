@@ -790,12 +790,60 @@ SmashValue* smash_object_get(SmashValue* obj, const char* property) {
     return smash_value_create_null();
 }
 
+// Logical NOT operation
+SmashValue* smash_value_logical_not(SmashValue* value) {
+    if (!value) {
+        return smash_value_create_boolean(true); // !null is true
+    }
+    
+    // Convert value to boolean and negate it
+    bool is_truthy = smash_value_is_truthy(value);
+    return smash_value_create_boolean(!is_truthy);
+}
+
+// Helper function to determine if a value is truthy
+bool smash_value_is_truthy(SmashValue* value) {
+    if (!value) {
+        return false;
+    }
+    
+    switch (value->type) {
+        case SMASH_TYPE_NULL:
+            return false;
+            
+        case SMASH_TYPE_BOOLEAN:
+            return value->data.boolean;
+            
+        case SMASH_TYPE_NUMBER:
+            return value->data.number != 0;
+            
+        case SMASH_TYPE_STRING:
+            return value->data.string && value->data.string[0] != '\0';
+            
+        case SMASH_TYPE_ARRAY:
+            return value->data.array && value->data.array->size > 0;
+            
+        case SMASH_TYPE_OBJECT:
+            return true; // Objects are always truthy
+            
+        default:
+            return false;
+    }
+}
+
 // Set a property on an object
 void smash_object_set(SmashValue* obj, const char* property, SmashValue* value) {
     if (!obj || obj->type != SMASH_TYPE_OBJECT || !property || !value) {
-        return; // Invalid parameters
+        return; // Invalid input
+    }
+
+    // Create a copy of the value to store in the object
+    SmashValue* value_copy = smash_value_clone(value);
+    if (!value_copy) {
+        return; // Failed to clone value
     }
     
+    // Get the object structure
     SmashObject* object = obj->data.object;
     
     // Check if property already exists
@@ -803,8 +851,8 @@ void smash_object_set(SmashValue* obj, const char* property, SmashValue* value) 
         if (strcmp(object->properties[i].key, property) == 0) {
             // Free the old value
             smash_value_free(object->properties[i].value);
-            // Set the new value (clone it to avoid double-free issues)
-            object->properties[i].value = smash_value_clone(value);
+            // Set the new value (use the clone we already created)
+            object->properties[i].value = value_copy;
             return;
         }
     }
@@ -813,13 +861,40 @@ void smash_object_set(SmashValue* obj, const char* property, SmashValue* value) 
     int new_size = object->size + 1;
     object->properties = realloc(object->properties, new_size * sizeof(SmashProperty));
     if (!object->properties) {
+        smash_value_free(value_copy);
         return; // Memory allocation failed
     }
     
     // Set the new property
     object->properties[object->size].key = strdup(property);
-    object->properties[object->size].value = smash_value_clone(value);
+    object->properties[object->size].value = value_copy;
     object->size = new_size;
+}
+
+// Get all property names from an object as an array
+SmashValue* smash_object_get_keys(SmashValue* obj) {
+    if (!obj || obj->type != SMASH_TYPE_OBJECT) {
+        return smash_value_create_array(0); // Return empty array for non-objects
+    }
+
+    SmashObject* object = obj->data.object;
+    int key_count = object->size;
+    
+    // Create an array to hold all keys
+    SmashValue* keys_array = smash_value_create_array(key_count);
+    if (!keys_array) {
+        return smash_value_create_array(0); // Return empty array on error
+    }
+    
+    // Add all keys to the array
+    for (int i = 0; i < object->size; i++) {
+        SmashValue* key = smash_value_create_string(object->properties[i].key);
+        if (key) {
+            smash_array_push(keys_array, key);
+        }
+    }
+    
+    return keys_array;
 }
 
 // Match a string against a pattern

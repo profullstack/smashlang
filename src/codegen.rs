@@ -14,6 +14,13 @@ impl CodeGenerator {
             temp_var_counter: 0,
         }
     }
+    
+    // Helper method to generate unique temporary variable IDs
+    fn next_temp_id(&mut self) -> u32 {
+        let id = self.temp_var_counter;
+        self.temp_var_counter += 1;
+        id
+    }
 
     // Main function to generate C code from AST
     pub fn generate(&mut self, ast: &[AstNode]) -> Result<String, String> {
@@ -142,12 +149,70 @@ int main(int argc, char** argv) {{
                 
                 Ok((code, prop_var))
             },
+            // Handle computed property access (e.g., obj[expr])
+            AstNode::ComputedPropertyAccess { object, property } => {
+                // Generate code for the object expression
+                let (obj_code, obj_var) = self.generate_c_code_for_expr(object, indent_level)?;
+                
+                // Generate code for the property expression
+                let (prop_expr_code, prop_expr_var) = self.generate_c_code_for_expr(property, indent_level)?;
+                
+                // Create a new variable for the property value
+                let prop_var = format!("prop_{}", self.temp_var_counter);
+                self.temp_var_counter += 1;
+                
+                // Add the object code first
+                code.push_str(&obj_code);
+                
+                // Add the property expression code
+                code.push_str(&prop_expr_code);
+                
+                // Convert the property expression to a string (for use as a key)
+                let key_var = format!("key_{}", self.temp_var_counter);
+                self.temp_var_counter += 1;
+                code.push_str(&format!("{}char* {} = smash_value_to_string({}); // Convert property to string\n", 
+                                       indent, key_var, prop_expr_var));
+                
+                // Generate code to access the property using the string key
+                code.push_str(&format!("{}SmashValue* {} = smash_object_get({}, {}); // Computed property access\n", 
+                                       indent, prop_var, obj_var, key_var));
+                
+                // Free the temporary string
+                code.push_str(&format!("{}free({}); // Free temporary string\n", indent, key_var));
+                
+                Ok((code, prop_var))
+            },
             // Handle float literals
             AstNode::Float(f) => {
                 let var_name = format!("smash_num_{}", self.temp_var_counter);
                 self.temp_var_counter += 1;
                 code.push_str(&format!("{}SmashValue* {} = smash_value_create_number({}); // Expr Float\n", indent, var_name, f));
                 Ok((code, var_name))
+            },
+            
+            // Handle unary operations
+            AstNode::UnaryOp { op, expr } => {
+                // Generate code for the operand
+                let (expr_code, expr_var) = self.generate_c_code_for_expr(expr, indent_level)?;
+                
+                // Add the operand code first
+                code.push_str(&expr_code);
+                
+                let result_var = format!("unary_{}", self.temp_var_counter);
+                self.temp_var_counter += 1;
+                
+                match op.as_str() {
+                    "!" => {
+                        // Logical NOT operation
+                        code.push_str(&format!("{}SmashValue* {} = smash_value_logical_not({}); // Logical NOT\n", 
+                                          indent, result_var, expr_var));
+                    },
+                    _ => {
+                        return Err(format!("Unsupported unary operator: {}", op));
+                    }
+                }
+                
+                Ok((code, result_var))
             },
             // Add other expression types as needed (FunctionCall returning value, BinaryOp, etc.)
             _ => Err(format!("C code generation not implemented for expression node: {:?}", expr)),
@@ -279,7 +344,108 @@ int main(int argc, char** argv) {{
                     }
                 }
              }
-            // ... other statement types like IfStatement, ReturnStatement, etc. ...
+            // Handle If statements
+            AstNode::If { condition, then_branch, else_branch } => {
+                // Generate code for the condition
+                match self.generate_c_code_for_expr(condition, indent_level) {
+                    Ok((cond_code, cond_var)) => {
+                        // Add the condition code first
+                        code.push_str(&cond_code);
+                        
+                        // Generate the if statement
+                        code.push_str(&format!("{}// Start if statement\n", indent));
+                        code.push_str(&format!("{}if (smash_value_is_truthy({})) {{\n", indent, cond_var));
+                        
+                        // Generate code for the then branch
+                        match self.generate_c_code_for_node(then_branch, indent_level + 1) {
+                            Ok(then_code) => {
+                                code.push_str(&then_code);
+                                
+                                // Handle the else branch if it exists
+                                if let Some(else_branch) = else_branch {
+                                    code.push_str(&format!("{}}} else {{\n", indent));
+                                    match self.generate_c_code_for_node(else_branch, indent_level + 1) {
+                                        Ok(else_code) => {
+                                            code.push_str(&else_code);
+                                        }
+                                        Err(e) => {
+                                            return Err(format!("Error generating code for else branch: {}", e));
+                                        }
+                                    }
+                                }
+                                
+                                // Close the if statement
+                                code.push_str(&format!("{}}}\n", indent));
+                                code.push_str(&format!("{}// End if statement\n", indent));
+                            }
+                            Err(e) => {
+                                return Err(format!("Error generating code for then branch: {}", e));
+                            }
+                        }
+                    }
+                    Err(e) => {
+                        return Err(format!("Error generating code for if condition: {}", e));
+                    }
+                }
+                
+                return Ok(code);
+            },
+            // Handle ForIn loops (iterate over object properties)
+            AstNode::ForIn { var_name, object, body } => {
+                // Generate code for the object expression
+                match self.generate_c_code_for_expr(object, indent_level) {
+                    Ok((obj_code, obj_var)) => {
+                        // Add the object code first
+                        code.push_str(&obj_code);
+                        
+                        // Generate a unique ID for this loop
+                        let loop_id = self.next_temp_id();
+                        
+                        // Start the ForIn loop
+                        code.push_str(&format!("{}// Start ForIn loop for variable '{}'\n", indent, var_name));
+                        
+                        // Get the keys from the object
+                        code.push_str(&format!("{}SmashValue* keys_{} = smash_object_get_keys({});\n", indent, loop_id, obj_var));
+                        code.push_str(&format!("{}int len_{} = smash_array_length(keys_{});\n", indent, loop_id, loop_id));
+                        
+                        // Start the loop
+                        code.push_str(&format!("{}for (int i_{} = 0; i_{} < len_{}; i_{}++) {{\n", indent, loop_id, loop_id, loop_id, loop_id));
+                        
+                        // Get the current key
+                        let inner_indent = "    ".repeat(indent_level + 1);
+                        code.push_str(&format!("{}SmashValue* key_{} = smash_array_get(keys_{}, i_{});\n", inner_indent, loop_id, loop_id, loop_id));
+                        code.push_str(&format!("{}char* {}_str = smash_value_to_string(key_{});\n", inner_indent, var_name, loop_id));
+                        code.push_str(&format!("{}SmashValue* {} = smash_value_create_string({}_str);\n", inner_indent, var_name, var_name));
+                        code.push_str(&format!("{}free({}_str); // Free the temporary string\n", inner_indent, var_name));
+                        
+                        // Generate code for the loop body
+                        match self.generate_c_code_for_node(body, indent_level + 1) {
+                            Ok(body_code) => {
+                                code.push_str(&body_code);
+                                
+                                // Free the key variable at the end of each iteration
+                                code.push_str(&format!("{}smash_value_free({});\n", inner_indent, var_name));
+                            }
+                            Err(e) => {
+                                return Err(format!("Error generating code for ForIn body: {}", e));
+                            }
+                        }
+                        
+                        // Close the loop
+                        code.push_str(&format!("{}}}\n", indent));
+                        
+                        // Free the keys array
+                        code.push_str(&format!("{}smash_value_free(keys_{}); // Free the keys array\n", indent, loop_id));
+                        code.push_str(&format!("{}// End ForIn loop for variable '{}'\n", indent, var_name));
+                    }
+                    Err(e) => {
+                        return Err(format!("Error generating code for ForIn object: {}", e));
+                    }
+                }
+                
+                return Ok(code);
+            },
+            // ... other statement types like ReturnStatement, etc. ...
             _ => {
                 code.push_str(&format!("{}// C code generation not implemented for statement node: {:?}\n", indent, node));
                 return Ok(code)

@@ -32,20 +32,52 @@ int main(int argc, char** argv) {
     }
     // End ForOf loop for variable 'i'
     smash_value_free(x); // Free the iterable after the loop
-    SmashValue* smash_str_10 = smash_value_create_string("Hello, SmashLang!"); // Expr String
-    SmashValue* message = smash_str_10;
-    SmashValue* smash_num_11 = smash_value_create_number(2025); // Expr Number
-    SmashValue* year = smash_num_11;
-    SmashValue* smash_num_12 = smash_value_create_number(3.14); // Expr Float
-    SmashValue* pi = smash_num_12;
-    SmashValue* smash_bool_13 = smash_value_create_boolean(true); // Expr Boolean
-    SmashValue* active = smash_bool_13;
-    SmashValue* smash_bool_14 = smash_value_create_boolean(false); // Expr Boolean
-    SmashValue* active2 = smash_bool_14;
-    // C code generation not implemented for statement node: If { condition: Identifier("active"), then_branch: Block([FunctionCall { name: "print", args: [Identifier("pi")] }]), else_branch: None }
-    // C code generation not implemented for statement node: If { condition: UnaryOp { op: "!", expr: Identifier("active2") }, then_branch: Block([FunctionCall { name: "print", args: [String("not active"), Identifier("pi")] }]), else_branch: None }
-    SmashValue* smash_str_15 = smash_value_create_string("smash.*"); // Expr String
-    SmashValue* pattern = smash_str_15;
+    // Start ForIn loop for variable 'val'
+    SmashValue* keys_10 = smash_object_get_keys(user);
+    int len_10 = smash_array_length(keys_10);
+    for (int i_10 = 0; i_10 < len_10; i_10++) {
+        SmashValue* key_10 = smash_array_get(keys_10, i_10);
+        char* val_str = smash_value_to_string(key_10);
+        SmashValue* val = smash_value_create_string(val_str);
+        free(val_str); // Free the temporary string
+        {
+            char* key_12 = smash_value_to_string(val); // Convert property to string
+            SmashValue* prop_11 = smash_object_get(user, key_12); // Computed property access
+            free(key_12); // Free temporary string
+            print(2, val, prop_11); // Print function call
+        }
+        smash_value_free(val);
+    }
+    smash_value_free(keys_10); // Free the keys array
+    // End ForIn loop for variable 'val'
+    SmashValue* smash_str_13 = smash_value_create_string("Hello, SmashLang!"); // Expr String
+    SmashValue* message = smash_str_13;
+    SmashValue* smash_num_14 = smash_value_create_number(2025); // Expr Number
+    SmashValue* year = smash_num_14;
+    SmashValue* smash_num_15 = smash_value_create_number(3.14); // Expr Float
+    SmashValue* pi = smash_num_15;
+    SmashValue* smash_bool_16 = smash_value_create_boolean(true); // Expr Boolean
+    SmashValue* active = smash_bool_16;
+    SmashValue* smash_bool_17 = smash_value_create_boolean(false); // Expr Boolean
+    SmashValue* active2 = smash_bool_17;
+    // Start if statement
+    if (smash_value_is_truthy(active)) {
+        {
+            print(1, pi); // Print function call
+        }
+    }
+    // End if statement
+    SmashValue* unary_18 = smash_value_logical_not(active2); // Logical NOT
+    // Start if statement
+    if (smash_value_is_truthy(unary_18)) {
+        {
+            SmashValue* smash_str_19 = smash_value_create_string("not active"); // Expr String
+            print(2, smash_str_19, pi); // Print function call
+        }
+    }
+    // End if statement
+    SmashValue* smash_str_20 = smash_value_create_string("smash.*"); // Expr String
+    SmashValue* pattern = smash_str_20;
     print(1, message); // Print function call
 
     // TODO: Cleanup if needed

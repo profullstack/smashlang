@@ -48,6 +48,12 @@ pub enum AstNode {
         property: String,
     },
     
+    // Computed property access (e.g., obj[expr])
+    ComputedPropertyAccess {
+        object: Box<AstNode>,
+        property: Box<AstNode>,
+    },
+    
     // Method call (e.g., obj.method())
     MethodCall {
         object: Box<AstNode>,
@@ -1393,20 +1399,41 @@ impl Parser {
                 // Check for property access (identifier followed by dot and another identifier)
                 let mut expr = AstNode::Identifier(id.clone());
                 
-                // Process property access chains (obj.prop1.prop2)
-                while let Some(Token::Dot) = self.peek() {
-                    self.advance(); // Consume the dot
-                    
-                    // Expect an identifier after the dot
-                    if let Some(Token::Identifier(prop)) = self.peek() {
-                        let property = prop.clone();
-                        self.advance(); // Consume the property identifier
-                        expr = AstNode::PropertyAccess {
-                            object: Box::new(expr),
-                            property,
-                        };
+                // Process property access chains (obj.prop1.prop2) and computed property access (obj[expr])
+                loop {
+                    if let Some(Token::Dot) = self.peek() {
+                        self.advance(); // Consume the dot
+                        
+                        // Expect an identifier after the dot
+                        if let Some(Token::Identifier(prop)) = self.peek() {
+                            let property = prop.clone();
+                            self.advance(); // Consume the property identifier
+                            expr = AstNode::PropertyAccess {
+                                object: Box::new(expr),
+                                property,
+                            };
+                        } else {
+                            return Err(ParseError::new("Expected property name after dot", self.pos));
+                        }
+                    } else if let Some(Token::LBracket) = self.peek() {
+                        self.advance(); // Consume the left bracket
+                        
+                        // Parse the expression inside the brackets
+                        let property_expr = self.parse_expr()?;
+                        
+                        // Expect a closing bracket
+                        if let Some(Token::RBracket) = self.peek() {
+                            self.advance(); // Consume the right bracket
+                            expr = AstNode::ComputedPropertyAccess {
+                                object: Box::new(expr),
+                                property: Box::new(property_expr),
+                            };
+                        } else {
+                            return Err(ParseError::new("Expected closing bracket after property expression", self.pos));
+                        }
                     } else {
-                        return Err(ParseError::new("Expected property name after dot", self.pos));
+                        // No more property access, break the loop
+                        break;
                     }
                 }
                 

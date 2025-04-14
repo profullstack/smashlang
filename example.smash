@@ -1,4 +1,5 @@
 let x = [1, 2, 3];
+const y = [true, false, false, true];
 let user = {
     name: "chovy",
     age: 33,
@@ -8,6 +9,21 @@ print("age:", user.age);
 
 for (let i of x) {
 	print(i);
+}
+
+// Iterate over object properties with for...in loop
+for (let val in user) {
+    print(val, user[val]);
+}
+
+
+for (let x of y) {
+    if (x) {
+        print("true");
+        continue;
+    } else {
+        print("false");
+    }
 }
 
 let message = "Hello, SmashLang!";

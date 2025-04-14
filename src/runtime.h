@@ -57,12 +57,15 @@ SmashValue* smash_value_clone(SmashValue* value); // Create a deep copy of a Sma
 SmashValue* smash_value_create_object();
 SmashValue* smash_object_get(SmashValue* obj, const char* property); // Get property from object
 void smash_object_set(SmashValue* obj, const char* property, SmashValue* value); // Set property on object
+SmashValue* smash_object_get_keys(SmashValue* obj); // Get array of property names
 SmashValue* smash_value_create_boolean(bool val);
 SmashValue* smash_value_create_number(double num);
 SmashValue* smash_value_create_string(const char* str); // Creates a copy
 SmashValue* smash_value_create_array(int initial_capacity);
 // SmashValue* smash_value_create_object(); // Future use
 void smash_value_free(SmashValue* value); // Important: Frees value and potentially nested data
+SmashValue* smash_value_logical_not(SmashValue* value); // Logical NOT operation
+bool smash_value_is_truthy(SmashValue* value); // Check if a value is truthy
 
 // --- General Helpers ---
 char* smash_value_to_string(SmashValue* value); // Converts any value to a new string
