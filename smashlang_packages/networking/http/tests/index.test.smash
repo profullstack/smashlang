@@ -1,36 +1,369 @@
-// networking/http/tests/index.test.smash - Test file for http package
+/**
+ * HTTP Package Tests
+ * 
+ * This file contains tests for the HTTP package using the SmashLang testing framework.
+ * It uses a combination of real HTTP requests to public APIs and mocked responses.
+ */
 
-import * from 'networking/http';
-import { test, describe, expect, beforeEach, afterEach } from 'std/testing';
+import { test, describe, expect, beforeEach, afterEach, mock } from "std/testing";
+import { http, Response, CookieJar } from "../src/index.smash";
 
-describe('Package: http', () => {
-    beforeEach(() => {
-        // Setup code for each test
-        console.log('Setting up test for http');
+// Mock implementation of fetch for testing
+const mockFetch = mock.fn();
+
+// Helper to create a mock response
+function createMockResponse(status, body, headers = {}) {
+  const responseHeaders = new Headers();
+  for (const [key, value] of Object.entries(headers)) {
+    responseHeaders.append(key, value);
+  }
+  
+  return {
+    status,
+    statusText: status === 200 ? "OK" : "Error",
+    headers: responseHeaders,
+    json: async () => typeof body === 'string' ? JSON.parse(body) : body,
+    text: async () => typeof body === 'string' ? body : JSON.stringify(body),
+    body: {
+      getReader: () => ({
+        read: async () => ({ done: true, value: undefined })
+      })
+    }
+  };
+}
+
+describe("HTTP Package", () => {
+  // Save original fetch
+  const originalFetch = global.fetch;
+  
+  beforeEach(() => {
+    // Reset mock between tests
+    mockFetch.mockReset();
+    // Replace global fetch with mock
+    global.fetch = mockFetch;
+  });
+  
+  afterEach(() => {
+    // Restore original fetch
+    global.fetch = originalFetch;
+  });
+  
+  describe("Response Class", () => {
+    test("should correctly identify successful responses", () => {
+      const okResponse = new Response(200, "OK", {}, "Success");
+      const createdResponse = new Response(201, "Created", {}, "Created");
+      const notFoundResponse = new Response(404, "Not Found", {}, "Not Found");
+      const serverErrorResponse = new Response(500, "Server Error", {}, "Error");
+      
+      expect(okResponse.ok).toBe(true);
+      expect(createdResponse.ok).toBe(true);
+      expect(notFoundResponse.ok).toBe(false);
+      expect(serverErrorResponse.ok).toBe(false);
     });
-
-    afterEach(() => {
-        // Cleanup code for each test
-        console.log('Cleaning up after test for http');
+    
+    test("should convert response body to text", async () => {
+      const stringResponse = new Response(200, "OK", {}, "Hello World");
+      const jsonResponse = new Response(200, "OK", {}, { message: "Hello World" });
+      
+      expect(await stringResponse.text()).toBe("Hello World");
+      expect(await jsonResponse.text()).toBe("[object Object]");
     });
-
-    test('package can be imported correctly', () => {
-        // This test verifies that the package can be imported
-        expect(typeof http).toBe('object');
+    
+    test("should parse JSON response body", async () => {
+      const jsonString = '{"message":"Hello World"}';
+      const response = new Response(200, "OK", {}, jsonString);
+      
+      const json = await response.json();
+      expect(json).toEqual({ message: "Hello World" });
     });
-
-    // Add more specific tests for the package functionality
-    test('package has expected exports', () => {
-        // Check for expected exports based on the package
-        // This is a basic test that should be customized for each package
-        expect(http).not.toBe(null);
-        expect(http).not.toBe(undefined);
+    
+    test("should throw when parsing invalid JSON", async () => {
+      const invalidJson = '{"message":"Hello World"';
+      const response = new Response(200, "OK", {}, invalidJson);
+      
+      await expect(response.json()).rejects.toThrow("Failed to parse response as JSON");
     });
+  });
+  
+  describe("CookieJar Class", () => {
+    test("should store and retrieve cookies", () => {
+      const jar = new CookieJar();
+      const url = "https://example.com/path";
+      
+      jar.setCookie("name=value; Path=/", url);
+      
+      const cookies = jar.getCookies(url);
+      expect(cookies.length).toBe(1);
+      expect(cookies[0]).toBe("name=value; Path=/");
+    });
+    
+    test("should organize cookies by domain", () => {
+      const jar = new CookieJar();
+      
+      jar.setCookie("name=value1", "https://example.com");
+      jar.setCookie("name=value2", "https://api.example.com");
+      jar.setCookie("name=value3", "https://other.com");
+      
+      expect(jar.getCookies("https://example.com").length).toBe(1);
+      expect(jar.getCookies("https://api.example.com").length).toBe(1);
+      expect(jar.getCookies("https://other.com").length).toBe(1);
+      expect(jar.getCookies("https://unknown.com").length).toBe(0);
+    });
+    
+    test("should replace cookies with the same name", () => {
+      const jar = new CookieJar();
+      const url = "https://example.com";
+      
+      jar.setCookie("name=value1; Path=/", url);
+      jar.setCookie("name=value2; Path=/", url);
+      
+      const cookies = jar.getCookies(url);
+      expect(cookies.length).toBe(1);
+      expect(cookies[0]).toBe("name=value2; Path=/");
+    });
+    
+    test("should generate cookie header string", () => {
+      const jar = new CookieJar();
+      const url = "https://example.com";
+      
+      jar.setCookie("name1=value1; Path=/", url);
+      jar.setCookie("name2=value2; Path=/", url);
+      
+      const header = jar.getCookieHeader(url);
+      expect(header).toBe("name1=value1; name2=value2");
+    });
+    
+    test("should clear all cookies", () => {
+      const jar = new CookieJar();
+      
+      jar.setCookie("name=value1", "https://example.com");
+      jar.setCookie("name=value2", "https://other.com");
+      
+      jar.clear();
+      
+      expect(jar.getCookies("https://example.com").length).toBe(0);
+      expect(jar.getCookies("https://other.com").length).toBe(0);
+    });
+    
+    test("should clear cookies for a specific domain", () => {
+      const jar = new CookieJar();
+      
+      jar.setCookie("name=value1", "https://example.com");
+      jar.setCookie("name=value2", "https://other.com");
+      
+      jar.clearDomain("example.com");
+      
+      expect(jar.getCookies("https://example.com").length).toBe(0);
+      expect(jar.getCookies("https://other.com").length).toBe(1);
+    });
+  });
+  
+  describe("HTTP Client", () => {
+    test("should make a GET request", async () => {
+      const mockResponseBody = { id: 1, title: "Test Post" };
+      mockFetch.mockResolvedValueOnce(createMockResponse(200, mockResponseBody));
+      
+      const response = await http.get("https://example.com/posts/1");
+      
+      expect(mockFetch).toHaveBeenCalledTimes(1);
+      expect(mockFetch).toHaveBeenCalledWith("https://example.com/posts/1", expect.objectContaining({
+        method: "GET"
+      }));
+      
+      expect(response.status).toBe(200);
+      expect(await response.json()).toEqual(mockResponseBody);
+    });
+    
+    test("should make a POST request with JSON body", async () => {
+      const requestBody = { title: "New Post", body: "Content" };
+      const mockResponseBody = { id: 1, ...requestBody };
+      mockFetch.mockResolvedValueOnce(createMockResponse(201, mockResponseBody));
+      
+      const response = await http.post("https://example.com/posts", {
+        body: requestBody
+      });
+      
+      expect(mockFetch).toHaveBeenCalledTimes(1);
+      expect(mockFetch).toHaveBeenCalledWith("https://example.com/posts", expect.objectContaining({
+        method: "POST",
+        body: JSON.stringify(requestBody),
+        headers: expect.objectContaining({
+          "Content-Type": "application/json"
+        })
+      }));
+      
+      expect(response.status).toBe(201);
+      expect(await response.json()).toEqual(mockResponseBody);
+    });
+    
+    test("should handle request failures", async () => {
+      mockFetch.mockRejectedValueOnce(new Error("Network error"));
+      
+      await expect(http.get("https://example.com/posts/1")).rejects.toThrow("Network error");
+      expect(mockFetch).toHaveBeenCalledTimes(1);
+    });
+    
+    test("should retry failed requests", async () => {
+      // First attempt fails, second succeeds
+      mockFetch.mockRejectedValueOnce(new Error("Network error"));
+      mockFetch.mockResolvedValueOnce(createMockResponse(200, { success: true }));
+      
+      const response = await http.get("https://example.com/posts/1", {
+        retries: 1,
+        retryDelay: 10 // Short delay for testing
+      });
+      
+      expect(mockFetch).toHaveBeenCalledTimes(2);
+      expect(response.status).toBe(200);
+      expect(await response.json()).toEqual({ success: true });
+    });
+    
+    test("should handle response validation", async () => {
+      mockFetch.mockResolvedValueOnce(createMockResponse(404, { error: "Not found" }));
+      
+      await expect(http.get("https://example.com/posts/999")).rejects.toThrow("Request failed with status code 404");
+      expect(mockFetch).toHaveBeenCalledTimes(1);
+    });
+    
+    test("should allow custom response validation", async () => {
+      mockFetch.mockResolvedValueOnce(createMockResponse(404, { error: "Not found" }));
+      
+      const response = await http.get("https://example.com/posts/999", {
+        validateStatus: () => true // Accept any status code
+      });
+      
+      expect(mockFetch).toHaveBeenCalledTimes(1);
+      expect(response.status).toBe(404);
+      expect(await response.json()).toEqual({ error: "Not found" });
+    });
+    
+    test("should send cookies from cookie jar", async () => {
+      mockFetch.mockResolvedValueOnce(createMockResponse(200, { success: true }));
+      
+      const jar = new CookieJar();
+      jar.setCookie("session=abc123", "https://example.com");
+      
+      await http.get("https://example.com/api", {
+        cookieJar: jar
+      });
+      
+      expect(mockFetch).toHaveBeenCalledWith("https://example.com/api", expect.objectContaining({
+        headers: expect.objectContaining({
+          "Cookie": "session=abc123"
+        })
+      }));
+    });
+    
+    test("should store cookies in cookie jar", async () => {
+      mockFetch.mockResolvedValueOnce(createMockResponse(200, { success: true }, {
+        "Set-Cookie": "session=xyz789; Path=/"
+      }));
+      
+      const jar = new CookieJar();
+      
+      await http.get("https://example.com/api", {
+        cookieJar: jar
+      });
+      
+      const cookies = jar.getCookies("https://example.com/api");
+      expect(cookies.length).toBe(1);
+      expect(cookies[0]).toBe("session=xyz789; Path=/");
+    });
+    
+    test("should handle timeout", async () => {
+      // Mock AbortSignal.timeout
+      const originalAbortSignal = global.AbortSignal;
+      const mockAbortController = new AbortController();
+      global.AbortSignal = {
+        timeout: (ms) => {
+          expect(ms).toBe(1000);
+          return mockAbortController.signal;
+        }
+      };
+      
+      mockFetch.mockResolvedValueOnce(createMockResponse(200, { success: true }));
+      
+      await http.get("https://example.com/api", {
+        timeout: 1000
+      });
+      
+      expect(mockFetch).toHaveBeenCalledWith("https://example.com/api", expect.objectContaining({
+        signal: mockAbortController.signal
+      }));
+      
+      // Restore original AbortSignal
+      global.AbortSignal = originalAbortSignal;
+    });
+  });
+  
+  describe("HTTP Methods", () => {
+    test("should support all HTTP methods", async () => {
+      // Setup mocks for all methods
+      mockFetch.mockResolvedValue(createMockResponse(200, { success: true }));
+      
+      // Test each method
+      await http.get("https://example.com/resource");
+      expect(mockFetch).toHaveBeenLastCalledWith(expect.any(String), expect.objectContaining({ method: "GET" }));
+      
+      await http.post("https://example.com/resource");
+      expect(mockFetch).toHaveBeenLastCalledWith(expect.any(String), expect.objectContaining({ method: "POST" }));
+      
+      await http.put("https://example.com/resource");
+      expect(mockFetch).toHaveBeenLastCalledWith(expect.any(String), expect.objectContaining({ method: "PUT" }));
+      
+      await http.delete("https://example.com/resource");
+      expect(mockFetch).toHaveBeenLastCalledWith(expect.any(String), expect.objectContaining({ method: "DELETE" }));
+      
+      await http.patch("https://example.com/resource");
+      expect(mockFetch).toHaveBeenLastCalledWith(expect.any(String), expect.objectContaining({ method: "PATCH" }));
+      
+      await http.head("https://example.com/resource");
+      expect(mockFetch).toHaveBeenLastCalledWith(expect.any(String), expect.objectContaining({ method: "HEAD" }));
+      
+      await http.options("https://example.com/resource");
+      expect(mockFetch).toHaveBeenLastCalledWith(expect.any(String), expect.objectContaining({ method: "OPTIONS" }));
+    });
+  });
+  
+  describe("Integration Tests", () => {
+    // These tests make actual HTTP requests to public APIs
+    // They should be skipped in automated testing environments
+    
+    test.skip("should make a real GET request", async () => {
+      // Restore original fetch for this test
+      global.fetch = originalFetch;
+      
+      const response = await http.get("https://jsonplaceholder.typicode.com/posts/1");
+      
+      expect(response.status).toBe(200);
+      expect(response.ok).toBe(true);
+      
+      const data = await response.json();
+      expect(data.id).toBe(1);
+      expect(data.title).toBeDefined();
+    });
+    
+    test.skip("should make a real POST request", async () => {
+      // Restore original fetch for this test
+      global.fetch = originalFetch;
+      
+      const newPost = {
+        title: "Test Post",
+        body: "This is a test post",
+        userId: 1
+      };
+      
+      const response = await http.post("https://jsonplaceholder.typicode.com/posts", {
+        body: newPost
+      });
+      
+      expect(response.status).toBe(201);
+      expect(response.ok).toBe(true);
+      
+      const data = await response.json();
+      expect(data.id).toBeDefined();
+      expect(data.title).toBe(newPost.title);
+      expect(data.body).toBe(newPost.body);
+    });
+  });
 });
-
-// Add more specific test cases below
-// Example:
-// test('specific function works as expected', () => {
-//     const result = http.someFunction();
-//     expect(result).toBe(expectedValue);
-// });

@@ -1,0 +1,192 @@
+/**
+ * Advanced HTTP Package Example
+ * 
+ * This example demonstrates advanced features of the HTTP package,
+ * including cookie handling, form data submission, request retries,
+ * and streaming responses.
+ */
+
+import { http, CookieJar } from "../src/index.smash";
+
+// Function to log a response in a readable format
+async function logResponse(response) {
+  console.log(`Status: ${response.status} ${response.statusText}`);
+  console.log("Headers:", response.headers);
+  
+  // Try to get the response as JSON, fall back to text if it fails
+  try {
+    const data = await response.json();
+    console.log("Response (JSON):", data);
+  } catch (error) {
+    const text = await response.text();
+    console.log("Response (Text):", text.substring(0, 100) + (text.length > 100 ? "..." : ""));
+  }
+  
+  console.log("---");
+}
+
+// Main async function to run all examples
+async function runExamples() {
+  console.log("=== HTTP Package Advanced Examples ===\n");
+  
+  // Example 1: Working with cookies
+  console.log("=== Cookie Handling ===");
+  const cookieJar = new CookieJar();
+  
+  // First request - server sets cookies
+  console.log("Making first request to set cookies...");
+  try {
+    const response = await http.get("https://httpbin.org/cookies/set?name=smash&lang=lang", {
+      cookieJar: cookieJar,
+      followRedirects: true
+    });
+    
+    await logResponse(response);
+    
+    // Show cookies in the jar
+    console.log("Cookies in jar:", cookieJar.cookies);
+  } catch (error) {
+    console.error("Cookie setting request failed:", error);
+  }
+  
+  // Second request - cookies are automatically sent
+  console.log("Making second request with cookies from jar...");
+  try {
+    const response = await http.get("https://httpbin.org/cookies", {
+      cookieJar: cookieJar
+    });
+    
+    await logResponse(response);
+  } catch (error) {
+    console.error("Cookie getting request failed:", error);
+  }
+  
+  // Example 2: Form data submission
+  console.log("\n=== Form Data Submission ===");
+  console.log("Submitting form data...");
+  try {
+    // Create form data
+    const formData = new FormData();
+    formData.append("name", "SmashLang");
+    formData.append("version", "1.0.0");
+    formData.append("features", JSON.stringify(["http", "cookies", "forms"]));
+    
+    const response = await http.post("https://httpbin.org/post", {
+      body: formData
+    });
+    
+    await logResponse(response);
+  } catch (error) {
+    console.error("Form data submission failed:", error);
+  }
+  
+  // Example 3: Request retries
+  console.log("\n=== Request Retries ===");
+  console.log("Making request with retries to an endpoint that might fail...");
+  try {
+    // This endpoint randomly returns 500 errors
+    const response = await http.get("https://httpbin.org/status/200,500", {
+      retries: 3,
+      retryDelay: 1000,
+      validateStatus: status => status === 200
+    });
+    
+    console.log(`Status: ${response.status} ${response.statusText}`);
+    console.log("Request succeeded (possibly after retries)");
+    console.log("---");
+  } catch (error) {
+    console.error("Request with retries failed after all attempts:", error);
+  }
+  
+  // Example 4: Streaming response
+  console.log("\n=== Streaming Response ===");
+  console.log("Streaming a large response...");
+  try {
+    const response = await http.get("https://httpbin.org/stream/5", {
+      stream: true
+    });
+    
+    console.log(`Status: ${response.status} ${response.statusText}`);
+    
+    // Process the stream
+    const reader = response._body.getReader();
+    let receivedChunks = 0;
+    let receivedBytes = 0;
+    
+    while (true) {
+      const { done, value } = await reader.read();
+      
+      if (done) {
+        break;
+      }
+      
+      // value is a Uint8Array
+      receivedChunks++;
+      receivedBytes += value.length;
+      
+      // Convert chunk to string and log it
+      const chunk = new TextDecoder().decode(value);
+      console.log(`Chunk ${receivedChunks} (${value.length} bytes):`, chunk);
+    }
+    
+    console.log(`Streaming complete. Received ${receivedChunks} chunks, ${receivedBytes} bytes total.`);
+    console.log("---");
+  } catch (error) {
+    console.error("Streaming request failed:", error);
+  }
+  
+  // Example 5: Concurrent requests
+  console.log("\n=== Concurrent Requests ===");
+  console.log("Making multiple requests concurrently...");
+  try {
+    const urls = [
+      "https://jsonplaceholder.typicode.com/posts/1",
+      "https://jsonplaceholder.typicode.com/posts/2",
+      "https://jsonplaceholder.typicode.com/posts/3"
+    ];
+    
+    const requests = urls.map(url => http.get(url));
+    const responses = await Promise.all(requests);
+    
+    console.log(`Received ${responses.length} responses:`);
+    
+    for (let i = 0; i < responses.length; i++) {
+      const response = responses[i];
+      const data = await response.json();
+      console.log(`Response ${i + 1} (${urls[i]}):`);
+      console.log(`  Status: ${response.status}`);
+      console.log(`  Title: ${data.title}`);
+    }
+    
+    console.log("---");
+  } catch (error) {
+    console.error("Concurrent requests failed:", error);
+  }
+  
+  // Example 6: Request with custom validation
+  console.log("\n=== Custom Response Validation ===");
+  console.log("Making request with custom validation...");
+  try {
+    const response = await http.get("https://jsonplaceholder.typicode.com/posts/1", {
+      validateStatus: status => {
+        console.log(`Custom validator called with status: ${status}`);
+        return status === 200; // Only accept 200 OK
+      }
+    });
+    
+    const data = await response.json();
+    console.log(`Status: ${response.status} ${response.statusText}`);
+    console.log("Response validated successfully");
+    console.log(`Title: ${data.title}`);
+    console.log("---");
+  } catch (error) {
+    console.error("Request with custom validation failed:", error);
+  }
+  
+  console.log("All advanced examples completed!");
+}
+
+// Run the examples
+runExamples().catch(error => {
+  console.error("Error running advanced examples:", error);
+});

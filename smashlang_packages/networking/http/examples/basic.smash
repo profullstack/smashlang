@@ -1,0 +1,148 @@
+/**
+ * Basic HTTP Package Example
+ * 
+ * This example demonstrates the basic functionality of the HTTP package,
+ * including making GET and POST requests, handling responses, and working
+ * with different response formats.
+ */
+
+import { http } from "../src/index.smash";
+
+// Function to log a response in a readable format
+async function logResponse(response) {
+  console.log(`Status: ${response.status} ${response.statusText}`);
+  console.log("Headers:", response.headers);
+  
+  // Try to get the response as JSON, fall back to text if it fails
+  try {
+    const data = await response.json();
+    console.log("Response (JSON):", data);
+  } catch (error) {
+    const text = await response.text();
+    console.log("Response (Text):", text);
+  }
+  
+  console.log("---");
+}
+
+// Main async function to run all examples
+async function runExamples() {
+  console.log("=== HTTP Package Basic Examples ===\n");
+  
+  // Simple GET request
+  console.log("Making a GET request to JSONPlaceholder API...");
+  try {
+    const response = await http.get("https://jsonplaceholder.typicode.com/posts/1");
+    await logResponse(response);
+  } catch (error) {
+    console.error("GET request failed:", error);
+  }
+  
+  // GET request with query parameters
+  console.log("Making a GET request with query parameters...");
+  try {
+    const response = await http.get("https://jsonplaceholder.typicode.com/posts", {
+      headers: {
+        "Accept": "application/json"
+      }
+    });
+    
+    // Just log the number of items to keep the output clean
+    const posts = await response.json();
+    console.log(`Status: ${response.status} ${response.statusText}`);
+    console.log(`Received ${posts.length} posts`);
+    console.log("First post:", posts[0]);
+    console.log("---");
+  } catch (error) {
+    console.error("GET request with parameters failed:", error);
+  }
+  
+  // POST request with JSON body
+  console.log("Making a POST request with JSON body...");
+  try {
+    const newPost = {
+      title: "SmashLang HTTP Client",
+      body: "This post was created using the SmashLang HTTP client",
+      userId: 1
+    };
+    
+    const response = await http.post("https://jsonplaceholder.typicode.com/posts", {
+      headers: {
+        "Content-Type": "application/json",
+        "Accept": "application/json"
+      },
+      body: newPost
+    });
+    
+    await logResponse(response);
+  } catch (error) {
+    console.error("POST request failed:", error);
+  }
+  
+  // PUT request to update a resource
+  console.log("Making a PUT request to update a resource...");
+  try {
+    const updatedPost = {
+      id: 1,
+      title: "Updated Title",
+      body: "This post was updated using the SmashLang HTTP client",
+      userId: 1
+    };
+    
+    const response = await http.put("https://jsonplaceholder.typicode.com/posts/1", {
+      headers: {
+        "Content-Type": "application/json",
+        "Accept": "application/json"
+      },
+      body: updatedPost
+    });
+    
+    await logResponse(response);
+  } catch (error) {
+    console.error("PUT request failed:", error);
+  }
+  
+  // DELETE request
+  console.log("Making a DELETE request...");
+  try {
+    const response = await http.delete("https://jsonplaceholder.typicode.com/posts/1");
+    await logResponse(response);
+  } catch (error) {
+    console.error("DELETE request failed:", error);
+  }
+  
+  // Request with timeout
+  console.log("Making a request with timeout...");
+  try {
+    const response = await http.get("https://jsonplaceholder.typicode.com/posts/1", {
+      timeout: 5000 // 5 seconds
+    });
+    
+    console.log(`Status: ${response.status} ${response.statusText}`);
+    console.log("Request completed within timeout");
+    console.log("---");
+  } catch (error) {
+    console.error("Request with timeout failed:", error);
+  }
+  
+  // Request with error handling
+  console.log("Making a request to a non-existent endpoint...");
+  try {
+    const response = await http.get("https://jsonplaceholder.typicode.com/nonexistent", {
+      validateStatus: status => true // Don't throw on any status code
+    });
+    
+    console.log(`Status: ${response.status} ${response.statusText}`);
+    console.log("Even though the status is an error, we handled it");
+    console.log("---");
+  } catch (error) {
+    console.error("Request to non-existent endpoint failed:", error);
+  }
+  
+  console.log("All examples completed!");
+}
+
+// Run the examples
+runExamples().catch(error => {
+  console.error("Error running examples:", error);
+});

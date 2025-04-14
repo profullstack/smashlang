@@ -1,0 +1,53 @@
+/**
+ * SmashLang PostgreSQL Package
+ * 
+ * A comprehensive PostgreSQL client for SmashLang applications.
+ * Provides functionality for connecting to PostgreSQL databases,
+ * executing queries, and managing transactions.
+ */
+
+// PostgreSQL connection string parser
+function parseConnectionString(connectionString) {
+  if (!connectionString) {
+    throw new Error("Connection string is required");
+  }
+  
+  // Handle connection objects
+  if (typeof connectionString === 'object') {
+    return {
+      host: connectionString.host || 'localhost',
+      port: connectionString.port || 5432,
+      database: connectionString.database,
+      user: connectionString.user || connectionString.username,
+      password: connectionString.password,
+      ssl: connectionString.ssl
+    };
+  }
+  
+  // Parse connection string
+  try {
+    if (connectionString.startsWith('postgresql://')) {
+      const url = new URL(connectionString);
+      const params = new URLSearchParams(url.search);
+      
+      return {
+        host: url.hostname || 'localhost',
+        port: url.port ? parseInt(url.port, 10) : 5432,
+        database: url.pathname.slice(1) || undefined,
+        user: url.username || undefined,
+        password: url.password || undefined,
+        ssl: params.get('ssl') === 'true'
+      };
+    } else {
+      // Parse key=value format
+      const config = {};
+      connectionString.split(' ').forEach(part => {
+        const [key, value] = part.split('=');
+        if (key && value) {
+          config[key.trim()] = value.trim().replace(/^['"]|['"]$/g, '');
+        }
+      });
+      
+      return {
+        host: config.host || 'localhost',
+        port: config.port ? parseInt(config.port, 10) : 5432,
