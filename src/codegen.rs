@@ -238,6 +238,20 @@ int main(int argc, char** argv) {{
                         code.push_str(&format!("{}SmashValue* {} = smash_value_create_null(); // Error fallback\n", indent, name));
                     }
                 }
+            },
+            AstNode::ConstDecl { name, value } => {
+                // Generate code for the value expression (same as LetDecl since C doesn't have const for variables)
+                match self.generate_c_code_for_expr(value, indent_level) {
+                    Ok((expr_code, expr_var)) => {
+                        code.push_str(&expr_code); // Code to create the value
+                        // Declare the variable and assign the result from the expression
+                        code.push_str(&format!("{}SmashValue* {} = {};\n", indent, name, expr_var));
+                    }
+                    Err(e) => {
+                        code.push_str(&format!("{}// Error generating expression for const {}: {}\n", indent, name, e));
+                        code.push_str(&format!("{}SmashValue* {} = smash_value_create_null(); // Error fallback\n", indent, name));
+                    }
+                }
             }
             AstNode::FunctionCall { name, args } => {
                 if name == "print" {
@@ -353,7 +367,6 @@ int main(int argc, char** argv) {{
                         code.push_str(&cond_code);
                         
                         // Generate the if statement
-                        code.push_str(&format!("{}// Start if statement\n", indent));
                         code.push_str(&format!("{}if (smash_value_is_truthy({})) {{\n", indent, cond_var));
                         
                         // Generate code for the then branch
@@ -388,6 +401,11 @@ int main(int argc, char** argv) {{
                     }
                 }
                 
+                return Ok(code);
+            },
+            // Handle continue statement
+            AstNode::Continue => {
+                code.push_str(&format!("{}{};\n", indent, "continue"));
                 return Ok(code);
             },
             // Handle ForIn loops (iterate over object properties)

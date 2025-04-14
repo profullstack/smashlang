@@ -24,6 +24,8 @@ for (let x of y) {
     } else {
         print("false");
     }
+
+    print("end");
 }
 
 let message = "Hello, SmashLang!";
