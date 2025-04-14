@@ -2,54 +2,56 @@
 name = "smashlang"
 version = "0.1.0"
 edition = "2021"
+authors = ["Your Name <your.email@example.com>"]
+description = "A JavaScript-like programming language in Rust"
+license = "MIT"
+repository = "https://github.com/yourusername/smashlang"
+readme = "README.md"
+keywords = ["language", "compiler", "interpreter", "javascript", "wasm"]
+categories = ["compilers", "development-tools", "wasm"]
 
 [dependencies]
-inkwell = { version = "0.2.0", features = ["llvm15-0"], optional = true }
-anyhow = "1.0"
-rustyline = "11.0.0"  # For improved REPL input handling
-colored = "2.0.0"    # For colored terminal output
-chrono = "0.4"      # For date and time functionality
-regex = "1.9.5"     # For regular expression support
-serde_json = "1.0"   # For JSON serialization/deserialization
-rand = "0.8"        # Added for unique names in codegen
+# Lexer
+logos = "0.13.0"
 
-# macOS-specific dependencies
-[target.'cfg(target_os = "macos")'.dependencies]
-core-foundation = "0.9"  # For macOS Core Foundation bindings
-core-graphics = { version = "0.22", optional = true }  # For macOS graphics
-objc = { version = "0.2", features = ["exception"] }  # For Objective-C runtime
-avfoundation = { version = "0.1", optional = true }  # For macOS AVFoundation
+# Parser
+pest = "2.8.0"
+pest_derive = "2.8.0"
 
-[build-dependencies]
-cc = "1.0.79"      # For compiling C code
-pkg-config = "0.3.27"  # For finding system libraries like PCRE
+# Standard library helpers
+chrono = "0.4.31"
+regex = "1.10.2"
+serde = { version = "1.0.193", features = ["derive"] }
+serde_json = "1.0.108"
+rand = "0.8.5"
+
+# CLI
+clap = { version = "4.4.11", features = ["derive"] }
+colored = "2.0.4"
+rustyline = "11.0.0"
 
 [dev-dependencies]
-tempfile = "3.5.0"  # For temporary file handling in tests
+criterion = "0.5.1"
 
 [features]
-default = ["macos-support"]
-compiler = ["inkwell"]
-macos-support = ["core-graphics", "avfoundation"]
-core-graphics = ["dep:core-graphics"]
-avfoundation = ["dep:avfoundation"]
+default = ["jit"]
+jit = []
+wasm = []
 
-[lib]
-name = "smashlang"
-path = "src/lib.rs"
+[profile.release]
+lto = true
+codegen-units = 1
+opt-level = 3
+debug = false
+
+[profile.dev]
+opt-level = 0
+debug = true
 
 [[bin]]
 name = "smash"
 path = "src/main.rs"
 
-[[bin]]
-name = "smashpkg"
-path = "src/smashpkg.rs"
-
-[[bin]]
-name = "smashc"
-path = "src/smashc.rs"
-
-[[bin]]
-name = "smashtest"
-path = "src/smashtest.rs"
+[lib]
+name = "smashlang"
+path = "src/lib.rs"

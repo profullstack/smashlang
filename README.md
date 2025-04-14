@@ -1,501 +1,205 @@
-<p align="center">
-  <picture>
-    <source media="(prefers-color-scheme: dark)" srcset="assets/logo.dark.svg">
-    <img src="assets/logo.light.svg" alt="SmashLang logo" width="400" />
-  </picture>
-</p>
+# SmashLang: A JavaScript-like Programming Language in Rust
 
-# SmashLang
+SmashLang is a dynamically-typed programming language with JavaScript-like syntax that compiles to native binaries across all major platforms (desktop, mobile, server, WebAssembly, etc.). The language supports dynamic typing, native date/time, regular expressions, and control flow constructs like `if`, `for`, and `while`.
 
-**SmashLang** is a bold, high-performance, JavaScript-inspired general-purpose programming language that compiles to native binaries. With strong syntax, a modern standard library, self-contained regex support, REPL, and built-in modules, SmashLang is made for developers who want the power of C/Rust but the clarity of JavaScript — without the bloat.
+## Features
 
----
+- **JavaScript-like Syntax**: Familiar syntax for JavaScript developers
+- **Dynamic Typing**: Flexible type system with runtime type checking
+- **Native Date/Time**: Built-in support for date and time operations
+- **Regular Expressions**: First-class support for regular expressions
+- **Control Flow**: Full support for `if`, `for`, `while`, and other control flow constructs
+- **Functions and Closures**: Support for functions, closures, and arrow functions
+- **Error Handling**: Try/catch/finally blocks for error handling
+- **Async/Await**: Support for asynchronous programming
+- **Cross-Platform**: Compiles to native binaries for all major platforms
 
-[![GitHub](https://img.shields.io/github/license/profullstack/smashlang)](https://github.com/profullstack/smashlang/blob/master/LICENSE)
-[![GitHub commit activity](https://img.shields.io/github/commit-activity/m/profullstack/smashlang)](https://github.com/profullstack/smashlang/pulse)
-[![GitHub last commit](https://img.shields.io/github/last-commit/profullstack/smashlang)](https://github.com/profullstack/smashlang/commits/master)
+## Installation
 
-
-## ✨ Features
-
-- 🔥 JavaScript-inspired syntax with modern improvements
-- 💥 First-class support for arrays, objects, strings, self-contained regex, dates
-- 📦 Module system and `smashpkg` package manager
-- 🧠 Pattern matching and function expression sugar
-- 🚀 Compiles to native binaries (via LLVM + Clang)
-- 💬 REPL and full CLI compiler (`smashc`)
-- 🛠️ Language Server Protocol (LSP) support
-- 💪 Written in Rust with an embedded runtime (`libsmashrt`)
-
----
-
-## 📦 Use Cases
-
-- **CLI tools** with native speed
-- **Data processing pipelines**
-- **Cross-platform scripting**
-- **WebAssembly** (WASM) targets in future versions
-- **Educational tools** with readable syntax and REPL
-- **Regex-heavy parsing applications** with no external dependencies
-
----
-
-## 🖥️ Operating System Support
-
-SmashLang compiles to native binaries for:
-
-- ✅ Linux (x64, ARM)
-- ✅ macOS (Intel & Apple Silicon)
-- ✅ Windows (via MinGW)
-- ✅ Android (NDK/Clang)
-- ✅ iOS (Xcode SDK)
-
----
-
-## 🚀 Getting Started
-
-### Quick Installation
-
-Install SmashLang with a single command:
+### From Source
 
 ```bash
-# Using curl
-curl -fsSL https://raw.githubusercontent.com/profullstack/smashlang/master/install.sh | bash -s -- --master
-
-# Or using wget
-wget -O- https://raw.githubusercontent.com/profullstack/smashlang/master/install.sh | bash -s -- --master
+git clone https://github.com/yourusername/smashlang.git
+cd smashlang
+cargo install --path .
 ```
 
-> **Note:** The `--master` option installs directly from the GitHub master branch instead of using release packages. This is recommended until official releases are available.
-
-This will automatically:
-- Detect your operating system (Windows, macOS, or Linux)
-- Download the appropriate binaries
-- Set up the package repository
-- Configure your environment
-- Add SmashLang to your PATH
-
-After installation, verify it works:
+### Using Cargo
 
 ```bash
-smash --version
+cargo install smashlang
 ```
 
-### Build the Compiler & Runtime
+## Usage
+
+### REPL
+
+Start the interactive REPL:
 
 ```bash
-./build.sh example.smash
+smash
 ```
 
-This compiles:
-- `std.smash` (standard library)
-- `libsmashrt` runtime (Rust)
-- Your `.smash` file to an executable
+### Running Scripts
 
-Use `--target` to cross-compile:
-```bash
-./build.sh hello.smash --target x86_64-w64-windows-gnu
-```
-
-### Run the REPL
+Run a SmashLang script:
 
 ```bash
-smash repl
+smash run script.smash
 ```
 
-### Example Program
+### Compiling Scripts
 
-```js
-const name = "SmashLang";
-let nums = [1, 2, 3];
-let doubled = nums.map(fn(x) => x * 2);
-print("Hello from " + name);
+Compile a SmashLang script to a native binary:
+
+```bash
+smash compile script.smash
 ```
 
----
+## Language Examples
 
-## 🔍 Self-Contained Regex Engine
+### Variables and Basic Types
 
-SmashLang includes a lightweight, self-contained regex implementation with no external dependencies:
+```javascript
+// Variables
+let x = 42;
+const PI = 3.14159;
 
-```js
-// Basic pattern matching
-let text = "Hello, SmashLang! This is a test string with numbers 123 and 456.";
-let match = text.match("SmashLang");  // Returns "SmashLang"
-
-// Case-insensitive matching with /i flag
-let caseMatch = text.match("smashlang/i");  // Returns "SmashLang"
-
-// Character classes with quantifiers
-let digits = text.match("[0-9]+");  // Returns "123"
-
-// String replacement
-let replaced = text.replace("test", "sample");
-
-// Global replacement with /g flag
-let text2 = "one two one two one three";
-let globalReplaced = text2.replace("one/g", "ONE");  // Replaces all occurrences
-
-// Combined flags
-let mixedText = "Hello hello HELLO world";
-let combinedReplaced = mixedText.replace("hello/ig", "hi");  // Case-insensitive and global
+// Types
+let num = 42;
+let float = 3.14;
+let str = "Hello, world!";
+let bool = true;
+let arr = [1, 2, 3, 4, 5];
+let obj = { name: "John", age: 30 };
+let regex = /[a-z]+/;
+let date = new Date();
 ```
 
-Features supported:
-- Basic pattern matching
-- Case-insensitive matching with `/i` flag
-- Global replacement with `/g` flag
-- Character classes like `[a-z]`, `[0-9]`
-- Quantifiers like `+` for one or more occurrences
-- Escaped character classes like `\d` (digits), `\w` (word characters), `\s` (whitespace)
+### Control Flow
 
-All regex functionality is implemented without external dependencies, making SmashLang binaries completely self-contained.
+```javascript
+// If statement
+if (x > 10) {
+    print("x is greater than 10");
+} else if (x > 5) {
+    print("x is greater than 5 but not greater than 10");
+} else {
+    print("x is not greater than 5");
+}
 
----
+// For loop
+for (let i = 0; i < 10; i++) {
+    print(i);
+}
 
-## 🔎 HTTP/HTTPS API
+// While loop
+let i = 0;
+while (i < 10) {
+    print(i);
+    i++;
+}
 
-SmashLang includes a fetch-compatible API for making HTTP requests with both Promise-based and async/await approaches:
+// For-in loop (objects)
+for (let key in obj) {
+    print(key, obj[key]);
+}
 
-### Promise-based API
+// For-of loop (arrays)
+for (let value of arr) {
+    print(value);
+}
+```
 
-```js
-// Simple GET request
-fetch("https://api.example.com/data")
-    .then(fn(response) {
-        return response.json();
+### Functions
+
+```javascript
+// Function declaration
+function add(a, b) {
+    return a + b;
+}
+
+// Arrow function
+const multiply = (a, b) => a * b;
+
+// Async function
+async function fetchData() {
+    const response = await fetch("https://api.example.com/data");
+    return response.json();
+}
+```
+
+### Error Handling
+
+```javascript
+try {
+    // Code that might throw an error
+    throw new Error("Something went wrong");
+} catch (error) {
+    // Handle the error
+    print("Error:", error);
+} finally {
+    // This will always execute
+    print("Cleanup");
+}
+```
+
+### Promises and Async/Await
+
+```javascript
+// Creating a promise
+const promise = new Promise((resolve, reject) => {
+    setTimeout(() => {
+        resolve("Success!");
+    }, 1000);
+});
+
+// Using then/catch
+promise
+    .then(result => {
+        print("Result:", result);
     })
-    .then(fn(data) {
-        print("Received data:", data);
-    })
-    .catch(fn(error) {
-        print("Error fetching data:", error);
+    .catch(error => {
+        print("Error:", error);
     });
 
-// POST request with JSON body
-post("https://api.example.com/submit", {
-    name: "SmashLang",
-    version: "1.0.0",
-    features: ["native compilation", "JavaScript-like syntax"]
-}, {
-    headers: {
-        "Content-Type": "application/json",
-        "Accept": "application/json"
-    }
-});
-```
-
-### Async/Await API
-
-```js
-// Top-level async function
-async fn fetchData() {
+// Using async/await
+async function run() {
     try {
-        // Simple GET request with async/await
-        const response = await fetch("https://api.example.com/data");
-        const data = await response.json();
-        print("Received data:", data);
-        
-        // POST request with async/await
-        const postResponse = await post("https://api.example.com/submit", {
-            name: "SmashLang",
-            version: "1.0.0",
-            features: ["native compilation", "async/await"]
-        }, {
-            headers: {
-                "Content-Type": "application/json"
-            }
-        });
-        const result = await postResponse.json();
-        print("Response:", result);
+        const result = await promise;
+        print("Result:", result);
     } catch (error) {
         print("Error:", error);
     }
 }
 
-// Run the async function
-fetchData();
+run();
 ```
 
----
+## Implementation Details
 
-## 🔌 Networking
+SmashLang is implemented in Rust and uses the following crates:
 
-Low-level TCP/IP and UDP networking capabilities with both traditional and async/await approaches:
+- **Lexer**: [`logos`](https://crates.io/crates/logos) for fast and efficient tokenization
+- **Parser**: [`pest`](https://crates.io/crates/pest) for parsing with a PEG grammar
+- **Interpreter**: Custom implementation with a dynamic type system
+- **Compiler**: [`cranelift`](https://crates.io/crates/cranelift) for JIT compilation
+- **WebAssembly**: [`wasmtime`](https://crates.io/crates/wasmtime) for WebAssembly support
+- **Standard Library**: Uses Rust's standard library and crates like [`chrono`](https://crates.io/crates/chrono) and [`regex`](https://crates.io/crates/regex)
 
-### Traditional API
+## Cross-Platform Support
 
-```js
-// Import the networking module
-import "std/net";
+SmashLang supports the following platforms:
 
-// TCP Client example
-let client = createTcpClient();
-let conn = client.connect("example.com", 80);
-client.send(conn, "GET / HTTP/1.1\r\nHost: example.com\r\n\r\n");
-let response = client.receive(conn);
-print(response);
-client.close(conn);
+- **Desktop**: Windows, macOS, Linux
+- **Mobile**: iOS, Android
+- **Web**: WebAssembly
+- **Server**: Any platform that supports Rust
 
-// TCP Server example
-let server = createTcpServer();
-let s = server.bind("127.0.0.1", 8080);
-server.listen(s);
+## Contributing
 
-let client = server.accept(s);
-let data = createTcpClient().receive(client);
-createTcpClient().send(client, "HTTP/1.1 200 OK\r\n\r\nHello!");
-createTcpClient().close(client);
-server.close(s);
-
-// UDP example
-let socket = createUdpSocket();
-let udpSocket = socket.bind("127.0.0.1", 8081);
-socket.sendTo(udpSocket, "Hello UDP", "127.0.0.1", 8081);
-let [data, sender] = socket.receiveFrom(udpSocket);
-print(data + " from " + sender.address + ":" + sender.port);
-socket.close(udpSocket);
-```
-
-### Async/Await API
-
-```js
-// Import the networking module
-import "std/net";
-
-// Async TCP client example
-async fn fetchWebPage(host, port, path) {
-    try {
-        const client = createTcpClient();
-        const conn = await client.connect(host, port);
-        
-        await client.send(conn, `GET ${path} HTTP/1.1\r\nHost: ${host}\r\n\r\n`);
-        const response = await client.receive(conn);
-        
-        await client.close(conn);
-        return response;
-    } catch (error) {
-        print("Network error:", error);
-        throw error;
-    }
-}
-
-// Async TCP server example
-async fn startServer(address, port) {
-    const server = createTcpServer();
-    
-    try {
-        const s = await server.bind(address, port);
-        await server.listen(s);
-        print(`Server listening on ${address}:${port}`);
-        
-        // Accept and handle a connection
-        const client = await server.accept(s);
-        const data = await createTcpClient().receive(client);
-        await createTcpClient().send(client, "HTTP/1.1 200 OK\r\n\r\nHello!");
-        await createTcpClient().close(client);
-        await server.close(s);
-    } catch (error) {
-        print("Server error:", error);
-    }
-}
-
-// Async UDP example
-async fn sendAndReceiveUdp() {
-    const socket = createUdpSocket();
-    
-    try {
-        const udpSocket = await socket.bind("127.0.0.1", 8081);
-        
-        await socket.sendTo(udpSocket, "Hello UDP", "127.0.0.1", 8081);
-        const [data, sender] = await socket.receiveFrom(udpSocket);
-        print(`${data} from ${sender.address}:${sender.port}`);
-        
-        await socket.close(udpSocket);
-    } catch (error) {
-        print("UDP error:", error);
-    }
-}
-
-// Run the async functions
-fetchWebPage("example.com", 80, "/").then(response => print(response));
-startServer("127.0.0.1", 8080);
-sendAndReceiveUdp();
-```
-
----
-
-## 🧪 Pattern Matching
-
-```js
-match age {
-  0 => "newborn",
-  1 => "baby",
-  _ => "child"
-}
-```
-
----
-
-## 📦 Package Manager
-
-SmashLang uses a Homebrew-inspired package management system with all packages contained within the `smashlang_packages` directory in the main codebase.
-
-### Installing Packages
-
-```bash
-# Install a package
-smashpkg install math
-
-# Install a specific version
-smashpkg install sqlite@3.36.0
-
-# Install multiple packages
-smashpkg install math crypto json
-```
-
-Packages are installed to `smash_modules/` and available via `import`.
-
-```js
-// Import a package
-import "math";
-
-// Use the package
-let result = math.sin(0.5) + math.cos(0.5);
-```
-
-### Package Directory Structure
-
-All SmashLang packages are organized in the `smashlang_packages` directory:
-
-```
-smashlang_packages/
-├u2500u2500 core/          # Essential libraries maintained by the SmashLang team
-├u2500u2500 networking/    # Libraries for HTTP, WebSockets, and other network protocols
-├u2500u2500 database/      # Database drivers and ORM tools
-├u2500u2500 community/     # Third-party packages contributed by the community
-```
-
-This approach keeps the codebase self-contained and ensures that even with a million packages, the download size remains manageable.
-
-### Creating Packages
-
-SmashLang provides a convenient way to create new packages with the proper structure:
-
-```bash
-# Create a simple package
-smashpkg create my-package
-
-# Create a package in a category
-smashpkg create utils/array-utils
-```
-
-This will create a new package in the `./smashlang_packages` directory with the following structure:
-
-```
-smashlang_packages/my-package/
-├── package.json         # Package metadata
-├── README.md            # Documentation
-├── .gitignore           # Git ignore rules
-├── src/
-│   └── index.smash      # Main package code
-├── examples/
-│   └── example.smash    # Usage examples
-└── tests/
-    └── index.test.smash # Test cases
-```
-
-### Contributing Packages
-
-To contribute a new package:
-
-1. Create a new package using `smashpkg create <name>`
-2. Develop and test your package locally
-3. Test your formula using `smashpkg test <formula>`
-4. Submit a pull request
-
-See the [smashlang_packages/README.md](./smashlang_packages/README.md) for more details.
-
----
-
-## 🧪 Testing Framework
-
-SmashLang includes a built-in testing framework inspired by Jest and Mocha, making it easy to write and run tests for your code.
-
-### Writing Tests
-
-```javascript
-// Import the testing framework
-import { test, describe, expect, beforeEach, afterEach } from 'std/testing';
-
-// Simple test
-test('addition works correctly', () => {
-  expect(2 + 2).toBe(4);
-});
-
-// Grouped tests with setup and teardown
-describe('String operations', () => {
-  let testString;
-  
-  beforeEach(() => {
-    testString = 'SmashLang';
-  });
-  
-  test('string length is correct', () => {
-    expect(testString.length).toBe(9);
-  });
-  
-  test('string includes method works', () => {
-    expect(testString.includes('Smash')).toBeTrue();
-  });
-});
-```
-
-### Running Tests
-
-Use the `smashtest` command to run your tests:
-
-```bash
-# Run all tests in a directory
-smashtest ./tests
-
-# Run a specific test file
-smashtest ./tests/unit.test.smash
-
-# Run tests with a specific tag
-smashtest ./tests --tag=unit
-```
-
-### Testing Packages
-
-When you create a package with `smashpkg create`, it automatically includes test files that work with the testing framework.
-
-```bash
-smashtest ./smashlang_packages/my-package/tests
-```
-
-## 🔧 Tooling
-
-- `smashc` — CLI compiler
-- `smash repl` — interactive shell
-- `smash-lang-server` — LSP integration
-- `smashpkg` — package manager
-- `smashtest` — test runner
-
----
-
-## ❤️ 💪 Logo
-
-The SmashLang logo represents resistance, speed, and clarity. The raised fist reflects a new era in programming — strong, expressive, and free. We are also inspired by Bernie Sanders and his relentless fight for the people.
-
----
-
-## Contact
-For technical contributions or questions: opensource@profullstack.com
-
-[![Discord](https://img.shields.io/discord/1011308539819597844?label=Discord&logo=Discord&style=for-the-badge)](https://discord.gg/U7dEXfBA3s)
-[![Reddit](https://img.shields.io/badge/Reddit-FF4500?logo=reddit&logoColor=fff&style=for-the-badge)](https://www.reddit.com/r/smashlang/)
+Contributions are welcome! Please feel free to submit a Pull Request.
 
 ## License
 
-ISC © 2025 SmashLang.com
+This project is licensed under the MIT License - see the LICENSE file for details.

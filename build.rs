@@ -1,82 +1,58 @@
+use std::env;
+use std::fs;
+use std::path::Path;
 use std::process::Command;
 
 fn main() {
-    // Try to get the git hash
-    let output = Command::new("git")
-        .args(["rev-parse", "--short", "HEAD"])
-        .output();
+    println!("cargo:rerun-if-changed=build.rs");
+    println!("cargo:rerun-if-changed=src/grammar.pest");
     
-    if let Ok(output) = output {
-        if output.status.success() {
-            let git_hash = String::from_utf8_lossy(&output.stdout).trim().to_string();
-            println!("cargo:rustc-env=GIT_HASH={}", git_hash);
-        }
+    // Store the git hash for version information
+    let git_hash = get_git_hash();
+    if let Some(hash) = git_hash {
+        println!("cargo:rustc-env=GIT_HASH={}", hash);
     }
     
-    // Make the build rerun if the git HEAD changes
-    println!("cargo:rerun-if-changed=.git/HEAD");
+    // Set up platform-specific configurations
+    let target = env::var("TARGET").unwrap();
     
-    // Compile the runtime.c file
-    println!("cargo:rerun-if-changed=src/runtime.c");
+    if target.contains("wasm32") {
+        println!("cargo:rustc-cfg=feature=\"wasm\"");
+    } else {
+        println!("cargo:rustc-cfg=feature=\"native\"");
+    }
     
-    #[cfg(feature = "compiler")]
-    {
-        // Build the runtime library
-        let mut build = cc::Build::new();
-        build.file("src/runtime.c");
+    // Set up OS-specific configurations
+    if target.contains("windows") {
+        println!("cargo:rustc-cfg=os=\"windows\"");
+    } else if target.contains("apple") {
+        println!("cargo:rustc-cfg=os=\"macos\"");
         
-        // macOS-specific configuration
-        #[cfg(target_os = "macos")]
-        {
-            // Link against system frameworks
-            println!("cargo:rustc-link-lib=framework=CoreFoundation");
-            println!("cargo:rustc-link-lib=framework=Security");
-            
-            // Try multiple methods to find PCRE
-            let pcre_found = if let Ok(lib) = pkg_config::probe_library("libpcre") {
-                // Use pkg-config paths
-                for path in lib.include_paths {
-                    build.include(path);
-                }
-                for path in lib.link_paths {
-                    println!("cargo:rustc-link-search={}", path.display());
-                }
-                true
-            } else {
-                // Try standard system paths first
-                if std::path::Path::new("/usr/local/include/pcre.h").exists() {
-                    build.include("/usr/local/include");
-                    println!("cargo:rustc-link-search=/usr/local/lib");
-                    true
-                } else if let Ok(output) = std::process::Command::new("brew").args(["--prefix", "pcre"]).output() {
-                    // Try Homebrew path as last resort
-                    if output.status.success() {
-                        let prefix = String::from_utf8_lossy(&output.stdout).trim().to_string();
-                        build.include(format!("{}/include", prefix));
-                        println!("cargo:rustc-link-search={}/lib", prefix);
-                        true
-                    } else {
-                        false
-                    }
-                } else {
-                    false
-                }
-            };
-            
-            if !pcre_found {
-                panic!("Could not find PCRE library. Please ensure it is installed.");
-            }
-            
-            println!("cargo:rustc-link-lib=pcre");
-            
-            // Add macOS-specific compiler flags
-            build.flag("-framework")
-                .flag("CoreFoundation")
-                .flag("-framework")
-                .flag("Security");
+        if target.contains("ios") {
+            println!("cargo:rustc-cfg=os=\"ios\"");
         }
-        
-        build.compile("smash_runtime");
-        println!("cargo:rustc-link-lib=smash_runtime");
+    } else if target.contains("android") {
+        println!("cargo:rustc-cfg=os=\"android\"");
+    } else if target.contains("linux") {
+        println!("cargo:rustc-cfg=os=\"linux\"");
+    }
+}
+
+fn get_git_hash() -> Option<String> {
+    let output = Command::new("git")
+        .args(&["rev-parse", "--short", "HEAD"])
+        .output()
+        .ok()?;
+    
+    if output.status.success() {
+        let hash = String::from_utf8(output.stdout).ok()?;
+        Some(hash.trim().to_string())
+    } else {
+        // If git command fails, try to read from a file
+        if Path::new("git_hash.txt").exists() {
+            fs::read_to_string("git_hash.txt").ok()
+        } else {
+            None
+        }
     }
 }

@@ -1,0 +1,271 @@
+// SmashLang Grammar for pest parser
+
+// Whitespace and comments
+WHITESPACE = _{ " " | "\t" | "\r" | "\n" }
+COMMENT = _{ line_comment | block_comment }
+line_comment = _{ "//" ~ (!"\n" ~ ANY)* }
+block_comment = _{ "/*" ~ (!"*/" ~ ANY)* ~ "*/" }
+
+// Program is a sequence of statements
+program = { SOI ~ statement* ~ EOI }
+
+// Statements
+statement = {
+    import_statement |
+    variable_declaration |
+    function_declaration |
+    return_statement |
+    if_statement |
+    for_statement |
+    for_in_statement |
+    for_of_statement |
+    while_statement |
+    do_while_statement |
+    switch_statement |
+    try_statement |
+    throw_statement |
+    break_statement |
+    continue_statement |
+    block |
+    expression_statement
+}
+
+// Import statement
+import_statement = { "import" ~ string_literal ~ ";" }
+
+// Variable declarations
+variable_declaration = { (let_declaration | const_declaration) ~ ";" }
+let_declaration = { "let" ~ identifier ~ "=" ~ expression }
+const_declaration = { "const" ~ identifier ~ "=" ~ expression }
+
+// Destructuring (array and object)
+array_destructuring = { "[" ~ destructuring_target ~ ("," ~ destructuring_target)* ~ "]" ~ "=" ~ expression }
+object_destructuring = { "{" ~ destructuring_target ~ ("," ~ destructuring_target)* ~ "}" ~ "=" ~ expression }
+destructuring_target = { 
+    rest_element | 
+    (identifier ~ ("=" ~ expression)?) |
+    (identifier ~ ":" ~ identifier ~ ("=" ~ expression)?)
+}
+rest_element = { "..." ~ identifier }
+
+// Function declaration
+function_declaration = { 
+    async_modifier? ~ "fn" ~ identifier ~ "(" ~ parameter_list? ~ ")" ~ block
+}
+async_modifier = { "async" }
+parameter_list = { identifier ~ ("," ~ identifier)* }
+
+// Arrow function
+arrow_function = {
+    async_modifier? ~ "(" ~ parameter_list? ~ ")" ~ "=>" ~ (block | expression)
+}
+
+// Return statement
+return_statement = { "return" ~ expression? ~ ";" }
+
+// Control flow statements
+if_statement = { "if" ~ "(" ~ expression ~ ")" ~ statement ~ ("else" ~ statement)? }
+for_statement = { "for" ~ "(" ~ (variable_declaration | expression_statement | ";") ~ expression? ~ ";" ~ expression? ~ ")" ~ statement }
+for_in_statement = { "for" ~ "(" ~ ("let" | "const")? ~ identifier ~ "in" ~ expression ~ ")" ~ statement }
+for_of_statement = { "for" ~ "(" ~ ("let" | "const")? ~ identifier ~ "of" ~ expression ~ ")" ~ statement }
+while_statement = { "while" ~ "(" ~ expression ~ ")" ~ statement }
+do_while_statement = { "do" ~ statement ~ "while" ~ "(" ~ expression ~ ")" ~ ";" }
+
+// Switch statement
+switch_statement = { "switch" ~ "(" ~ expression ~ ")" ~ "{" ~ case_clause* ~ default_clause? ~ "}" }
+case_clause = { "case" ~ expression ~ ":" ~ statement* }
+default_clause = { "default" ~ ":" ~ statement* }
+
+// Try-catch-finally
+try_statement = { "try" ~ block ~ catch_clause? ~ finally_clause? }
+catch_clause = { "catch" ~ "(" ~ identifier ~ ")" ~ block }
+finally_clause = { "finally" ~ block }
+
+// Throw statement
+throw_statement = { "throw" ~ expression ~ ";" }
+
+// Break and continue
+break_statement = { "break" ~ ";" }
+continue_statement = { "continue" ~ ";" }
+
+// Block
+block = { "{" ~ statement* ~ "}" }
+
+// Expression statement
+expression_statement = { expression ~ ";" }
+
+// Expressions
+expression = { assignment_expression }
+
+// Assignment expressions
+assignment_expression = { 
+    (identifier ~ assignment_operator ~ expression) |
+    (member_expression ~ assignment_operator ~ expression) |
+    conditional_expression
+}
+assignment_operator = { 
+    "=" | "+=" | "-=" | "*=" | "/=" | "%=" | 
+    "&=" | "|=" | "^=" | "<<=" | ">>=" 
+}
+
+// Conditional (ternary) expression
+conditional_expression = { 
+    logical_or_expression ~ ("?" ~ expression ~ ":" ~ expression)?
+}
+
+// Logical OR expression
+logical_or_expression = { 
+    logical_and_expression ~ ("||" ~ logical_and_expression)*
+}
+
+// Logical AND expression
+logical_and_expression = { 
+    bitwise_or_expression ~ ("&&" ~ bitwise_or_expression)*
+}
+
+// Bitwise OR expression
+bitwise_or_expression = { 
+    bitwise_xor_expression ~ ("|" ~ bitwise_xor_expression)*
+}
+
+// Bitwise XOR expression
+bitwise_xor_expression = { 
+    bitwise_and_expression ~ ("^" ~ bitwise_and_expression)*
+}
+
+// Bitwise AND expression
+bitwise_and_expression = { 
+    equality_expression ~ ("&" ~ equality_expression)*
+}
+
+// Equality expression
+equality_expression = { 
+    relational_expression ~ (("==" | "!=" | "===" | "!==") ~ relational_expression)*
+}
+
+// Relational expression
+relational_expression = { 
+    shift_expression ~ (("<" | ">" | "<=" | ">=") ~ shift_expression)*
+}
+
+// Shift expression
+shift_expression = { 
+    additive_expression ~ (("<<" | ">>" | ">>>") ~ additive_expression)*
+}
+
+// Additive expression
+additive_expression = { 
+    multiplicative_expression ~ (("+" | "-") ~ multiplicative_expression)*
+}
+
+// Multiplicative expression
+multiplicative_expression = { 
+    unary_expression ~ (("*" | "/" | "%") ~ unary_expression)*
+}
+
+// Unary expression
+unary_expression = { 
+    ("+" | "-" | "!" | "~" | "++" | "--") ~ unary_expression |
+    await_expression |
+    postfix_expression
+}
+
+// Await expression
+await_expression = { "await" ~ unary_expression }
+
+// Postfix expression
+postfix_expression = { 
+    left_hand_side_expression ~ ("++" | "--")?
+}
+
+// Left-hand side expression
+left_hand_side_expression = { 
+    call_expression | member_expression | new_expression | primary_expression
+}
+
+// Call expression
+call_expression = { 
+    (member_expression | primary_expression) ~ arguments ~ (arguments | member_access)*
+}
+
+// Member expression
+member_expression = { 
+    primary_expression ~ member_access+
+}
+
+// Member access
+member_access = { 
+    "." ~ identifier | "[" ~ expression ~ "]"
+}
+
+// New expression
+new_expression = { "new" ~ member_expression ~ arguments? }
+
+// Arguments
+arguments = { "(" ~ (expression ~ ("," ~ expression)*)? ~ ")" }
+
+// Primary expression
+primary_expression = { 
+    identifier | 
+    literal | 
+    array_literal | 
+    object_literal | 
+    function_expression | 
+    arrow_function |
+    "(" ~ expression ~ ")"
+}
+
+// Function expression
+function_expression = { 
+    async_modifier? ~ "function" ~ identifier? ~ "(" ~ parameter_list? ~ ")" ~ block
+}
+
+// Array literal
+array_literal = { "[" ~ (expression ~ ("," ~ expression)*)? ~ "]" }
+
+// Object literal
+object_literal = { "{" ~ (property ~ ("," ~ property)*)? ~ "}" }
+property = { (identifier | string_literal) ~ ":" ~ expression }
+
+// Literals
+literal = { 
+    number_literal | 
+    string_literal | 
+    boolean_literal | 
+    null_literal |
+    regex_literal
+}
+
+// Number literals
+number_literal = @{ int ~ ("." ~ ASCII_DIGIT*)? ~ (^"e" ~ ("+" | "-")? ~ ASCII_DIGIT+)? }
+int = @{ "0" | ASCII_NONZERO_DIGIT ~ ASCII_DIGIT* }
+
+// String literals
+string_literal = ${ double_quoted_string | single_quoted_string | template_string }
+double_quoted_string = ${ "\"" ~ inner_string ~ "\"" }
+single_quoted_string = ${ "'" ~ inner_string ~ "'" }
+template_string = ${ "`" ~ inner_template_string ~ "`" }
+inner_string = @{ char* }
+inner_template_string = @{ (template_char | template_interpolation)* }
+char = {
+    !("\"" | "'" | "\\") ~ ANY
+    | "\\" ~ ("\"" | "'" | "\\" | "n" | "r" | "t" | "b" | "f" | "v" | "0")
+}
+template_char = {
+    !("`" | "\\" | "${") ~ ANY
+    | "\\" ~ ("`" | "\\" | "n" | "r" | "t" | "b" | "f" | "v" | "0")
+}
+template_interpolation = { "${" ~ expression ~ "}" }
+
+// Boolean literals
+boolean_literal = { "true" | "false" }
+
+// Null literal
+null_literal = { "null" }
+
+// Regex literal
+regex_literal = @{ "/" ~ (!("/" | "\n" | "\r") ~ ANY | "\\" ~ ANY)+ ~ "/" ~ regex_flags? }
+regex_flags = @{ ("g" | "i" | "m" | "u" | "y")+ }
+
+// Identifier
+identifier = @{ (ASCII_ALPHA | "_") ~ (ASCII_ALPHANUMERIC | "_")* }
