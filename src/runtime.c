@@ -185,16 +185,35 @@ char* smash_value_to_string(SmashValue* value) {
     }
 }
 
-// Implementation for the print function
-void print(SmashValue* value) {
-    char* str = smash_value_to_string(value);
-    if (str) {
-        printf("%s\n", str);
-        free(str); // Free the string returned by smash_value_to_string
-    } else {
-        printf("(error converting value to string)\n");
+// Implementation for the print function with variable arguments
+#include <stdarg.h>
+#include <string.h>
+void print(int count, ...) {
+    va_list args;
+    va_start(args, count);
+    
+    for (int i = 0; i < count; i++) {
+        SmashValue* value = va_arg(args, SmashValue*);
+        char* str = smash_value_to_string(value);
+        
+        if (str) {
+            printf("%s", str);
+            free(str); // Free the string returned by smash_value_to_string
+        } else {
+            printf("(error converting value to string)");
+        }
+        
+        // Print a space between arguments, but not after the last one
+        if (i < count - 1) {
+            printf(" ");
+        }
     }
-    // Note: print does not take ownership or free the 'value' argument itself.
+    
+    // Print newline at the end
+    printf("\n");
+    
+    va_end(args);
+    // Note: print does not take ownership or free the 'value' arguments.
 }
 
 // Forward declarations for regex functions
@@ -676,6 +695,131 @@ char* smash_regex_replace(SmashRegex* regex, const char* str, const char* replac
 int load_regex_library(void) {
     // No need to load external library, using embedded implementation
     return 1;  // Always succeeds with embedded implementation
+}
+
+// Create a deep copy of a SmashValue
+SmashValue* smash_value_clone(SmashValue* value) {
+    if (!value) {
+        return smash_value_create_null();
+    }
+    
+    switch (value->type) {
+        case SMASH_TYPE_NULL:
+            return smash_value_create_null();
+            
+        case SMASH_TYPE_BOOLEAN:
+            return smash_value_create_boolean(value->data.boolean);
+            
+        case SMASH_TYPE_NUMBER:
+            return smash_value_create_number(value->data.number);
+            
+        case SMASH_TYPE_STRING:
+            return smash_value_create_string(value->data.string);
+            
+        case SMASH_TYPE_ARRAY:
+            {
+                // Create a new array
+                SmashValue* new_array = smash_value_create_array(value->data.array->size);
+                if (!new_array) return NULL;
+                
+                // Clone each element
+                for (int i = 0; i < value->data.array->size; i++) {
+                    SmashValue* element_clone = smash_value_clone(value->data.array->elements[i]);
+                    if (!element_clone) {
+                        // Handle error: free the array we've created so far
+                        smash_value_free(new_array);
+                        return NULL;
+                    }
+                    
+                    // Add the cloned element to the new array
+                    new_array->data.array->elements[i] = element_clone;
+                }
+                
+                return new_array;
+            }
+            
+        case SMASH_TYPE_OBJECT:
+            {
+                // For now, just return a simple null value for objects
+                // In a complete implementation, we would clone all properties
+                return smash_value_create_null();
+            }
+            
+        default:
+            return smash_value_create_null();
+    }
+}
+
+// Implementation for object creation and property access
+SmashValue* smash_value_create_object() {
+    SmashValue* obj = (SmashValue*)malloc(sizeof(SmashValue));
+    if (!obj) {
+        return NULL;
+    }
+    
+    obj->type = SMASH_TYPE_OBJECT;
+    obj->data.object = (SmashObject*)malloc(sizeof(SmashObject));
+    if (!obj->data.object) {
+        free(obj);
+        return NULL;
+    }
+    
+    obj->data.object->properties = NULL;  // Start with no properties
+    obj->data.object->size = 0;
+    
+    return obj;
+}
+
+SmashValue* smash_object_get(SmashValue* obj, const char* property) {
+    if (!obj || obj->type != SMASH_TYPE_OBJECT) {
+        // Return null for non-object values
+        return smash_value_create_null();
+    }
+    
+    SmashObject* object = obj->data.object;
+    
+    // Search for the property in the object
+    for (int i = 0; i < object->size; i++) {
+        if (strcmp(object->properties[i].key, property) == 0) {
+            // Return a copy of the found property value
+            return smash_value_clone(object->properties[i].value);
+        }
+    }
+    
+    // Property not found, return null
+    return smash_value_create_null();
+}
+
+// Set a property on an object
+void smash_object_set(SmashValue* obj, const char* property, SmashValue* value) {
+    if (!obj || obj->type != SMASH_TYPE_OBJECT || !property || !value) {
+        return; // Invalid parameters
+    }
+    
+    SmashObject* object = obj->data.object;
+    
+    // Check if property already exists
+    for (int i = 0; i < object->size; i++) {
+        if (strcmp(object->properties[i].key, property) == 0) {
+            // Free the old value
+            smash_value_free(object->properties[i].value);
+            // Set the new value (clone it to avoid double-free issues)
+            object->properties[i].value = smash_value_clone(value);
+            return;
+        }
+    }
+    
+    // Property doesn't exist, add it
+    int new_size = object->size + 1;
+    object->properties = realloc(object->properties, new_size * sizeof(SmashProperty));
+    if (!object->properties) {
+        return; // Memory allocation failed
+    }
+    
+    // Set the new property
+    object->properties[object->size].key = strdup(property);
+    object->properties[object->size].value = smash_value_clone(value);
+    object->size = new_size;
 }
 
 // Match a string against a pattern

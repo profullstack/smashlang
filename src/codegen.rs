@@ -98,15 +98,59 @@ int main(int argc, char** argv) {{
                 }
                 Ok((code, array_var))
             }
-            AstNode::ObjectLiteral(_properties) => {
-                // TODO: Implement Object Literal generation using SmashValue
+            AstNode::ObjectLiteral(properties) => {
+                // Create a new object
                 let object_var = format!("smash_obj_{}", self.temp_var_counter);
                 self.temp_var_counter += 1;
-                code.push_str(&format!("{}SmashValue* {} = smash_value_create_null(); // Placeholder for object\n", indent, object_var));
+                code.push_str(&format!("{}SmashValue* {} = smash_value_create_object(); // Create object\n", indent, object_var));
+                
+                // Set each property on the object
+                for (key, value) in properties {
+                    // Generate code for the property value
+                    match self.generate_c_code_for_expr(value, indent_level) {
+                        Ok((value_code, value_var)) => {
+                            // Add the value code first
+                            code.push_str(&value_code);
+                            
+                            // Set the property on the object
+                            code.push_str(&format!("{}smash_object_set({}, \"{}\", {}); // Set property\n", 
+                                              indent, object_var, key, value_var));
+                        }
+                        Err(e) => {
+                            return Err(format!("Error generating code for object property '{}': {}", key, e));
+                        }
+                    }
+                }
+                
                 Ok((code, object_var))
             }
+            // Handle property access (e.g., obj.property)
+            AstNode::PropertyAccess { object, property } => {
+                // Generate code for the object expression
+                let (obj_code, obj_var) = self.generate_c_code_for_expr(object, indent_level)?;
+                
+                // Create a new variable for the property value
+                let prop_var = format!("prop_{}", self.temp_var_counter);
+                self.temp_var_counter += 1;
+                
+                // Add the object code first
+                code.push_str(&obj_code);
+                
+                // Generate code to access the property
+                code.push_str(&format!("{}SmashValue* {} = smash_object_get({}, \"{}\"); // Property access\n", 
+                                      indent, prop_var, obj_var, property));
+                
+                Ok((code, prop_var))
+            },
+            // Handle float literals
+            AstNode::Float(f) => {
+                let var_name = format!("smash_num_{}", self.temp_var_counter);
+                self.temp_var_counter += 1;
+                code.push_str(&format!("{}SmashValue* {} = smash_value_create_number({}); // Expr Float\n", indent, var_name, f));
+                Ok((code, var_name))
+            },
             // Add other expression types as needed (FunctionCall returning value, BinaryOp, etc.)
-             _ => Err(format!("C code generation not implemented for expression node: {:?}", expr)),
+            _ => Err(format!("C code generation not implemented for expression node: {:?}", expr)),
         }
     }
 
@@ -131,19 +175,35 @@ int main(int argc, char** argv) {{
                 }
             }
             AstNode::FunctionCall { name, args } => {
-                if name == "print" && args.len() == 1 {
-                     match self.generate_c_code_for_expr(&args[0], indent_level) {
-                        Ok((arg_code, arg_var)) => {
-                            code.push_str(&arg_code); // Code to evaluate argument
-                            code.push_str(&format!("{}print({}); // Function call\n", indent, arg_var));
-                            // TODO: Free temporary arg_var if needed?
-                        }
-                        Err(e) => {
-                             code.push_str(&format!("{}// Error generating argument for print: {}\n", indent, e));
+                if name == "print" {
+                    // Special handling for print function with any number of arguments
+                    let mut arg_codes = String::new();
+                    let mut arg_vars = Vec::new();
+                    
+                    // Generate code for each argument
+                    for arg in args {
+                        match self.generate_c_code_for_expr(arg, indent_level) {
+                            Ok((arg_code, arg_var)) => {
+                                arg_codes.push_str(&arg_code);
+                                arg_vars.push(arg_var);
+                            }
+                            Err(e) => {
+                                code.push_str(&format!("{}// Error generating argument for print: {}\n", indent, e));
+                                return Err(format!("Error generating argument for print: {}", e));
+                            }
                         }
                     }
+                    
+                    // Add the argument code to the main code
+                    code.push_str(&arg_codes);
+                    
+                    // Generate the print function call with the number of arguments and the argument variables
+                    code.push_str(&format!("{}print({}, {});", indent, args.len(), arg_vars.join(", ")));
+                    code.push_str(" // Print function call\n");
+                    
+                    return Ok(code);
                 } else {
-                    // Handle other function calls or print with different arity
+                    // Handle other function calls
                      code.push_str(&format!("{}// TODO: Call function '{}' (Not implemented correctly for SmashValue yet)\n", indent, name));
                     // Generate args, call C function... complex if functions return SmashValue* etc.
                 }

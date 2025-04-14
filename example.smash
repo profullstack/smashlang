@@ -4,6 +4,8 @@ let user = {
     age: 33,
 };
 
+print("age:", user.age);
+
 for (let i of x) {
 	print(i);
 }
@@ -12,6 +14,15 @@ let message = "Hello, SmashLang!";
 let year = 2025;
 let pi = 3.14;
 let active = true;
+let active2 = false;
+
+if (active) {
+    print(pi);
+}
+
+if (!active2) {
+    print("not active", pi);
+}
 
 // Using a string-based approach for regex patterns
 let pattern = "smash.*";

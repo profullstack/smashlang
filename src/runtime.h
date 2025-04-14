@@ -6,6 +6,18 @@
 
 // --- Value Representation ---
 
+// Property structure for objects
+typedef struct {
+    char* key;
+    struct SmashValue* value;
+} SmashProperty;
+
+// Object structure
+typedef struct {
+    SmashProperty* properties;
+    int size;
+} SmashObject;
+
 typedef enum {
     SMASH_TYPE_NULL,
     SMASH_TYPE_UNDEFINED,
@@ -19,7 +31,6 @@ typedef enum {
 // Forward declarations
 typedef struct SmashValue SmashValue;
 typedef struct SmashArray SmashArray;
-// typedef struct SmashObject SmashObject; // Future use
 
 // Dynamic Array Structure
 struct SmashArray {
@@ -36,12 +47,16 @@ struct SmashValue {
         double number;
         char* string;      // Assume heap-allocated
         SmashArray* array;
-        // SmashObject* object; // Future use
+        SmashObject* object;
     } data;
 };
 
 // --- Value Creation / Management ---
 SmashValue* smash_value_create_null();
+SmashValue* smash_value_clone(SmashValue* value); // Create a deep copy of a SmashValue
+SmashValue* smash_value_create_object();
+SmashValue* smash_object_get(SmashValue* obj, const char* property); // Get property from object
+void smash_object_set(SmashValue* obj, const char* property, SmashValue* value); // Set property on object
 SmashValue* smash_value_create_boolean(bool val);
 SmashValue* smash_value_create_number(double num);
 SmashValue* smash_value_create_string(const char* str); // Creates a copy
@@ -51,7 +66,7 @@ void smash_value_free(SmashValue* value); // Important: Frees value and potentia
 
 // --- General Helpers ---
 char* smash_value_to_string(SmashValue* value); // Converts any value to a new string
-void print(SmashValue* value); // Declaration for print
+void print(int count, ...); // Declaration for print with variable arguments
 
 // --- String helper functions (Keep existing declarations for now, but they might need updates later) ---
 char* smash_string_to_upper(const char* str);
