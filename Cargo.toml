@@ -52,6 +52,10 @@ debug = true
 name = "smash"
 path = "src/main.rs"
 
+[[bin]]
+name = "smashc"
+path = "src/smashc.rs"
+
 [lib]
 name = "smashlang"
 path = "src/lib.rs"
