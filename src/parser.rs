@@ -1299,6 +1299,11 @@ impl Parser {
                 self.advance();
                 Ok(AstNode::Number(value))
             },
+            Some(Token::Float(f)) => {
+                let value = *f;
+                self.advance();
+                Ok(AstNode::Float(value))
+            },
             Some(Token::String(s)) => {
                 let value = s.clone();
                 self.advance();
@@ -1548,6 +1553,12 @@ impl Parser {
                     // Check for comma or closing brace
                     if let Some(Token::Comma) = self.peek() {
                         self.advance(); // Consume the comma
+                        // Check if the next token is the closing brace (for trailing comma)
+                        if let Some(Token::RBrace) = self.peek() {
+                            self.advance(); // Consume the right brace
+                            break; // Exit loop after trailing comma
+                        }
+                        // If not RBrace after comma, continue loop to expect next property
                     } else if let Some(Token::RBrace) = self.peek() {
                         self.advance(); // Consume the right brace
                         break;

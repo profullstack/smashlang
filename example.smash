@@ -11,3 +11,5 @@ let active = true;
 
 // Using a string-based approach for regex patterns
 let pattern = "smash.*";
+
+print(message);
