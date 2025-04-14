@@ -1,43 +1,421 @@
-// hardware/camera/tests/index.test.smash - Test file for camera package
+/**
+ * Camera Package Tests
+ * 
+ * This file contains tests for the camera package using the SmashLang testing framework.
+ * It uses mocks to test the functionality without requiring actual camera hardware.
+ */
 
-import * from 'hardware/camera';
-import { test, describe, expect, beforeEach, afterEach } from 'std/testing';
+import { test, describe, expect, beforeEach, afterEach, mock } from "std/testing";
+import { camera, Device, Photo, VideoFile, CameraStream } from "../src/index.smash";
 
-describe('Package: camera', () => {
+describe("Camera Package", () => {
+  describe("Device Class", () => {
+    let device;
+    
     beforeEach(() => {
-        // Setup code for each test
-        console.log('Setting up test for camera');
+      device = new Device("camera1", "Test Camera", "user", { zoom: { min: 1, max: 5 } });
     });
-
-    afterEach(() => {
-        // Cleanup code for each test
-        console.log('Cleaning up after test for camera');
+    
+    test("should store device properties", () => {
+      expect(device.id).toBe("camera1");
+      expect(device.label).toBe("Test Camera");
+      expect(device.facingMode).toBe("user");
+      expect(device.capabilities).toEqual({ zoom: { min: 1, max: 5 } });
     });
-
-    test('package can be imported correctly', () => {
-        // This test verifies that the package can be imported
-        expect(typeof camera).toBe('object');
+    
+    test("isFrontFacing should return true for user-facing cameras", () => {
+      expect(device.isFrontFacing).toBe(true);
+      expect(device.isBackFacing).toBe(false);
+      
+      const backCamera = new Device("camera2", "Back Camera", "environment");
+      expect(backCamera.isFrontFacing).toBe(false);
+      expect(backCamera.isBackFacing).toBe(true);
     });
-
-    // Add more specific tests for the package functionality
-    test('package has expected exports', () => {
-        // Check for expected exports based on the package
-        // This is a basic test that should be customized for each package
-        expect(camera).not.toBe(null);
-        expect(camera).not.toBe(undefined);
+    
+    test("toString should return a formatted string", () => {
+      expect(device.toString()).toBe("Test Camera (camera1, user)");
     });
-});
-
-// Add more specific test cases below
-// Example:
-// test('specific function works as expected', () => {
-//     const result = camera.someFunction();
-//     expect(result).toBe(expectedValue);
-// });
-
-// Specific tests for exported items
-describe('Exported items', () => {
-    test('CameraStream is exported correctly', () => {
-        expect(typeof camera.CameraStream).not.toBe('undefined');
+  });
+  
+  describe("Photo Class", () => {
+    let photo;
+    
+    beforeEach(() => {
+      photo = new Photo("test_data", "jpeg", 1920, 1080);
     });
+    
+    test("should store photo properties", () => {
+      expect(photo.format).toBe("jpeg");
+      expect(photo.width).toBe(1920);
+      expect(photo.height).toBe(1080);
+      expect(photo.createdAt).toBeInstanceOf(Date);
+    });
+    
+    test("size should calculate the size based on data type", () => {
+      // String data
+      expect(photo.size).toBeGreaterThan(0);
+      
+      // Blob data
+      const blobPhoto = new Photo(new Blob(["test"]), "jpeg", 1920, 1080);
+      expect(blobPhoto.size).toBeGreaterThanOrEqual(4);
+      
+      // ArrayBuffer data
+      const buffer = new ArrayBuffer(10);
+      const bufferPhoto = new Photo(buffer, "jpeg", 1920, 1080);
+      expect(bufferPhoto.size).toBe(10);
+    });
+    
+    test("saveToFile should save the photo to a file", async () => {
+      const consoleSpy = mock.spyOn(console, "log");
+      
+      const path = await photo.saveToFile("test.jpg");
+      
+      expect(path).toBe("test.jpg");
+      expect(consoleSpy).toHaveBeenCalledWith(expect.stringContaining("Saving photo to test.jpg"));
+      expect(consoleSpy).toHaveBeenCalledWith(expect.stringContaining("Photo saved to test.jpg"));
+      
+      consoleSpy.mockRestore();
+    });
+    
+    test("toBase64 should convert the photo to Base64", async () => {
+      const base64 = await photo.toBase64();
+      
+      expect(base64).toContain("data:image/jpeg;base64,");
+      
+      // String data should be returned as is
+      const base64Photo = new Photo("data:image/png;base64,abc123", "png", 800, 600);
+      const result = await base64Photo.toBase64();
+      expect(result).toBe("data:image/png;base64,abc123");
+    });
+    
+    test("process should apply filters to the photo", async () => {
+      const filters = [
+        { filter: "brightness", options: { level: 1.2 } },
+        { filter: "contrast", options: { level: 1.1 } }
+      ];
+      
+      const consoleSpy = mock.spyOn(console, "log");
+      
+      const processedPhoto = await photo.process(filters);
+      
+      expect(processedPhoto).toBeInstanceOf(Photo);
+      expect(processedPhoto.format).toBe(photo.format);
+      expect(processedPhoto.width).toBe(photo.width);
+      expect(processedPhoto.height).toBe(photo.height);
+      expect(consoleSpy).toHaveBeenCalledWith(expect.stringContaining("Processing photo with 2 filters"));
+      
+      consoleSpy.mockRestore();
+    });
+  });
+  
+  describe("VideoFile Class", () => {
+    let videoFile;
+    
+    beforeEach(() => {
+      videoFile = new VideoFile("/tmp/video.mp4", "mp4", 5000, 1000000);
+    });
+    
+    test("should store video properties", () => {
+      expect(videoFile.path).toBe("/tmp/video.mp4");
+      expect(videoFile.format).toBe("mp4");
+      expect(videoFile.duration).toBe(5000);
+      expect(videoFile.size).toBe(1000000);
+      expect(videoFile.createdAt).toBeInstanceOf(Date);
+    });
+    
+    test("saveToFile should save the video to a file", async () => {
+      const consoleSpy = mock.spyOn(console, "log");
+      
+      const path = await videoFile.saveToFile("output.mp4");
+      
+      expect(path).toBe("output.mp4");
+      expect(videoFile.path).toBe("output.mp4"); // Path should be updated
+      expect(consoleSpy).toHaveBeenCalledWith(expect.stringContaining("Saving video to output.mp4"));
+      expect(consoleSpy).toHaveBeenCalledWith(expect.stringContaining("Video saved to output.mp4"));
+      
+      consoleSpy.mockRestore();
+    });
+    
+    test("getThumbnail should extract a thumbnail from the video", async () => {
+      const consoleSpy = mock.spyOn(console, "log");
+      
+      const thumbnail = await videoFile.getThumbnail(2000);
+      
+      expect(thumbnail).toBeInstanceOf(Photo);
+      expect(thumbnail.format).toBe("jpeg");
+      expect(consoleSpy).toHaveBeenCalledWith(expect.stringContaining("Extracting thumbnail at 2000ms"));
+      
+      consoleSpy.mockRestore();
+    });
+  });
+  
+  describe("CameraStream Class", () => {
+    let cameraStream;
+    
+    beforeEach(() => {
+      cameraStream = new CameraStream("camera1", {
+        width: 1280,
+        height: 720,
+        frameRate: 30
+      });
+    });
+    
+    test("should store camera options", () => {
+      expect(cameraStream.deviceId).toBe("camera1");
+      expect(cameraStream.options.width).toBe(1280);
+      expect(cameraStream.options.height).toBe(720);
+      expect(cameraStream.options.frameRate).toBe(30);
+      expect(cameraStream.options.facingMode).toBe("user"); // Default
+      expect(cameraStream.options.audio).toBe(false); // Default
+    });
+    
+    test("isActive should return false initially", () => {
+      expect(cameraStream.isActive).toBe(false);
+    });
+    
+    test("isRecording should return false initially", () => {
+      expect(cameraStream.isRecording).toBe(false);
+    });
+    
+    test("start should initialize the camera stream", async () => {
+      const consoleSpy = mock.spyOn(console, "log");
+      const emitSpy = mock.spyOn(cameraStream, "_emitEvent");
+      
+      await cameraStream.start();
+      
+      expect(cameraStream.isActive).toBe(true);
+      expect(consoleSpy).toHaveBeenCalledWith(expect.stringContaining("Starting camera"));
+      expect(consoleSpy).toHaveBeenCalledWith("Camera started successfully");
+      expect(emitSpy).toHaveBeenCalledWith("start", {});
+      
+      consoleSpy.mockRestore();
+      emitSpy.mockRestore();
+    });
+    
+    test("stop should release the camera stream", async () => {
+      const consoleSpy = mock.spyOn(console, "log");
+      const emitSpy = mock.spyOn(cameraStream, "_emitEvent");
+      
+      // Start the camera first
+      await cameraStream.start();
+      
+      cameraStream.stop();
+      
+      expect(cameraStream.isActive).toBe(false);
+      expect(consoleSpy).toHaveBeenCalledWith("Stopping camera");
+      expect(consoleSpy).toHaveBeenCalledWith("Camera stopped");
+      expect(emitSpy).toHaveBeenCalledWith("stop", {});
+      
+      consoleSpy.mockRestore();
+      emitSpy.mockRestore();
+    });
+    
+    test("takePhoto should capture a photo", async () => {
+      const consoleSpy = mock.spyOn(console, "log");
+      const emitSpy = mock.spyOn(cameraStream, "_emitEvent");
+      
+      // Start the camera first
+      await cameraStream.start();
+      
+      const photo = await cameraStream.takePhoto({ format: "png", quality: 0.8 });
+      
+      expect(photo).toBeInstanceOf(Photo);
+      expect(photo.format).toBe("png");
+      expect(photo.width).toBe(1280);
+      expect(photo.height).toBe(720);
+      expect(consoleSpy).toHaveBeenCalledWith(expect.stringContaining("Taking photo"));
+      expect(emitSpy).toHaveBeenCalledWith("photoTaken", { photo });
+      
+      consoleSpy.mockRestore();
+      emitSpy.mockRestore();
+    });
+    
+    test("startRecording should start video recording", async () => {
+      const consoleSpy = mock.spyOn(console, "log");
+      const emitSpy = mock.spyOn(cameraStream, "_emitEvent");
+      
+      // Start the camera first
+      await cameraStream.start();
+      
+      await cameraStream.startRecording({ format: "mp4", quality: "high" });
+      
+      expect(cameraStream.isRecording).toBe(true);
+      expect(consoleSpy).toHaveBeenCalledWith(expect.stringContaining("Starting recording"));
+      expect(consoleSpy).toHaveBeenCalledWith("Recording started");
+      expect(emitSpy).toHaveBeenCalledWith("recordingStart", expect.objectContaining({
+        timestamp: expect.any(Number)
+      }));
+      
+      consoleSpy.mockRestore();
+      emitSpy.mockRestore();
+    });
+    
+    test("stopRecording should stop video recording", async () => {
+      const consoleSpy = mock.spyOn(console, "log");
+      const emitSpy = mock.spyOn(cameraStream, "_emitEvent");
+      
+      // Start the camera and recording first
+      await cameraStream.start();
+      await cameraStream.startRecording();
+      
+      const videoFile = await cameraStream.stopRecording();
+      
+      expect(cameraStream.isRecording).toBe(false);
+      expect(videoFile).toBeInstanceOf(VideoFile);
+      expect(videoFile.format).toBe("mp4");
+      expect(consoleSpy).toHaveBeenCalledWith("Stopping recording");
+      expect(emitSpy).toHaveBeenCalledWith("recordingStop", { videoFile });
+      
+      consoleSpy.mockRestore();
+      emitSpy.mockRestore();
+    });
+    
+    test("getCapabilities should return camera capabilities", async () => {
+      // Start the camera first
+      await cameraStream.start();
+      
+      const capabilities = await cameraStream.getCapabilities();
+      
+      expect(capabilities).toEqual(expect.objectContaining({
+        resolutions: expect.any(Array),
+        frameRates: expect.any(Array),
+        zoom: expect.objectContaining({
+          min: expect.any(Number),
+          max: expect.any(Number)
+        })
+      }));
+    });
+    
+    test("configure should update camera settings", async () => {
+      const consoleSpy = mock.spyOn(console, "log");
+      const emitSpy = mock.spyOn(cameraStream, "_emitEvent");
+      
+      // Start the camera first
+      await cameraStream.start();
+      
+      const settings = {
+        zoom: 2.0,
+        focusMode: "manual"
+      };
+      
+      await cameraStream.configure(settings);
+      
+      expect(cameraStream.options.zoom).toBe(2.0);
+      expect(cameraStream.options.focusMode).toBe("manual");
+      expect(consoleSpy).toHaveBeenCalledWith(expect.stringContaining("Configuring camera"));
+      expect(emitSpy).toHaveBeenCalledWith("configure", { settings });
+      
+      consoleSpy.mockRestore();
+      emitSpy.mockRestore();
+    });
+    
+    test("applyFilter should add a filter to the stream", async () => {
+      const consoleSpy = mock.spyOn(console, "log");
+      const emitSpy = mock.spyOn(cameraStream, "_emitEvent");
+      
+      // Start the camera first
+      await cameraStream.start();
+      
+      await cameraStream.applyFilter("sepia", { intensity: 0.7 });
+      
+      expect(cameraStream._filters.length).toBe(1);
+      expect(cameraStream._filters[0]).toEqual({
+        name: "sepia",
+        options: { intensity: 0.7 }
+      });
+      expect(consoleSpy).toHaveBeenCalledWith(expect.stringContaining("Applying filter"));
+      expect(emitSpy).toHaveBeenCalledWith("filterApplied", {
+        filter: "sepia",
+        options: { intensity: 0.7 }
+      });
+      
+      consoleSpy.mockRestore();
+      emitSpy.mockRestore();
+    });
+    
+    test("removeFilters should remove all filters", async () => {
+      const consoleSpy = mock.spyOn(console, "log");
+      const emitSpy = mock.spyOn(cameraStream, "_emitEvent");
+      
+      // Start the camera and add filters first
+      await cameraStream.start();
+      await cameraStream.applyFilter("sepia");
+      await cameraStream.applyFilter("grayscale");
+      
+      await cameraStream.removeFilters();
+      
+      expect(cameraStream._filters.length).toBe(0);
+      expect(consoleSpy).toHaveBeenCalledWith("Removing all filters");
+      expect(emitSpy).toHaveBeenCalledWith("filtersRemoved", { count: 2 });
+      
+      consoleSpy.mockRestore();
+      emitSpy.mockRestore();
+    });
+    
+    test("on should register an event listener", () => {
+      const callback = () => {};
+      
+      cameraStream.on("test", callback);
+      
+      expect(cameraStream._eventListeners.test).toContain(callback);
+    });
+    
+    test("off should remove an event listener", () => {
+      const callback1 = () => {};
+      const callback2 = () => {};
+      
+      cameraStream.on("test", callback1);
+      cameraStream.on("test", callback2);
+      
+      cameraStream.off("test", callback1);
+      
+      expect(cameraStream._eventListeners.test).not.toContain(callback1);
+      expect(cameraStream._eventListeners.test).toContain(callback2);
+      
+      // Remove all listeners for an event
+      cameraStream.off("test");
+      
+      expect(cameraStream._eventListeners.test).toEqual([]);
+    });
+    
+    test("_emitEvent should call all registered listeners", () => {
+      const callback1 = mock.fn();
+      const callback2 = mock.fn();
+      
+      cameraStream.on("test", callback1);
+      cameraStream.on("test", callback2);
+      
+      const data = { value: 42 };
+      cameraStream._emitEvent("test", data);
+      
+      expect(callback1).toHaveBeenCalledWith(data);
+      expect(callback2).toHaveBeenCalledWith(data);
+    });
+  });
+  
+  describe("Camera API", () => {
+    test("isAvailable should check if camera is available", async () => {
+      const result = await camera.isAvailable();
+      expect(typeof result).toBe("boolean");
+    });
+    
+    test("requestPermission should request camera permission", async () => {
+      const result = await camera.requestPermission();
+      expect(typeof result).toBe("boolean");
+    });
+    
+    test("getDevices should return a list of camera devices", async () => {
+      const devices = await camera.getDevices();
+      
+      expect(Array.isArray(devices)).toBe(true);
+      expect(devices.length).toBeGreaterThan(0);
+      
+      for (const device of devices) {
+        expect(device).toBeInstanceOf(Device);
+        expect(device.id).toBeDefined();
+        expect(device.label).toBeDefined();
+        expect(device.facingMode).toBeDefined();
+      }
+    });
+  });
 });

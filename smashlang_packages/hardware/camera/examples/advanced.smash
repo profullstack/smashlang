@@ -1,0 +1,275 @@
+/**
+ * Advanced Camera Package Example
+ * 
+ * This example demonstrates advanced features of the camera package,
+ * including face detection, object detection, and barcode scanning.
+ */
+
+import { camera, CameraStream } from "../src/index.smash";
+
+// Main async function to run all examples
+async function runExamples() {
+  console.log("=== Camera Package Advanced Examples ===\n");
+  
+  // Check if camera is available and get permission
+  const isAvailable = await camera.isAvailable();
+  if (!isAvailable) {
+    console.error("Camera is not available on this device");
+    return;
+  }
+  
+  const permission = await camera.requestPermission();
+  if (!permission) {
+    console.error("Camera permission denied");
+    return;
+  }
+  
+  console.log("Camera is available and permission granted");
+  
+  // Get the first available camera
+  const devices = await camera.getDevices();
+  if (devices.length === 0) {
+    console.error("No cameras found");
+    return;
+  }
+  
+  const deviceId = devices[0].id;
+  console.log(`Using camera: ${devices[0].label} (${deviceId})`);
+  console.log("---");
+  
+  // Example 1: Face Detection
+  console.log("=== Face Detection Example ===");
+  
+  // Create a camera stream
+  const faceDetectionStream = new CameraStream(deviceId, {
+    width: 1280,
+    height: 720,
+    frameRate: 30
+  });
+  
+  // Register face detection event listener
+  faceDetectionStream.on('faceDetected', (faces) => {
+    console.log(`Detected ${faces.length} face(s):`);
+    for (const face of faces) {
+      console.log(`- Face at (${face.x.toFixed(2)}, ${face.y.toFixed(2)}), size: ${face.width.toFixed(2)}x${face.height.toFixed(2)}`);
+      console.log(`  Confidence: ${(face.confidence * 100).toFixed(1)}%`);
+      
+      if (face.landmarks) {
+        console.log(`  Eyes: (${face.landmarks.eyes[0].x.toFixed(2)}, ${face.landmarks.eyes[0].y.toFixed(2)}) and (${face.landmarks.eyes[1].x.toFixed(2)}, ${face.landmarks.eyes[1].y.toFixed(2)})`);
+        console.log(`  Nose: (${face.landmarks.nose.x.toFixed(2)}, ${face.landmarks.nose.y.toFixed(2)})`);
+        console.log(`  Mouth: (${face.landmarks.mouth.x.toFixed(2)}, ${face.landmarks.mouth.y.toFixed(2)})`);
+      }
+    }
+  });
+  
+  // Start the camera
+  console.log("Starting camera for face detection...");
+  await faceDetectionStream.start();
+  
+  // Enable face detection
+  console.log("Enabling face detection...");
+  await faceDetectionStream.enableFaceDetection({
+    trackMultiple: true,
+    minSize: 0.1 // Minimum face size as a proportion of frame
+  });
+  
+  console.log("Face detection enabled. Watching for faces for 5 seconds...");
+  
+  // Wait for 5 seconds to observe face detection events
+  await new Promise(resolve => setTimeout(resolve, 5000));
+  
+  // Disable face detection
+  console.log("Disabling face detection...");
+  faceDetectionStream.disableFaceDetection();
+  
+  // Stop the camera
+  console.log("Stopping camera...");
+  faceDetectionStream.stop();
+  console.log("Face detection example completed");
+  console.log("---");
+  
+  // Example 2: Object Detection
+  console.log("=== Object Detection Example ===");
+  
+  // Create a camera stream
+  const objectDetectionStream = new CameraStream(deviceId, {
+    width: 1280,
+    height: 720,
+    frameRate: 30
+  });
+  
+  // Register object detection event listener
+  objectDetectionStream.on('objectDetected', (objects) => {
+    console.log(`Detected ${objects.length} object(s):`);
+    for (const obj of objects) {
+      console.log(`- ${obj.class} (${(obj.confidence * 100).toFixed(1)}%) at (${obj.x.toFixed(2)}, ${obj.y.toFixed(2)}), size: ${obj.width.toFixed(2)}x${obj.height.toFixed(2)}`);
+    }
+  });
+  
+  // Start the camera
+  console.log("Starting camera for object detection...");
+  await objectDetectionStream.start();
+  
+  // Enable object detection
+  console.log("Enabling object detection...");
+  await objectDetectionStream.enableObjectDetection({
+    models: ["general", "person"],
+    confidence: 0.7
+  });
+  
+  console.log("Object detection enabled. Watching for objects for 5 seconds...");
+  
+  // Wait for 5 seconds to observe object detection events
+  await new Promise(resolve => setTimeout(resolve, 5000));
+  
+  // Disable object detection
+  console.log("Disabling object detection...");
+  objectDetectionStream.disableObjectDetection();
+  
+  // Stop the camera
+  console.log("Stopping camera...");
+  objectDetectionStream.stop();
+  console.log("Object detection example completed");
+  console.log("---");
+  
+  // Example 3: Barcode Scanning
+  console.log("=== Barcode Scanning Example ===");
+  
+  // Create a camera stream
+  const barcodeScanningStream = new CameraStream(deviceId, {
+    width: 1280,
+    height: 720,
+    frameRate: 30
+  });
+  
+  // Register barcode detection event listener
+  barcodeScanningStream.on('barcodeDetected', (barcodes) => {
+    console.log(`Detected ${barcodes.length} barcode(s):`);
+    for (const barcode of barcodes) {
+      console.log(`- ${barcode.format}: ${barcode.data}`);
+      console.log(`  Position: (${barcode.x.toFixed(2)}, ${barcode.y.toFixed(2)}), size: ${barcode.width.toFixed(2)}x${barcode.height.toFixed(2)}`);
+      
+      // Parse QR code content if it's a URL
+      if (barcode.format === "qr" && barcode.data.startsWith("http")) {
+        console.log(`  QR code contains URL: ${barcode.data}`);
+      }
+      // Parse QR code content if it's JSON
+      else if (barcode.format === "qr" && barcode.data.startsWith("{")) {
+        try {
+          const jsonData = JSON.parse(barcode.data);
+          console.log(`  QR code contains JSON data:`, jsonData);
+        } catch (e) {
+          console.log(`  QR code contains invalid JSON data`);
+        }
+      }
+    }
+  });
+  
+  // Start the camera
+  console.log("Starting camera for barcode scanning...");
+  await barcodeScanningStream.start();
+  
+  // Enable barcode scanning
+  console.log("Enabling barcode scanning...");
+  await barcodeScanningStream.enableBarcodeScanning({
+    formats: ["qr", "code128", "ean13", "pdf417"],
+    scanInterval: 500 // ms between scans
+  });
+  
+  console.log("Barcode scanning enabled. Watching for barcodes for 5 seconds...");
+  
+  // Wait for 5 seconds to observe barcode scanning events
+  await new Promise(resolve => setTimeout(resolve, 5000));
+  
+  // Take a single scan of the current frame
+  console.log("Performing a single barcode scan...");
+  const scanResult = await barcodeScanningStream.scanBarcodes();
+  if (scanResult.length > 0) {
+    console.log(`Found ${scanResult.length} barcode(s) in single scan:`);
+    for (const barcode of scanResult) {
+      console.log(`- ${barcode.format}: ${barcode.data}`);
+    }
+  } else {
+    console.log("No barcodes found in single scan");
+  }
+  
+  // Disable barcode scanning
+  console.log("Disabling barcode scanning...");
+  barcodeScanningStream.disableBarcodeScanning();
+  
+  // Stop the camera
+  console.log("Stopping camera...");
+  barcodeScanningStream.stop();
+  console.log("Barcode scanning example completed");
+  console.log("---");
+  
+  // Example 4: Combined Features
+  console.log("=== Combined Features Example ===");
+  
+  // Create a camera stream
+  const combinedStream = new CameraStream(deviceId, {
+    width: 1280,
+    height: 720,
+    frameRate: 30
+  });
+  
+  // Register event listeners
+  combinedStream.on('faceDetected', (faces) => {
+    console.log(`Combined: Detected ${faces.length} face(s)`);
+  });
+  
+  combinedStream.on('objectDetected', (objects) => {
+    console.log(`Combined: Detected ${objects.length} object(s)`);
+  });
+  
+  combinedStream.on('barcodeDetected', (barcodes) => {
+    console.log(`Combined: Detected ${barcodes.length} barcode(s)`);
+  });
+  
+  // Start the camera
+  console.log("Starting camera for combined features...");
+  await combinedStream.start();
+  
+  // Apply a filter
+  console.log("Applying a filter...");
+  await combinedStream.applyFilter("sepia", { intensity: 0.7 });
+  
+  // Enable all detection features
+  console.log("Enabling all detection features...");
+  await combinedStream.enableFaceDetection();
+  await combinedStream.enableObjectDetection();
+  await combinedStream.enableBarcodeScanning();
+  
+  console.log("All detection features enabled. Running for 5 seconds...");
+  
+  // Wait for 5 seconds to observe all events
+  await new Promise(resolve => setTimeout(resolve, 5000));
+  
+  // Take a photo with all features active
+  console.log("Taking a photo with all features active...");
+  const combinedPhoto = await combinedStream.takePhoto();
+  console.log(`Photo taken: ${combinedPhoto.width}x${combinedPhoto.height}`);
+  
+  // Disable all detection features
+  console.log("Disabling all detection features...");
+  combinedStream.disableFaceDetection();
+  combinedStream.disableObjectDetection();
+  combinedStream.disableBarcodeScanning();
+  
+  // Remove filters
+  console.log("Removing filters...");
+  await combinedStream.removeFilters();
+  
+  // Stop the camera
+  console.log("Stopping camera...");
+  combinedStream.stop();
+  console.log("Combined features example completed");
+  console.log("---");
+  
+  console.log("All advanced examples completed!");
+}
+
+// Run the examples
+runExamples().catch(error => {
+  console.error("Error running advanced examples:", error);
+});
