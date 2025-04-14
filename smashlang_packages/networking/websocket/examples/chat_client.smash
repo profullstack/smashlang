@@ -1,0 +1,274 @@
+/**
+ * WebSocket Chat Client Example
+ * 
+ * This example demonstrates how to create a WebSocket client that connects to
+ * the chat server example. It shows how to send and receive messages, handle
+ * different message types, and manage the connection.
+ */
+
+import websocket from '../src/index.smash';
+
+// Configuration
+const config = {
+  serverUrl: 'ws://localhost:8080/chat',
+  reconnectInterval: 5000, // 5 seconds
+  maxReconnectAttempts: 5
+};
+
+// State
+let client = null;
+let username = null;
+let reconnectAttempts = 0;
+let reconnectTimeout = null;
+let userList = [];
+
+// Initialize the chat client
+function initChatClient() {
+  print(`Connecting to chat server at ${config.serverUrl}...`);
+  
+  // Create a WebSocket client
+  client = websocket.createClient(config.serverUrl);
+  
+  // Set up event handlers
+  client.on('open', handleOpen);
+  client.on('message', handleMessage);
+  client.on('close', handleClose);
+  client.on('error', handleError);
+  
+  // Connect to the server
+  client.connect().catch(error => {
+    print(`Connection error: ${error.message}`);
+    scheduleReconnect();
+  });
+}
+
+// Event handlers
+
+/**
+ * Handle connection open event
+ */
+function handleOpen(event) {
+  print('Connected to chat server!');
+  print('Type messages to send to the chat.');
+  print('Commands:');
+  print('  /nick <username> - Change your nickname');
+  print('  /users - List all connected users');
+  print('  /help - Show help message');
+  print('  /quit - Disconnect from the server');
+  
+  // Reset reconnect attempts on successful connection
+  reconnectAttempts = 0;
+  
+  // If we have a username from a previous session, set it again
+  if (username) {
+    sendCommand(`/nick ${username}`);
+  }
+}
+
+/**
+ * Handle message event
+ */
+function handleMessage(event) {
+  let message = event.data;
+  
+  // Try to parse as JSON
+  if (typeof message === 'string') {
+    try {
+      message = JSON.parse(message);
+    } catch (e) {
+      // Not JSON, just a regular message
+      print(`Received: ${message}`);
+      return;
+    }
+  }
+  
+  // Handle different message types
+  switch (message.type) {
+    case 'chat':
+      handleChatMessage(message);
+      break;
+    case 'system':
+      handleSystemMessage(message);
+      break;
+    case 'userList':
+      handleUserListMessage(message);
+      break;
+    case 'error':
+      handleErrorMessage(message);
+      break;
+    default:
+      print(`Received unknown message type: ${JSON.stringify(message)}`);
+  }
+}
+
+/**
+ * Handle close event
+ */
+function handleClose(event) {
+  print(`Disconnected from server: ${event.reason} (code: ${event.code})`);
+  
+  if (event.code !== websocket.CLOSE_CODES.NORMAL) {
+    scheduleReconnect();
+  }
+}
+
+/**
+ * Handle error event
+ */
+function handleError(event) {
+  print(`WebSocket error: ${event.error.message}`);
+}
+
+// Message type handlers
+
+/**
+ * Handle chat message
+ */
+function handleChatMessage(message) {
+  const timestamp = new Date(message.timestamp).toLocaleTimeString();
+  print(`[${timestamp}] ${message.username}: ${message.content}`);
+}
+
+/**
+ * Handle system message
+ */
+function handleSystemMessage(message) {
+  const timestamp = new Date(message.timestamp).toLocaleTimeString();
+  print(`[${timestamp}] * ${message.content}`);
+  
+  // Check if this is a nickname confirmation
+  if (message.content.startsWith('You are now known as ')) {
+    username = message.content.replace('You are now known as ', '').replace('.', '');
+  }
+}
+
+/**
+ * Handle user list message
+ */
+function handleUserListMessage(message) {
+  userList = message.users;
+  print(`Online users (${userList.length}): ${userList.join(', ')}`);
+}
+
+/**
+ * Handle error message
+ */
+function handleErrorMessage(message) {
+  print(`Error: ${message.content}`);
+}
+
+// Utility functions
+
+/**
+ * Send a chat message
+ */
+function sendChatMessage(content) {
+  if (!client || !client.isOpen()) {
+    print('Not connected to server.');
+    return;
+  }
+  
+  client.send({
+    type: 'chat',
+    content: content
+  }).catch(error => {
+    print(`Error sending message: ${error.message}`);
+  });
+}
+
+/**
+ * Send a command
+ */
+function sendCommand(command) {
+  if (!client || !client.isOpen()) {
+    print('Not connected to server.');
+    return;
+  }
+  
+  client.send({
+    type: 'command',
+    content: command
+  }).catch(error => {
+    print(`Error sending command: ${error.message}`);
+  });
+}
+
+/**
+ * Schedule a reconnection attempt
+ */
+function scheduleReconnect() {
+  if (reconnectAttempts >= config.maxReconnectAttempts) {
+    print('Maximum reconnection attempts reached. Giving up.');
+    return;
+  }
+  
+  reconnectAttempts++;
+  
+  const delay = config.reconnectInterval;
+  print(`Reconnecting in ${delay / 1000} seconds... (Attempt ${reconnectAttempts}/${config.maxReconnectAttempts})`);
+  
+  clearTimeout(reconnectTimeout);
+  reconnectTimeout = setTimeout(() => {
+    if (client) {
+      // Remove old event listeners
+      client.off('open', handleOpen);
+      client.off('message', handleMessage);
+      client.off('close', handleClose);
+      client.off('error', handleError);
+    }
+    
+    initChatClient();
+  }, delay);
+}
+
+/**
+ * Process user input
+ */
+function processInput(input) {
+  if (!input || input.trim() === '') {
+    return;
+  }
+  
+  if (input.startsWith('/')) {
+    // Command
+    if (input.startsWith('/quit')) {
+      // Special case for quit command
+      print('Disconnecting from server...');
+      client.close(websocket.CLOSE_CODES.NORMAL, 'User quit').then(() => {
+        print('Disconnected.');
+        process.exit(0);
+      });
+    } else {
+      sendCommand(input);
+    }
+  } else {
+    // Regular chat message
+    sendChatMessage(input);
+  }
+}
+
+// Set up stdin to read user input
+process.stdin.setEncoding('utf8');
+process.stdin.on('data', (data) => {
+  const input = data.toString().trim();
+  processInput(input);
+});
+
+// Initialize the client
+initChatClient();
+
+// Handle process termination
+process.on('SIGINT', () => {
+  print('\nDisconnecting from server...');
+  
+  if (client && client.isOpen()) {
+    client.close(websocket.CLOSE_CODES.NORMAL, 'Client terminated').then(() => {
+      print('Disconnected.');
+      process.exit(0);
+    }).catch(() => {
+      process.exit(1);
+    });
+  } else {
+    process.exit(0);
+  }
+});

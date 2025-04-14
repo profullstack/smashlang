@@ -1,0 +1,85 @@
+/**
+ * Basic WebSocket Example
+ * 
+ * This example demonstrates the basic functionality of the WebSocket package,
+ * including creating a client, connecting to a server, sending and receiving messages,
+ * and handling events.
+ */
+
+import websocket from '../src/index.smash';
+
+// Create a WebSocket client
+const client = websocket.createClient('ws://echo.websocket.org');
+
+// Set up event handlers
+client.on('open', (event) => {
+  print('Connection opened!');
+  
+  // Send a message once the connection is open
+  client.send('Hello, WebSocket!').then(() => {
+    print('Message sent successfully');
+  }).catch((error) => {
+    print(`Error sending message: ${error.message}`);
+  });
+  
+  // Send a JSON object
+  client.send({
+    type: 'greeting',
+    content: 'Hello from SmashLang WebSocket client!',
+    timestamp: new Date().toISOString()
+  }).then(() => {
+    print('JSON message sent successfully');
+  }).catch((error) => {
+    print(`Error sending JSON message: ${error.message}`);
+  });
+});
+
+client.on('message', (event) => {
+  print(`Received message: ${event.data}`);
+  
+  // Try to parse as JSON
+  try {
+    const jsonData = JSON.parse(event.data);
+    print('Received JSON data:');
+    print(`  Type: ${jsonData.type}`);
+    print(`  Content: ${jsonData.content}`);
+    print(`  Timestamp: ${jsonData.timestamp}`);
+  } catch (e) {
+    // Not JSON, just a regular message
+  }
+});
+
+client.on('close', (event) => {
+  print(`Connection closed with code ${event.code}: ${event.reason}`);
+  print(`Clean close: ${event.wasClean}`);
+});
+
+client.on('error', (event) => {
+  print(`Error: ${event.error.message}`);
+});
+
+// Connect to the server
+print('Connecting to WebSocket server...');
+client.connect().then(() => {
+  print('Connected successfully!');
+  
+  // Close the connection after 5 seconds
+  setTimeout(() => {
+    print('Closing connection...');
+    client.close(websocket.CLOSE_CODES.NORMAL, 'Example completed').then(() => {
+      print('Connection closed successfully');
+    });
+  }, 5000);
+}).catch((error) => {
+  print(`Connection error: ${error.message}`);
+});
+
+// Demonstrate URL utility functions
+print(`\nURL Utilities:`);
+print(`Is 'ws://example.com' a valid WebSocket URL? ${websocket.isValidUrl('ws://example.com')}`);
+print(`Is 'wss://secure.example.com' a valid WebSocket URL? ${websocket.isValidUrl('wss://secure.example.com')}`);
+print(`Is 'http://example.com' a valid WebSocket URL? ${websocket.isValidUrl('http://example.com')}`);
+
+print(`\nConverting HTTP URLs to WebSocket URLs:`);
+print(`'http://example.com' -> '${websocket.httpToWsUrl('http://example.com')}'`);
+print(`'https://secure.example.com' -> '${websocket.httpToWsUrl('https://secure.example.com')}'`);

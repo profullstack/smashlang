@@ -1,0 +1,259 @@
+/**
+ * WebSocket Chat Server Example
+ * 
+ * This example demonstrates how to create a WebSocket server that implements
+ * a simple chat application. It shows how to handle multiple clients,
+ * broadcast messages, and manage user connections.
+ */
+
+import websocket from '../src/index.smash';
+
+// Create a WebSocket server
+const server = websocket.createServer({
+  port: 8080,
+  host: 'localhost',
+  path: '/chat'
+});
+
+// Keep track of connected users
+const users = new Map(); // Maps client to username
+
+// Set up event handlers
+server.on('connection', (event) => {
+  const client = event.client;
+  const clientId = generateClientId();
+  
+  print(`New client connected: ${clientId}`);
+  
+  // Add the client to our users map with a temporary name
+  users.set(client, `Guest-${clientId}`);
+  
+  // Send welcome message to the new client
+  client.send({
+    type: 'system',
+    content: 'Welcome to the chat server! Use /nick <username> to set your nickname.',
+    timestamp: new Date().toISOString()
+  });
+  
+  // Notify all users about the new connection
+  broadcastSystemMessage(`${users.get(client)} has joined the chat.`);
+  
+  // Update user list for all clients
+  broadcastUserList();
+  
+  // Set up message handler for this client
+  client.on('message', (messageEvent) => {
+    try {
+      let message = messageEvent.data;
+      
+      // Try to parse as JSON
+      if (typeof message === 'string') {
+        try {
+          message = JSON.parse(message);
+        } catch (e) {
+          // Not JSON, just a regular message
+          // Wrap it in a message object
+          message = {
+            type: 'chat',
+            content: message
+          };
+        }
+      }
+      
+      // Handle different message types
+      switch (message.type) {
+        case 'chat':
+          handleChatMessage(client, message.content);
+          break;
+        case 'command':
+          handleCommand(client, message.content);
+          break;
+        default:
+          // Treat as regular chat message
+          handleChatMessage(client, message.content || message);
+      }
+    } catch (error) {
+      print(`Error handling message: ${error.message}`);
+      client.send({
+        type: 'error',
+        content: 'Error processing your message',
+        timestamp: new Date().toISOString()
+      });
+    }
+  });
+  
+  // Set up close handler for this client
+  client.on('close', (closeEvent) => {
+    const username = users.get(client);
+    print(`Client disconnected: ${username} (${clientId})`);
+    
+    // Remove the client from our users map
+    users.delete(client);
+    
+    // Notify all users about the disconnection
+    broadcastSystemMessage(`${username} has left the chat.`);
+    
+    // Update user list for all clients
+    broadcastUserList();
+  });
+  
+  // Set up error handler for this client
+  client.on('error', (errorEvent) => {
+    print(`Client error: ${errorEvent.error.message}`);
+  });
+});
+
+// Start the server
+print('Starting WebSocket chat server...');
+server.start().then(() => {
+  print(`Chat server running on ws://${server.getOptions().host}:${server.getOptions().port}${server.getOptions().path}`);
+  print('Press Ctrl+C to stop the server');
+}).catch((error) => {
+  print(`Failed to start server: ${error.message}`);
+});
+
+// Helper functions
+
+/**
+ * Generate a random client ID
+ */
+function generateClientId() {
+  return Math.random().toString(36).substring(2, 10);
+}
+
+/**
+ * Handle a chat message from a client
+ */
+function handleChatMessage(client, content) {
+  const username = users.get(client);
+  
+  // Check if it's a command
+  if (content.startsWith('/')) {
+    handleCommand(client, content);
+    return;
+  }
+  
+  print(`Chat message from ${username}: ${content}`);
+  
+  // Broadcast the message to all clients
+  server.broadcast({
+    type: 'chat',
+    username: username,
+    content: content,
+    timestamp: new Date().toISOString()
+  });
+}
+
+/**
+ * Handle a command from a client
+ */
+function handleCommand(client, command) {
+  const username = users.get(client);
+  
+  // Parse the command
+  const parts = command.split(' ');
+  const cmd = parts[0].toLowerCase();
+  const args = parts.slice(1);
+  
+  print(`Command from ${username}: ${cmd} ${args.join(' ')}`);
+  
+  switch (cmd) {
+    case '/nick':
+    case '/nickname':
+      // Change nickname
+      if (args.length === 0) {
+        sendSystemMessage(client, 'Usage: /nick <username>');
+        return;
+      }
+      
+      const newUsername = args[0];
+      const oldUsername = users.get(client);
+      
+      // Check if the username is already taken
+      for (const [c, u] of users.entries()) {
+        if (c !== client && u === newUsername) {
+          sendSystemMessage(client, `Username "${newUsername}" is already taken.`);
+          return;
+        }
+      }
+      
+      // Update the username
+      users.set(client, newUsername);
+      
+      // Notify the client
+      sendSystemMessage(client, `You are now known as ${newUsername}.`);
+      
+      // Notify all users
+      broadcastSystemMessage(`${oldUsername} is now known as ${newUsername}.`);
+      
+      // Update user list for all clients
+      broadcastUserList();
+      break;
+      
+    case '/users':
+    case '/list':
+      // List all users
+      const userList = Array.from(users.values());
+      sendSystemMessage(client, `Connected users (${userList.length}): ${userList.join(', ')}`);
+      break;
+      
+    case '/help':
+      // Show help
+      sendSystemMessage(client, 'Available commands:');
+      sendSystemMessage(client, '/nick <username> - Change your nickname');
+      sendSystemMessage(client, '/users - List all connected users');
+      sendSystemMessage(client, '/help - Show this help message');
+      break;
+      
+    default:
+      sendSystemMessage(client, `Unknown command: ${cmd}. Type /help for available commands.`);
+  }
+}
+
+/**
+ * Send a system message to a client
+ */
+function sendSystemMessage(client, content) {
+  client.send({
+    type: 'system',
+    content: content,
+    timestamp: new Date().toISOString()
+  });
+}
+
+/**
+ * Broadcast a system message to all clients
+ */
+function broadcastSystemMessage(content) {
+  server.broadcast({
+    type: 'system',
+    content: content,
+    timestamp: new Date().toISOString()
+  });
+}
+
+/**
+ * Broadcast the user list to all clients
+ */
+function broadcastUserList() {
+  const userList = Array.from(users.values());
+  
+  server.broadcast({
+    type: 'userList',
+    users: userList,
+    timestamp: new Date().toISOString()
+  });
+}
+
+// Handle process termination
+process.on('SIGINT', () => {
+  print('\nShutting down server...');
+  
+  server.stop().then(() => {
+    print('Server stopped.');
+    process.exit(0);
+  }).catch((error) => {
+    print(`Error stopping server: ${error.message}`);
+    process.exit(1);
+  });
+});

@@ -52,8 +52,8 @@ This document outlines the implementation status and tasks for all packages in t
   - ~~Add support for connection events (open, close, error)~~
   - ~~Implement message sending and receiving~~
   - ~~Add support for binary data~~
-  - Add comprehensive examples
-  - Create proper documentation
+  - ~~Add comprehensive examples~~
+  - ~~Create proper documentation~~
 
 ### smashhono
 - **Status**: Implemented
