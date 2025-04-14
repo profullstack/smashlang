@@ -84,11 +84,16 @@ pub enum AstNode {
         name: String,
         params: Vec<String>,
         body: Vec<AstNode>,
+        is_async: bool,
     },
     ArrowFunction {
         params: Vec<String>,
         body: Vec<AstNode>,
         expression: bool, // true if it's an expression arrow function (x => x + 1), false if it has a block body (x => { return x + 1; })
+        is_async: bool,
+    },
+    AwaitExpr {
+        expr: Box<AstNode>,
     },
     FunctionCall {
         name: String,
@@ -284,6 +289,44 @@ impl Parser {
             Some(Token::Const) => self.parse_const(),
             Some(Token::Let) => self.parse_let(),
             Some(Token::Fn) => self.parse_function(),
+            Some(Token::Identifier(id)) if id == "function" => {
+                self.advance(); // Consume 'function' identifier
+                self.parse_function_expression()
+            },
+            Some(Token::Async) => {
+                self.advance(); // Consume Async token
+                if let Some(Token::Fn) = self.peek() {
+                    // Handle async function with fn keyword
+                    self.pos -= 1; // Move back to the Async token
+                    self.parse_function() // parse_function will handle the async keyword
+                } else if let Some(Token::Identifier(id)) = self.peek() {
+                    if id == "function" {
+                        // Handle async function with function keyword
+                        self.advance(); // Consume 'function' identifier
+                        self.parse_async_function_expression()
+                    } else {
+                        // Handle top-level await expression
+                        self.advance(); // Re-consume Async token
+                        let expr = self.parse_expr()?;
+                        self.expect(&Token::Semicolon)?;
+                        Ok(Some(expr))
+                    }
+                } else {
+                    // Handle top-level await expression
+                    self.advance(); // Re-consume Async token
+                    let expr = self.parse_expr()?;
+                    self.expect(&Token::Semicolon)?;
+                    Ok(Some(expr))
+                }
+            },
+            Some(Token::Await) => {
+                // Handle top-level await expression
+                self.advance(); // Consume Await token
+                let expr = self.parse_expr()?;
+                let await_expr = AstNode::AwaitExpr { expr: Box::new(expr) };
+                self.expect(&Token::Semicolon)?;
+                Ok(Some(await_expr))
+            },
             Some(Token::Return) => self.parse_return(),
             Some(Token::Try) => self.parse_try_catch(),
             Some(Token::Throw) => self.parse_throw(),
@@ -363,7 +406,125 @@ impl Parser {
         }
     }
     
+    // Parse async JavaScript-style function declarations: async function name() {}
+    fn parse_async_function_expression(&mut self) -> ParseResult<Option<AstNode>> {
+        // This is an async function
+        let is_async = true;
+        
+        // Parse function name
+        if let Some(Token::Identifier(name)) = self.peek() {
+            let name = name.clone();
+            self.advance();
+            
+            // Parse parameter list
+            self.expect(&Token::LParen)?;
+            let mut params = Vec::new();
+            
+            if !matches!(self.peek(), Some(Token::RParen)) {
+                loop {
+                    if let Some(Token::Identifier(param)) = self.peek() {
+                        params.push(param.clone());
+                        self.advance();
+                    } else {
+                        return Err(ParseError::new("Expected parameter name", self.pos));
+                    }
+                    
+                    match self.peek() {
+                        Some(Token::Comma) => {
+                            self.advance();
+                        }
+                        Some(Token::RParen) => break,
+                        _ => return Err(ParseError::new("Expected comma or closing parenthesis", self.pos)),
+                    }
+                }
+            }
+            
+            self.expect(&Token::RParen)?;
+            
+            // Parse function body
+            self.expect(&Token::LBrace)?;
+            let mut body = Vec::new();
+            
+            while !matches!(self.peek(), Some(Token::RBrace) | None) {
+                if let Some(stmt) = self.parse_statement()? {
+                    body.push(stmt);
+                }
+            }
+            
+            self.expect(&Token::RBrace)?;
+            
+            Ok(Some(AstNode::Function { name, params, body, is_async }))
+        } else {
+            Err(ParseError::new("Expected function name", self.pos))
+        }
+    }
+
+    // Parse JavaScript-style function declarations: function name() {}
+    fn parse_function_expression(&mut self) -> ParseResult<Option<AstNode>> {
+        // Check if this is an async function
+        let is_async = false; // JavaScript-style functions don't have async prefix in the same way
+        
+        // Parse function name
+        if let Some(Token::Identifier(name)) = self.peek() {
+            let name = name.clone();
+            self.advance();
+            
+            // Parse parameter list
+            self.expect(&Token::LParen)?;
+            let mut params = Vec::new();
+            
+            if !matches!(self.peek(), Some(Token::RParen)) {
+                loop {
+                    if let Some(Token::Identifier(param)) = self.peek() {
+                        params.push(param.clone());
+                        self.advance();
+                    } else {
+                        return Err(ParseError::new("Expected parameter name", self.pos));
+                    }
+                    
+                    match self.peek() {
+                        Some(Token::Comma) => {
+                            self.advance();
+                        }
+                        Some(Token::RParen) => break,
+                        _ => return Err(ParseError::new("Expected comma or closing parenthesis", self.pos)),
+                    }
+                }
+            }
+            
+            self.expect(&Token::RParen)?;
+            
+            // Parse function body
+            self.expect(&Token::LBrace)?;
+            let mut body = Vec::new();
+            
+            while !matches!(self.peek(), Some(Token::RBrace) | None) {
+                if let Some(stmt) = self.parse_statement()? {
+                    body.push(stmt);
+                }
+            }
+            
+            self.expect(&Token::RBrace)?;
+            
+            Ok(Some(AstNode::Function { name, params, body, is_async }))
+        } else {
+            Err(ParseError::new("Expected function name", self.pos))
+        }
+    }
+
+    // Parse SmashLang-style function declarations: fn name() {}
     fn parse_function(&mut self) -> ParseResult<Option<AstNode>> {
+        // Check if this is an async function
+        let is_async = matches!(self.peek(), Some(Token::Async));
+        if is_async {
+            self.advance(); // Consume Async token
+            
+            // Make sure the next token is Fn
+            if !matches!(self.peek(), Some(Token::Fn)) {
+                return Err(ParseError::new("Expected 'fn' after 'async'", self.pos));
+            }
+        }
+        
         self.advance(); // Consume Fn token
         
         // Parse function name
@@ -408,7 +569,7 @@ impl Parser {
             
             self.expect(&Token::RBrace)?;
             
-            Ok(Some(AstNode::Function { name, params, body }))
+            Ok(Some(AstNode::Function { name, params, body, is_async }))
         } else {
             Err(ParseError::new("Expected function name", self.pos))
         }
@@ -1114,13 +1275,13 @@ impl Parser {
     }
     
     fn parse_bitwise(&mut self) -> ParseResult<AstNode> {
-        let mut expr = self.parse_unary()?;
+        let mut expr = self.parse_additive()?;
         
         while let Some(token) = self.peek() {
             match token {
                 Token::BitwiseAnd => {
                     self.advance();
-                    let right = self.parse_unary()?;
+                    let right = self.parse_additive()?;
                     expr = AstNode::BinaryOp {
                         left: Box::new(expr),
                         op: "&".to_string(),
@@ -1129,7 +1290,7 @@ impl Parser {
                 },
                 Token::BitwiseOr => {
                     self.advance();
-                    let right = self.parse_unary()?;
+                    let right = self.parse_additive()?;
                     expr = AstNode::BinaryOp {
                         left: Box::new(expr),
                         op: "|".to_string(),
@@ -1138,7 +1299,7 @@ impl Parser {
                 },
                 Token::BitwiseXor => {
                     self.advance();
-                    let right = self.parse_unary()?;
+                    let right = self.parse_additive()?;
                     expr = AstNode::BinaryOp {
                         left: Box::new(expr),
                         op: "^".to_string(),
@@ -1147,7 +1308,7 @@ impl Parser {
                 },
                 Token::BitwiseLeftShift => {
                     self.advance();
-                    let right = self.parse_unary()?;
+                    let right = self.parse_additive()?;
                     expr = AstNode::BinaryOp {
                         left: Box::new(expr),
                         op: "<<".to_string(),
@@ -1156,7 +1317,7 @@ impl Parser {
                 },
                 Token::BitwiseRightShift => {
                     self.advance();
-                    let right = self.parse_unary()?;
+                    let right = self.parse_additive()?;
                     expr = AstNode::BinaryOp {
                         left: Box::new(expr),
                         op: ">>".to_string(),
@@ -1165,7 +1326,7 @@ impl Parser {
                 },
                 Token::BitwiseUnsignedRightShift => {
                     self.advance();
-                    let right = self.parse_unary()?;
+                    let right = self.parse_additive()?;
                     expr = AstNode::BinaryOp {
                         left: Box::new(expr),
                         op: ">>>".to_string(),
@@ -1179,8 +1340,45 @@ impl Parser {
         Ok(expr)
     }
     
+    // Parse addition and subtraction operations, including string concatenation
+    fn parse_additive(&mut self) -> ParseResult<AstNode> {
+        let mut expr = self.parse_unary()?;
+        
+        while let Some(token) = self.peek() {
+            match token {
+                Token::Plus => {
+                    self.advance(); // Consume +
+                    let right = self.parse_unary()?;
+                    expr = AstNode::BinaryOp {
+                        left: Box::new(expr),
+                        op: "+".to_string(),
+                        right: Box::new(right),
+                    };
+                },
+                Token::Minus => {
+                    self.advance(); // Consume -
+                    let right = self.parse_unary()?;
+                    expr = AstNode::BinaryOp {
+                        left: Box::new(expr),
+                        op: "-".to_string(),
+                        right: Box::new(right),
+                    };
+                },
+                _ => break,
+            }
+        }
+        
+        Ok(expr)
+    }
+    
     // Parse arrow function expressions
     fn parse_arrow_function(&mut self) -> ParseResult<AstNode> {
+        // Check if this is an async arrow function
+        let is_async = matches!(self.peek(), Some(Token::Async));
+        if is_async {
+            self.advance(); // Consume Async token
+        }
+        
         // Parse parameter list
         let mut params = Vec::new();
         
@@ -1231,8 +1429,64 @@ impl Parser {
             self.advance(); // Consume LBrace
             
             while !matches!(self.peek(), Some(Token::RBrace) | None) {
-                if let Some(stmt) = self.parse_statement()? {
-                    body.push(stmt);
+                // Special case for setTimeout in Promise constructors
+                if matches!(self.peek(), Some(Token::Identifier(id)) if id == "setTimeout") {
+                    self.advance(); // Consume setTimeout
+                    
+                    // Parse the setTimeout call
+                    if let Some(Token::LParen) = self.peek() {
+                        self.advance(); // Consume left paren
+                        
+                        // Parse arguments
+                        let mut setTimeout_args = Vec::new();
+                        
+                        // Parse arguments generically to handle any expression
+                        if !matches!(self.peek(), Some(Token::RParen)) {
+                            loop {
+                                let arg = self.parse_expr()?;
+                                setTimeout_args.push(arg);
+                                
+                                match self.peek() {
+                                    Some(Token::Comma) => {
+                                        self.advance(); // Consume comma
+                                    }
+                                    Some(Token::RParen) => break,
+                                    _ => return Err(ParseError::new("Expected comma or closing parenthesis in setTimeout arguments", self.pos)),
+                                }
+                            }
+                        }
+                        
+                        self.expect(&Token::RParen)?; // Consume the right parenthesis
+                        
+                        // Create function call node
+                        let func_call = AstNode::FunctionCall {
+                            name: "setTimeout".to_string(),
+                            args: setTimeout_args,
+                        };
+                        
+                        body.push(func_call);
+                        
+                        // Check for semicolon
+                        if let Some(Token::Semicolon) = self.peek() {
+                            self.advance(); // Consume semicolon
+                        }
+                    } else {
+                        return Err(ParseError::new("Expected opening parenthesis after setTimeout", self.pos));
+                    }
+                } else {
+                    // Try to parse as a statement first
+                    if let Ok(Some(stmt)) = self.parse_statement() {
+                        body.push(stmt);
+                    } else {
+                        // If that fails, try to parse as an expression
+                        let expr = self.parse_expr()?;
+                        body.push(expr);
+                        
+                        // Check for semicolon
+                        if let Some(Token::Semicolon) = self.peek() {
+                            self.advance(); // Consume semicolon
+                        }
+                    }
                 }
             }
             
@@ -1244,7 +1498,7 @@ impl Parser {
             body.push(expr);
         }
         
-        Ok(AstNode::ArrowFunction { params, body, expression: is_expression })
+        Ok(AstNode::ArrowFunction { params, body, expression: is_expression, is_async })
     }
 
     fn parse_unary(&mut self) -> ParseResult<AstNode> {
@@ -1271,6 +1525,12 @@ impl Parser {
                 op: "~".to_string(),
                 expr: Box::new(expr),
             });
+        } else if matches!(self.peek(), Some(Token::Await)) {
+            self.advance(); // Consume await
+            let expr = self.parse_unary()?;
+            return Ok(AstNode::AwaitExpr {
+                expr: Box::new(expr),
+            });
         }
         
         // Otherwise, parse a primary expression
@@ -1279,8 +1539,6 @@ impl Parser {
         // Check for postfix increment/decrement
         if matches!(self.peek(), Some(Token::Increment)) {
             self.advance(); // Consume ++
-            return Ok(AstNode::PostIncrement(Box::new(expr)));
-        } else if matches!(self.peek(), Some(Token::Decrement)) {
             self.advance(); // Consume --
             return Ok(AstNode::PostDecrement(Box::new(expr)));
         }
@@ -1297,6 +1555,86 @@ impl Parser {
         Ok(Some(expr))
     }
     
+    // Process property access and method calls on an expression
+    // This handles method chaining like fetch().then().catch()
+    fn process_member_access(&mut self, mut expr: AstNode) -> ParseResult<AstNode> {
+        loop {
+            if let Some(Token::Dot) = self.peek() {
+                self.advance(); // Consume the dot
+                
+                // Expect an identifier after the dot
+                if let Some(Token::Identifier(prop)) = self.peek() {
+                    let property = prop.clone();
+                    self.advance(); // Consume the property identifier
+                    
+                    // Check if this is a method call (property followed by parentheses)
+                    if let Some(Token::LParen) = self.peek() {
+                        self.advance(); // Consume the left parenthesis
+                        
+                        // Parse arguments
+                        let mut args = Vec::new();
+                        if !matches!(self.peek(), Some(Token::RParen)) {
+                            loop {
+                                let arg = self.parse_expr()?;
+                                args.push(arg);
+                                
+                                match self.peek() {
+                                    Some(Token::Comma) => {
+                                        self.advance(); // Consume comma
+                                    }
+                                    Some(Token::RParen) => break,
+                                    _ => return Err(ParseError::new("Expected comma or closing parenthesis", self.pos)),
+                                }
+                            }
+                        }
+                        
+                        self.expect(&Token::RParen)?; // Consume the right parenthesis
+                        
+                        // Create a method call node
+                        expr = AstNode::MethodCall {
+                            object: Box::new(expr),
+                            method: property,
+                            args,
+                        };
+                        
+                        // Immediately check for further method chaining
+                        // This is crucial for Promise chains like fetch().then().catch()
+                        continue;
+                    } else {
+                        // Regular property access
+                        expr = AstNode::PropertyAccess {
+                            object: Box::new(expr),
+                            property,
+                        };
+                    }
+                } else {
+                    return Err(ParseError::new("Expected property name after dot", self.pos));
+                }
+            } else if let Some(Token::LBracket) = self.peek() {
+                self.advance(); // Consume the left bracket
+                
+                // Parse the expression inside the brackets
+                let property_expr = self.parse_expr()?;
+                
+                // Expect a closing bracket
+                if let Some(Token::RBracket) = self.peek() {
+                    self.advance(); // Consume the right bracket
+                    expr = AstNode::ComputedPropertyAccess {
+                        object: Box::new(expr),
+                        property: Box::new(property_expr),
+                    };
+                } else {
+                    return Err(ParseError::new("Expected closing bracket after property expression", self.pos));
+                }
+            } else {
+                // No more property access, break the loop
+                break;
+            }
+        }
+        
+        Ok(expr)
+    }
+
     fn parse_primary(&mut self) -> ParseResult<AstNode> {
         println!("parse_primary: Current token: {:?}", self.peek());
         match self.peek() {
@@ -1330,7 +1668,7 @@ impl Parser {
             Some(Token::TemplateStringPart(s)) => {
                 // This is a part of a template string with interpolation
                 let string_value = s.clone();
-                self.advance();
+                self.advance(); // Consume the initial template string part
                 
                 // Process all parts of the template string
                 let mut template_parts = Vec::new();
@@ -1396,46 +1734,9 @@ impl Parser {
                 let id = name.clone();
                 self.advance();
                 
-                // Check for property access (identifier followed by dot and another identifier)
+                // Create identifier node and process any property access or method calls
                 let mut expr = AstNode::Identifier(id.clone());
-                
-                // Process property access chains (obj.prop1.prop2) and computed property access (obj[expr])
-                loop {
-                    if let Some(Token::Dot) = self.peek() {
-                        self.advance(); // Consume the dot
-                        
-                        // Expect an identifier after the dot
-                        if let Some(Token::Identifier(prop)) = self.peek() {
-                            let property = prop.clone();
-                            self.advance(); // Consume the property identifier
-                            expr = AstNode::PropertyAccess {
-                                object: Box::new(expr),
-                                property,
-                            };
-                        } else {
-                            return Err(ParseError::new("Expected property name after dot", self.pos));
-                        }
-                    } else if let Some(Token::LBracket) = self.peek() {
-                        self.advance(); // Consume the left bracket
-                        
-                        // Parse the expression inside the brackets
-                        let property_expr = self.parse_expr()?;
-                        
-                        // Expect a closing bracket
-                        if let Some(Token::RBracket) = self.peek() {
-                            self.advance(); // Consume the right bracket
-                            expr = AstNode::ComputedPropertyAccess {
-                                object: Box::new(expr),
-                                property: Box::new(property_expr),
-                            };
-                        } else {
-                            return Err(ParseError::new("Expected closing bracket after property expression", self.pos));
-                        }
-                    } else {
-                        // No more property access, break the loop
-                        break;
-                    }
-                }
+                expr = self.process_member_access(expr)?;
                 
                 // Check if this is a function call (identifier followed by left parenthesis)
                 if let Some(Token::LParen) = self.peek() {
@@ -1469,26 +1770,285 @@ impl Parser {
                     }
                     
                     // Handle different types of function calls
-                    match &func_expr {
+                    let call_expr = match &func_expr {
                         AstNode::Identifier(id) => {
-                            return Ok(AstNode::FunctionCall { name: id.clone(), args });
+                            AstNode::FunctionCall { name: id.clone(), args }
                         },
                         AstNode::PropertyAccess { object, property } => {
                             // For method calls (obj.method())
-                            return Ok(AstNode::MethodCall { 
+                            AstNode::MethodCall { 
                                 object: object.clone(), 
                                 method: property.clone(),
                                 args
-                            });
+                            }
                         },
                         _ => {
                             return Err(ParseError::new("Invalid function call expression", self.pos));
                         }
-                    }
+                    };
+                    
+                    // Process any method chains on the function call result
+                    // This is crucial for Promise chains like fetch().then().catch()
+                    let result = self.process_member_access(call_expr)?;
+                    return Ok(result)
                 }
                 
                 // Return the expression (identifier or property access)
                 Ok(expr)
+            },
+            Some(Token::New) => {
+                self.advance(); // Consume the 'new' keyword
+                
+                // Parse the constructor name
+                if let Some(Token::Identifier(constructor)) = self.peek() {
+                    let constructor_name = constructor.clone();
+                    self.advance(); // Consume the constructor identifier
+                    
+                    // Parse constructor arguments
+                    let mut args = Vec::new();
+                    if let Some(Token::LParen) = self.peek() {
+                        self.advance(); // Consume the left parenthesis
+                        
+                        // Special handling for Promise constructor
+                        if constructor_name == "Promise" {
+                            println!("Parsing Promise constructor");
+                            
+                            // Check if we have a function as the argument
+                            match self.peek() {
+                                // Arrow function syntax: (resolve, reject) => { ... }
+                                Some(Token::LParen) => {
+                                    // This is likely an arrow function for the Promise executor
+                                    self.advance(); // Consume the left parenthesis
+                                    
+                                    // Parse parameters (resolve, reject)
+                                    let mut params = Vec::new();
+                                    if !matches!(self.peek(), Some(Token::RParen)) {
+                                        loop {
+                                            if let Some(Token::Identifier(param)) = self.peek() {
+                                                params.push(param.clone());
+                                                self.advance(); // Consume the parameter
+                                                
+                                                // Check for comma or closing parenthesis
+                                                if let Some(Token::Comma) = self.peek() {
+                                                    self.advance(); // Consume the comma
+                                                } else if let Some(Token::RParen) = self.peek() {
+                                                    self.advance(); // Consume the right parenthesis
+                                                    break;
+                                                } else {
+                                                    return Err(ParseError::new("Expected comma or closing parenthesis in arrow function parameters", self.pos));
+                                                }
+                                            } else {
+                                                return Err(ParseError::new("Expected identifier in arrow function parameters", self.pos));
+                                            }
+                                        }
+                                    } else {
+                                        self.advance(); // Consume the right parenthesis for empty parameters
+                                    }
+                                    
+                                    // Parse the fat arrow
+                                    if let Some(Token::FatArrow) = self.peek() {
+                                        self.advance(); // Consume the fat arrow
+                                     
+                                        // Parse the body
+                                        let mut body = Vec::new();
+                                        
+                                        // Check if it's a block body
+                                        if let Some(Token::LBrace) = self.peek() {
+                                            self.advance(); // Consume the left brace
+                                            
+                                            // Parse statements until we hit the closing brace
+                                            while !matches!(self.peek(), Some(Token::RBrace)) {
+                                                // Special case for setTimeout
+                                                if matches!(self.peek(), Some(Token::Identifier(id)) if id == "setTimeout") {
+                                                    self.advance(); // Consume setTimeout
+                                                    
+                                                    // Parse the setTimeout call
+                                                    if let Some(Token::LParen) = self.peek() {
+                                                        self.advance(); // Consume left paren
+                                                        
+                                                        // Parse arguments
+                                                        let mut setTimeout_args = Vec::new();
+                                                        
+                                                        // Parse arguments
+                                                        if !matches!(self.peek(), Some(Token::RParen)) {
+                                                            loop {
+                                                                let arg = self.parse_expr()?;
+                                                                setTimeout_args.push(arg);
+                                                                
+                                                                match self.peek() {
+                                                                    Some(Token::Comma) => {
+                                                                        self.advance(); // Consume comma
+                                                                    }
+                                                                    Some(Token::RParen) => break,
+                                                                    _ => return Err(ParseError::new("Expected comma or closing parenthesis in setTimeout arguments", self.pos)),
+                                                                }
+                                                            }
+                                                        }
+                                                        
+                                                        self.expect(&Token::RParen)?; // Consume the right parenthesis
+                                                        
+                                                        // Create function call node
+                                                        let func_call = AstNode::FunctionCall {
+                                                            name: "setTimeout".to_string(),
+                                                            args: setTimeout_args,
+                                                        };
+                                                        
+                                                        body.push(func_call);
+                                                        
+                                                        // Check for semicolon
+                                                        if let Some(Token::Semicolon) = self.peek() {
+                                                            self.advance(); // Consume semicolon
+                                                        }
+                                                    } else {
+                                                        return Err(ParseError::new("Expected opening parenthesis after setTimeout", self.pos));
+                                                    }
+                                                } else {
+                                                    // Try to parse as a statement first
+                                                    if let Ok(Some(stmt)) = self.parse_statement() {
+                                                        body.push(stmt);
+                                                    } else {
+                                                        // If that fails, try to parse as an expression
+                                                        let expr = self.parse_expr()?;
+                                                        body.push(expr);
+                                                        
+                                                        // Check for semicolon
+                                                        if let Some(Token::Semicolon) = self.peek() {
+                                                            self.advance(); // Consume semicolon
+                                                        }
+                                                    }
+                                                }
+                                            }
+                                            
+                                            self.advance(); // Consume the right brace
+                                        } else {
+                                            // Expression body
+                                            let expr = self.parse_expr()?;
+                                            body.push(expr);
+                                        }
+                                        
+                                        // Create the arrow function node
+                                        let arrow_func = AstNode::ArrowFunction {
+                                            params,
+                                            body,
+                                            expression: true,
+                                            is_async: false,
+                                        };
+                                        
+                                        args.push(arrow_func);
+                                        
+                                        // Consume the closing parenthesis of the Promise constructor
+                                        if let Some(Token::RParen) = self.peek() {
+                                            self.advance(); // Consume the right parenthesis
+                                        } else {
+                                            return Err(ParseError::new("Expected closing parenthesis after Promise constructor arguments", self.pos));
+                                        }
+                                    } else {
+                                        return Err(ParseError::new("Expected fat arrow in arrow function", self.pos));
+                                    }
+                                },
+                                // Function expression syntax: function(resolve, reject) { ... }
+                                Some(Token::Identifier(id)) if id == "function" => {
+                                    self.advance(); // Consume 'function' identifier
+                                    
+                                    // Parse parameter list
+                                    self.expect(&Token::LParen)?;
+                                    let mut params = Vec::new();
+                                    
+                                    if !matches!(self.peek(), Some(Token::RParen)) {
+                                        loop {
+                                            if let Some(Token::Identifier(param)) = self.peek() {
+                                                params.push(param.clone());
+                                                self.advance();
+                                            } else {
+                                                return Err(ParseError::new("Expected parameter name", self.pos));
+                                            }
+                                            
+                                            match self.peek() {
+                                                Some(Token::Comma) => {
+                                                    self.advance();
+                                                }
+                                                Some(Token::RParen) => break,
+                                                _ => return Err(ParseError::new("Expected comma or closing parenthesis", self.pos)),
+                                            }
+                                        }
+                                    }
+                                    
+                                    self.expect(&Token::RParen)?;
+                                    
+                                    // Parse function body
+                                    self.expect(&Token::LBrace)?;
+                                    let mut body = Vec::new();
+                                    
+                                    while !matches!(self.peek(), Some(Token::RBrace) | None) {
+                                        if let Some(stmt) = self.parse_statement()? {
+                                            body.push(stmt);
+                                        }
+                                    }
+                                    
+                                    self.expect(&Token::RBrace)?;
+                                    
+                                    // Create the function expression node
+                                    let func_expr = AstNode::ArrowFunction {
+                                        params,
+                                        body,
+                                        expression: false,
+                                        is_async: false,
+                                    };
+                                    
+                                    args.push(func_expr);
+                                    
+                                    // Consume the closing parenthesis of the Promise constructor
+                                    if let Some(Token::RParen) = self.peek() {
+                                        self.advance(); // Consume the right parenthesis
+                                    } else {
+                                        return Err(ParseError::new("Expected closing parenthesis after Promise constructor arguments", self.pos));
+                                    }
+                                },
+                                // Regular argument
+                                _ => {
+                                    if !matches!(self.peek(), Some(Token::RParen)) {
+                                        let arg = self.parse_expr()?;
+                                        args.push(arg);
+                                    }
+                                    
+                                    // Consume the closing parenthesis
+                                    if let Some(Token::RParen) = self.peek() {
+                                        self.advance(); // Consume the right parenthesis
+                                    } else {
+                                        return Err(ParseError::new("Expected closing parenthesis in Promise constructor", self.pos));
+                                    }
+                                }
+                            }
+                        } else {
+                            // Regular constructor arguments
+                            if !matches!(self.peek(), Some(Token::RParen)) {
+                                loop {
+                                    let arg = self.parse_expr()?;
+                                    args.push(arg);
+                                    
+                                    // Check for comma or closing parenthesis
+                                    if let Some(Token::Comma) = self.peek() {
+                                        self.advance(); // Consume the comma
+                                    } else if let Some(Token::RParen) = self.peek() {
+                                        self.advance(); // Consume the right parenthesis
+                                        break;
+                                    } else {
+                                        return Err(ParseError::new("Expected comma or closing parenthesis in constructor arguments", self.pos));
+                                    }
+                                }
+                            } else {
+                                self.advance(); // Consume the right parenthesis for empty arguments
+                            }
+                        }
+                    }
+                    
+                    return Ok(AstNode::NewExpr {
+                        constructor: constructor_name,
+                        args,
+                    });
+                } else {
+                    return Err(ParseError::new("Expected constructor name after 'new'", self.pos));
+                }
             },
             Some(Token::LParen) => {
                 self.advance();

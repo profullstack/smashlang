@@ -24,9 +24,30 @@ for (let x of y) {
     } else {
         print("false");
     }
-
-    print("end");
 }
+
+// Sleep function using Promise with setTimeout
+async fn sleep(ms) {
+    print("Sleeping...");
+    return new Promise((resolve, reject) => {
+        setTimeout(resolve, ms);
+    });
+}
+
+// Test async function
+async fn test() {
+    print("Starting test");
+    const result = await sleep(1000);
+    print("Finished sleeping");
+    return result;
+}
+
+// Call the async function
+print("Before await");
+const result = await test();
+print("After await");
+print("Result:");
+print(result);
 
 let message = "Hello, SmashLang!";
 let year = 2025;
@@ -46,3 +67,72 @@ if (!active2) {
 let pattern = "smash.*";
 
 print(message);
+
+// Simple Promise test
+print("\nPromise test:");
+
+// Create a function that returns a promise
+function createPromise() {
+    return new Promise(function(resolve, reject) {
+        // Resolve after a delay
+        setTimeout(function() {
+            resolve("Promise resolved!");
+        }, 1000);
+    });
+}
+
+// Create a function to handle the Promise result
+function handlePromise(result) {
+    print("Promise result:", result);
+    return "Processed: " + result;
+}
+
+// Create a function to handle errors
+function handleError(error) {
+    print("Promise error:", error);
+}
+
+// Use the Promise
+const promiseResult = createPromise();
+
+// Add handlers manually
+promiseResult.then(handlePromise);
+promiseResult.catch(handleError);
+
+// Simple async/await test
+print("\nAsync/await test:");
+
+// Helper function that returns a promise
+function createDelayPromise(ms, value) {
+    return new Promise(function(resolve, reject) {
+        setTimeout(function() {
+            resolve(value);
+        }, ms);
+    });
+}
+
+// Define an async function
+async function processAsync() {
+    try {
+        print("Starting async operation...");
+        
+        // Use await with our delay function
+        const result1 = await createDelayPromise(500, "First result");
+        print("Got first result:", result1);
+        
+        // Chain another async operation
+        const result2 = await createDelayPromise(500, "Second result: " + result1);
+        print("Got second result:", result2);
+        
+        return "Completed: " + result2;
+    } catch (error) {
+        print("Async error:", error);
+        return null;
+    }
+}
+
+// Call the async function
+print("Before calling async function");
+const asyncResult = await processAsync();
+print("After async function");
+print("Final result:", asyncResult);

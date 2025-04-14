@@ -1,0 +1,25 @@
+// Promise test with arrow function syntax and method chaining via variables
+
+// Create a Promise with arrow function
+const promise1 = new Promise((resolve, reject) => {
+    setTimeout(() => resolve("success"), 100);
+});
+
+// First then call
+const thenResult = promise1.then((result) => {
+    console.log("Promise resolved with: " + result);
+    return "chain value";
+});
+
+// Second then call
+const finalResult = thenResult.then((value) => {
+    console.log("Chain received: " + value);
+    return value.toUpperCase();
+});
+
+// Error handler using onCatch instead of catch
+const errorHandler = finalResult.onCatch((error) => {
+    console.log("Error caught: " + error);
+});
+
+console.log("Promises initialized");

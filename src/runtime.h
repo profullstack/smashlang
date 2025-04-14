@@ -6,6 +6,28 @@
 
 // --- Value Representation ---
 
+// Forward declarations
+typedef struct SmashValue SmashValue;
+typedef struct SmashArray SmashArray;
+typedef struct SmashPromise SmashPromise;
+typedef void (*PromiseCallback)(SmashValue*, void*);
+
+// Promise status enum
+typedef enum {
+    PROMISE_PENDING,
+    PROMISE_FULFILLED,
+    PROMISE_REJECTED
+} PromiseStatus;
+
+// Promise structure
+struct SmashPromise {
+    PromiseStatus status;
+    SmashValue* result;  // Result or reason
+    PromiseCallback on_fulfill;
+    PromiseCallback on_reject;
+    void* callback_data;
+};
+
 // Property structure for objects
 typedef struct {
     char* key;
@@ -25,7 +47,9 @@ typedef enum {
     SMASH_TYPE_NUMBER,
     SMASH_TYPE_STRING,
     SMASH_TYPE_ARRAY,
-    SMASH_TYPE_OBJECT
+    SMASH_TYPE_OBJECT,
+    SMASH_TYPE_PROMISE,
+    SMASH_TYPE_FUNCTION
 } SmashValueType;
 
 // Forward declarations
@@ -39,6 +63,9 @@ struct SmashArray {
     int capacity;
 };
 
+// Function type for async callbacks
+typedef SmashValue* (*SmashFunction)(SmashValue* this_val, int count, SmashValue** args);
+
 // Unified Value Structure
 struct SmashValue {
     SmashValueType type;
@@ -48,6 +75,8 @@ struct SmashValue {
         char* string;      // Assume heap-allocated
         SmashArray* array;
         SmashObject* object;
+        SmashPromise* promise;
+        SmashFunction function;
     } data;
 };
 
@@ -79,9 +108,31 @@ char* smash_string_trim_start(const char* str);
 char* smash_string_trim_end(const char* str);
 char* smash_string_char_at(const char* str, const char* index_str);
 char* smash_string_concat(const char* str1, const char* str2);
+char* smash_string_substring(const char* str, int start, int length);
+char* smash_string_match(const char* str, const char* pattern);
 char* smash_string_includes(const char* str, const char* search_str);
 char* smash_string_index_of(const char* str, const char* search_str);
 char* smash_string_slice(const char* str, const char* start_str, const char* end_str);
+
+// --- Promise Operations ---
+SmashValue* smash_promise_create();
+void smash_promise_resolve(SmashValue* promise, SmashValue* value);
+void smash_promise_reject(SmashValue* promise, SmashValue* reason);
+SmashValue* smash_promise_then(SmashValue* promise, SmashValue* on_fulfilled, SmashValue* on_rejected);
+SmashValue* smash_promise_catch(SmashValue* promise, SmashValue* on_rejected);
+
+// --- Fetch API ---
+SmashValue* smash_fetch(const char* url, SmashValue* options);
+SmashValue* smash_response_json(SmashValue* response);
+SmashValue* smash_response_text(SmashValue* response);
+
+// Timer API
+SmashValue* smash_set_timeout(SmashValue* callback, unsigned long delay_ms, int argc, SmashValue** args);
+SmashValue* smash_sleep(unsigned long ms);
+
+// Function API
+SmashValue* smash_value_create_function(SmashFunction func);
+
 char* smash_string_split(const char* str, const char* delimiter);
 char* smash_string_repeat(const char* str, const char* count_str);
 char* smash_get_length(const char* str); 

@@ -401,7 +401,7 @@ impl Repl {
             
             AstNode::LetDecl { name, value } => {
                 // Special handling for arrow functions to associate them with a name
-                if let AstNode::ArrowFunction { params, body, expression } = &**value {
+                if let AstNode::ArrowFunction { params, body, expression, is_async } = &**value {
                     // Create a named function value
                     let function_value = Value::Function(name.clone(), params.clone(), Box::new(if *expression && body.len() == 1 {
                         // For expression bodies, wrap in a return statement
@@ -424,7 +424,7 @@ impl Repl {
             
             AstNode::ConstDecl { name, value } => {
                 // Special handling for arrow functions to associate them with a name
-                if let AstNode::ArrowFunction { params, body, expression } = &**value {
+                if let AstNode::ArrowFunction { params, body, expression, is_async } = &**value {
                     // Create a named function value
                     let function_value = Value::Function(name.clone(), params.clone(), Box::new(if *expression && body.len() == 1 {
                         // For expression bodies, wrap in a return statement
@@ -718,7 +718,7 @@ impl Repl {
             // Handle template literals
             
             // Handle arrow functions
-            AstNode::ArrowFunction { params, body, expression } => {
+            AstNode::ArrowFunction { params, body, expression, is_async } => {
                 // Create a function value
                 // We'll use an empty name for anonymous functions
                 Ok(Value::Function(String::new(), params.clone(), Box::new(if *expression && body.len() == 1 {

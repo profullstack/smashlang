@@ -6,6 +6,8 @@ pub enum Token {
     Fn,
     Return,
     Import,
+    Async,
+    Await,
     
     // Error handling keywords
     Try,
@@ -656,6 +658,8 @@ pub fn tokenize(input: &str) -> Vec<Token> {
                     "return" => tokens.push(Token::Return),
                     "const" => tokens.push(Token::Const),
                     "import" => tokens.push(Token::Import),
+                    "async" => tokens.push(Token::Async),
+                    "await" => tokens.push(Token::Await),
                     "try" => tokens.push(Token::Try),
                     "catch" => tokens.push(Token::Catch),
                     "finally" => tokens.push(Token::Finally),

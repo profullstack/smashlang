@@ -897,6 +897,634 @@ SmashValue* smash_object_get_keys(SmashValue* obj) {
     return keys_array;
 }
 
+// --- Promise Implementation ---
+
+// Create a new Promise
+SmashValue* smash_promise_create() {
+    SmashValue* promise_value = (SmashValue*)malloc(sizeof(SmashValue));
+    if (!promise_value) {
+        return NULL; // Memory allocation failed
+    }
+    
+    SmashPromise* promise = (SmashPromise*)malloc(sizeof(SmashPromise));
+    if (!promise) {
+        free(promise_value);
+        return NULL; // Memory allocation failed
+    }
+    
+    // Initialize the promise
+    promise->status = PROMISE_PENDING;
+    promise->result = NULL;
+    promise->on_fulfill = NULL;
+    promise->on_reject = NULL;
+    promise->callback_data = NULL;
+    
+    // Set up the SmashValue
+    promise_value->type = SMASH_TYPE_PROMISE;
+    promise_value->data.promise = promise;
+    
+    return promise_value;
+}
+
+// Resolve a promise with a value
+void smash_promise_resolve(SmashValue* promise_value, SmashValue* value) {
+    if (!promise_value || promise_value->type != SMASH_TYPE_PROMISE) {
+        return; // Not a promise
+    }
+    
+    SmashPromise* promise = promise_value->data.promise;
+    if (promise->status != PROMISE_PENDING) {
+        return; // Promise already settled
+    }
+    
+    // Update promise status and result
+    promise->status = PROMISE_FULFILLED;
+    promise->result = smash_value_clone(value);
+    
+    // Execute the onFulfill callback if set
+    if (promise->on_fulfill) {
+        promise->on_fulfill(promise->result, promise->callback_data);
+    }
+}
+
+// Reject a promise with a reason
+void smash_promise_reject(SmashValue* promise_value, SmashValue* reason) {
+    if (!promise_value || promise_value->type != SMASH_TYPE_PROMISE) {
+        return; // Not a promise
+    }
+    
+    SmashPromise* promise = promise_value->data.promise;
+    if (promise->status != PROMISE_PENDING) {
+        return; // Promise already settled
+    }
+    
+    // Update promise status and reason
+    promise->status = PROMISE_REJECTED;
+    promise->result = smash_value_clone(reason);
+    
+    // Execute the onReject callback if set
+    if (promise->on_reject) {
+        promise->on_reject(promise->result, promise->callback_data);
+    }
+}
+
+// Helper struct for promise chaining
+typedef struct {
+    SmashValue* next_promise;
+    SmashValue* handler;
+} PromiseChainData;
+
+// Callback for promise chaining (fulfill)
+void promise_chain_fulfill(SmashValue* value, void* data) {
+    PromiseChainData* chain_data = (PromiseChainData*)data;
+    if (!chain_data) return;
+    
+    SmashValue* next_promise = chain_data->next_promise;
+    SmashValue* on_fulfilled = chain_data->handler;
+    
+    if (on_fulfilled && on_fulfilled->type == SMASH_TYPE_FUNCTION) {
+        // Call the handler function with the value
+        SmashValue* args[1] = { value };
+        SmashValue* result = on_fulfilled->data.function(NULL, 1, args);
+        
+        // Resolve the next promise with the result
+        smash_promise_resolve(next_promise, result);
+        smash_value_free(result);
+    } else {
+        // No handler, just pass through the value
+        smash_promise_resolve(next_promise, value);
+    }
+    
+    // Clean up
+    free(chain_data);
+}
+
+// Callback for promise chaining (reject)
+void promise_chain_reject(SmashValue* reason, void* data) {
+    PromiseChainData* chain_data = (PromiseChainData*)data;
+    if (!chain_data) return;
+    
+    SmashValue* next_promise = chain_data->next_promise;
+    SmashValue* on_rejected = chain_data->handler;
+    
+    if (on_rejected && on_rejected->type == SMASH_TYPE_FUNCTION) {
+        // Call the handler function with the reason
+        SmashValue* args[1] = { reason };
+        SmashValue* result = on_rejected->data.function(NULL, 1, args);
+        
+        // Resolve the next promise with the result
+        smash_promise_resolve(next_promise, result);
+        smash_value_free(result);
+    } else {
+        // No handler, propagate the rejection
+        smash_promise_reject(next_promise, reason);
+    }
+    
+    // Clean up
+    free(chain_data);
+}
+
+// Chain promises with then
+SmashValue* smash_promise_then(SmashValue* promise_value, SmashValue* on_fulfilled, SmashValue* on_rejected) {
+    if (!promise_value || promise_value->type != SMASH_TYPE_PROMISE) {
+        return smash_promise_create(); // Return a new rejected promise?
+    }
+    
+    SmashPromise* promise = promise_value->data.promise;
+    SmashValue* next_promise = smash_promise_create();
+    
+    if (promise->status == PROMISE_PENDING) {
+        // Set up callbacks for when the promise resolves/rejects
+        PromiseChainData* fulfill_data = (PromiseChainData*)malloc(sizeof(PromiseChainData));
+        fulfill_data->next_promise = next_promise;
+        fulfill_data->handler = on_fulfilled;
+        
+        PromiseChainData* reject_data = (PromiseChainData*)malloc(sizeof(PromiseChainData));
+        reject_data->next_promise = next_promise;
+        reject_data->handler = on_rejected;
+        
+        promise->on_fulfill = promise_chain_fulfill;
+        promise->on_reject = promise_chain_reject;
+        promise->callback_data = fulfill_data; // This is a simplification, we'd need separate data for each
+    } else if (promise->status == PROMISE_FULFILLED) {
+        // Promise already fulfilled, call handler immediately
+        if (on_fulfilled && on_fulfilled->type == SMASH_TYPE_FUNCTION) {
+            SmashValue* args[1] = { promise->result };
+            SmashValue* result = on_fulfilled->data.function(NULL, 1, args);
+            smash_promise_resolve(next_promise, result);
+            smash_value_free(result);
+        } else {
+            smash_promise_resolve(next_promise, promise->result);
+        }
+    } else if (promise->status == PROMISE_REJECTED) {
+        // Promise already rejected, call handler immediately
+        if (on_rejected && on_rejected->type == SMASH_TYPE_FUNCTION) {
+            SmashValue* args[1] = { promise->result };
+            SmashValue* result = on_rejected->data.function(NULL, 1, args);
+            smash_promise_resolve(next_promise, result);
+            smash_value_free(result);
+        } else {
+            smash_promise_reject(next_promise, promise->result);
+        }
+    }
+    
+    return next_promise;
+}
+
+// Add catch handler to a promise
+SmashValue* smash_promise_catch(SmashValue* promise_value, SmashValue* on_rejected) {
+    return smash_promise_then(promise_value, NULL, on_rejected);
+}
+
+// --- Fetch API Implementation ---
+
+// Struct to hold HTTP response data
+typedef struct {
+    char* body;
+    int status_code;
+    char* status_text;
+    SmashValue* headers;  // Object containing response headers
+} HttpResponse;
+
+// Free an HTTP response
+void free_http_response(HttpResponse* response) {
+    if (!response) return;
+    
+    if (response->body) free(response->body);
+    if (response->status_text) free(response->status_text);
+    if (response->headers) smash_value_free(response->headers);
+    free(response);
+}
+
+// Create a Response object from an HttpResponse
+SmashValue* create_response_object(HttpResponse* http_response) {
+    SmashValue* response = smash_value_create_object();
+    
+    // Add status code
+    SmashValue* status = smash_value_create_number(http_response->status_code);
+    smash_object_set(response, "status", status);
+    smash_value_free(status);
+    
+    // Add status text
+    SmashValue* status_text = smash_value_create_string(http_response->status_text);
+    smash_object_set(response, "statusText", status_text);
+    smash_value_free(status_text);
+    
+    // Add headers
+    smash_object_set(response, "headers", http_response->headers);
+    
+    // Add body (as a property, not directly accessible)
+    SmashValue* body_str = smash_value_create_string(http_response->body);
+    smash_object_set(response, "_body", body_str);
+    smash_value_free(body_str);
+    
+    // Add methods as function pointers (simplified for now)
+    // In a real implementation, we'd need to set up proper function objects
+    
+    return response;
+}
+
+// Helper function to perform HTTP request (simplified mock implementation)
+HttpResponse* perform_http_request(const char* url, const char* method, const char* body, SmashValue* headers) {
+    // This is a mock implementation that would be replaced with a real HTTP client
+    // In a real implementation, we'd use libcurl or another HTTP client library
+    
+    HttpResponse* response = (HttpResponse*)malloc(sizeof(HttpResponse));
+    if (!response) return NULL;
+    
+    // For demonstration, return a mock successful response
+    response->status_code = 200;
+    response->status_text = strdup("OK");
+    
+    // Create mock response body - in a real implementation this would come from the HTTP request
+    if (strstr(url, "example.com")) {
+        response->body = strdup("{\"message\": \"Hello from the API\", \"success\": true}");
+    } else {
+        response->body = strdup("{\"error\": \"Not found\", \"success\": false}");
+    }
+    
+    // Create headers object
+    response->headers = smash_value_create_object();
+    SmashValue* content_type = smash_value_create_string("application/json");
+    smash_object_set(response->headers, "Content-Type", content_type);
+    smash_value_free(content_type);
+    
+    return response;
+}
+
+// Callback data for fetch
+typedef struct {
+    SmashValue* promise;
+    char* url;
+    char* method;
+    char* body;
+    SmashValue* headers;
+} FetchData;
+
+// Thread function for async fetch (simplified)
+void* fetch_thread_func(void* arg) {
+    FetchData* data = (FetchData*)arg;
+    if (!data) return NULL;
+    
+    // Perform the HTTP request
+    HttpResponse* http_response = perform_http_request(data->url, data->method, data->body, data->headers);
+    
+    if (http_response) {
+        // Create response object
+        SmashValue* response = create_response_object(http_response);
+        
+        // Resolve the promise with the response
+        smash_promise_resolve(data->promise, response);
+        
+        // Clean up
+        smash_value_free(response);
+        free_http_response(http_response);
+    } else {
+        // Create error object
+        SmashValue* error = smash_value_create_object();
+        SmashValue* message = smash_value_create_string("Network error");
+        smash_object_set(error, "message", message);
+        smash_value_free(message);
+        
+        // Reject the promise with the error
+        smash_promise_reject(data->promise, error);
+        
+        // Clean up
+        smash_value_free(error);
+    }
+    
+    // Clean up fetch data
+    free(data->url);
+    if (data->method) free(data->method);
+    if (data->body) free(data->body);
+    if (data->headers) smash_value_free(data->headers);
+    free(data);
+    
+    return NULL;
+}
+
+// Fetch API implementation
+SmashValue* smash_fetch(const char* url, SmashValue* options) {
+    // Create a promise to return
+    SmashValue* promise = smash_promise_create();
+    
+    // Prepare fetch data
+    FetchData* data = (FetchData*)malloc(sizeof(FetchData));
+    if (!data) {
+        SmashValue* error = smash_value_create_object();
+        SmashValue* message = smash_value_create_string("Memory allocation failed");
+        smash_object_set(error, "message", message);
+        smash_value_free(message);
+        
+        smash_promise_reject(promise, error);
+        smash_value_free(error);
+        return promise;
+    }
+    
+    data->promise = promise;
+    data->url = strdup(url);
+    data->method = NULL;
+    data->body = NULL;
+    data->headers = NULL;
+    
+    // Parse options if provided
+    if (options && options->type == SMASH_TYPE_OBJECT) {
+        // Get method
+        SmashValue* method = smash_object_get(options, "method");
+        if (method && method->type == SMASH_TYPE_STRING) {
+            data->method = strdup(method->data.string);
+        } else {
+            data->method = strdup("GET");  // Default to GET
+        }
+        
+        // Get body
+        SmashValue* body = smash_object_get(options, "body");
+        if (body) {
+            if (body->type == SMASH_TYPE_STRING) {
+                data->body = strdup(body->data.string);
+            } else {
+                // Convert body to JSON string if it's an object
+                // This would require a JSON stringify function
+                // For now, we'll just use a placeholder
+                data->body = strdup("{}");
+            }
+        }
+        
+        // Get headers
+        SmashValue* headers = smash_object_get(options, "headers");
+        if (headers && headers->type == SMASH_TYPE_OBJECT) {
+            data->headers = smash_value_clone(headers);
+        }
+    } else {
+        // Default to GET method
+        data->method = strdup("GET");
+    }
+    
+    // In a real implementation, we would spawn a thread to perform the fetch
+    // For simplicity, we'll just call the function directly
+    fetch_thread_func(data);
+    
+    return promise;
+}
+
+// Parse JSON from response
+SmashValue* smash_response_json(SmashValue* response) {
+    if (!response || response->type != SMASH_TYPE_OBJECT) {
+        return smash_value_create_null();
+    }
+    
+    // Get the body from the response
+    SmashValue* body = smash_object_get(response, "_body");
+    if (!body || body->type != SMASH_TYPE_STRING) {
+        return smash_value_create_null();
+    }
+    
+    // In a real implementation, we would parse the JSON string
+    // For simplicity, we'll create a mock object based on the body content
+    SmashValue* json = smash_value_create_object();
+    
+    // Check if the body contains success: true
+    if (strstr(body->data.string, "\"success\": true")) {
+        SmashValue* success = smash_value_create_boolean(true);
+        smash_object_set(json, "success", success);
+        smash_value_free(success);
+        
+        // Extract message if present
+        if (strstr(body->data.string, "\"message\"")) {
+            SmashValue* message = smash_value_create_string("Hello from the API");
+            smash_object_set(json, "message", message);
+            smash_value_free(message);
+        }
+    } else {
+        SmashValue* success = smash_value_create_boolean(false);
+        smash_object_set(json, "success", success);
+        smash_value_free(success);
+        
+        // Extract error if present
+        if (strstr(body->data.string, "\"error\"")) {
+            SmashValue* error = smash_value_create_string("Not found");
+            smash_object_set(json, "error", error);
+            smash_value_free(error);
+        }
+    }
+    
+    return json;
+}
+
+// Get text from response
+SmashValue* smash_response_text(SmashValue* response) {
+    if (!response || response->type != SMASH_TYPE_OBJECT) {
+        return smash_value_create_string("");
+    }
+    
+    // Get the body from the response
+    SmashValue* body = smash_object_get(response, "_body");
+    if (!body || body->type != SMASH_TYPE_STRING) {
+        return smash_value_create_string("");
+    }
+    
+    // Return a copy of the body string
+    return smash_value_create_string(body->data.string);
+}
+
+// --- Timer Implementation ---
+#include <pthread.h>
+#include <time.h>
+
+// Struct to hold timer callback data
+typedef struct {
+    SmashValue* promise;
+    SmashValue* callback;
+    SmashValue** args;  // Fixed: Changed from SmashValue* to SmashValue**
+    int num_args;
+    unsigned long delay_ms;
+} TimerData;
+
+// Promise resolver function for setTimeout
+SmashValue* promise_resolver(SmashValue* this_val, int argc, SmashValue** args) {
+    // This function is called when the timer expires
+    // It resolves the promise with a value (or null if no value provided)
+    if (this_val && this_val->type == SMASH_TYPE_OBJECT) {
+        SmashValue* promise = smash_object_get(this_val, "promise");
+        if (promise && promise->type == SMASH_TYPE_PROMISE) {
+            // Resolve the promise with the first argument or null
+            if (argc > 0 && args && args[0]) {
+                smash_promise_resolve(promise, args[0]);
+            } else {
+                SmashValue* null_val = smash_value_create_null();
+                smash_promise_resolve(promise, null_val);
+                smash_value_free(null_val);
+            }
+        }
+    }
+    return smash_value_create_null();
+}
+
+// Thread function for setTimeout
+void* timer_thread_func(void* arg) {
+    TimerData* data = (TimerData*)arg;
+    if (!data) return NULL;
+    
+    // Sleep for the specified delay
+    struct timespec ts;
+    ts.tv_sec = data->delay_ms / 1000;
+    ts.tv_nsec = (data->delay_ms % 1000) * 1000000;
+    nanosleep(&ts, NULL);
+    
+    // If we have a callback, call it
+    if (data->callback && data->callback->type == SMASH_TYPE_FUNCTION) {
+        // Create a value to pass to the callback
+        SmashValue* value = smash_value_create_number(data->delay_ms);
+        
+        // Create an array to hold the arguments
+        SmashValue** args = NULL;
+        int argc = 0;
+        
+        if (data->args && data->num_args > 0) {
+            // Use the provided arguments
+            args = data->args;
+            argc = data->num_args;
+        } else {
+            // Use the delay value as the argument
+            args = &value;
+            argc = 1;
+        }
+        
+        // Call the function with the arguments
+        SmashValue* result = data->callback->data.function(NULL, argc, args);
+        
+        // If we have a promise, resolve it with the result
+        if (data->promise) {
+            smash_promise_resolve(data->promise, result);
+        }
+        
+        // Clean up
+        smash_value_free(result);
+        smash_value_free(value);
+    } else if (data->promise) {
+        // If we don't have a callback but we do have a promise, resolve it with null
+        SmashValue* null_value = smash_value_create_null();
+        smash_promise_resolve(data->promise, null_value);
+        smash_value_free(null_value);
+    }
+    
+    // Clean up
+    if (data->callback) smash_value_free(data->callback);
+    if (data->args) {
+        for (int i = 0; i < data->num_args; i++) {
+            smash_value_free(data->args[i]);
+        }
+        free(data->args);
+    }
+    free(data);
+    
+    return NULL;
+}
+
+// setTimeout implementation
+SmashValue* smash_set_timeout(SmashValue* callback, unsigned long delay_ms, int argc, SmashValue** args) {
+    // Create a promise to return
+    SmashValue* promise = smash_promise_create();
+    
+    // Prepare timer data
+    TimerData* data = (TimerData*)malloc(sizeof(TimerData));
+    if (!data) {
+        SmashValue* error = smash_value_create_object();
+        SmashValue* message = smash_value_create_string("Memory allocation failed");
+        smash_object_set(error, "message", message);
+        smash_value_free(message);
+        
+        smash_promise_reject(promise, error);
+        smash_value_free(error);
+        return promise;
+    }
+    
+    data->promise = promise;
+    data->callback = callback ? smash_value_clone(callback) : NULL;
+    data->delay_ms = delay_ms;
+    
+    // Copy arguments
+    if (argc > 0 && args) {
+        data->args = (SmashValue**)malloc(sizeof(SmashValue*) * argc);
+        if (!data->args) {
+            free(data);
+            SmashValue* error = smash_value_create_object();
+            SmashValue* message = smash_value_create_string("Memory allocation failed");
+            smash_object_set(error, "message", message);
+            smash_value_free(message);
+            
+            smash_promise_reject(promise, error);
+            smash_value_free(error);
+            return promise;
+        }
+        
+        for (int i = 0; i < argc; i++) {
+            data->args[i] = smash_value_clone(args[i]);
+        }
+        data->num_args = argc;
+    } else {
+        data->args = NULL;
+        data->num_args = 0;
+    }
+    
+    // Create a thread to handle the timer
+    pthread_t thread;
+    if (pthread_create(&thread, NULL, timer_thread_func, data) != 0) {
+        // Failed to create thread
+        if (data->callback) smash_value_free(data->callback);
+        if (data->args) {
+            for (int i = 0; i < data->num_args; i++) {
+                smash_value_free(data->args[i]);
+            }
+            free(data->args);
+        }
+        free(data);
+        
+        SmashValue* error = smash_value_create_object();
+        SmashValue* message = smash_value_create_string("Failed to create timer thread");
+        smash_object_set(error, "message", message);
+        smash_value_free(message);
+        
+        smash_promise_reject(promise, error);
+        smash_value_free(error);
+        return promise;
+    }
+    
+    // Detach the thread so it can clean up itself
+    pthread_detach(thread);
+    
+    return promise;
+}
+
+// Function to create a SmashValue that contains a function
+SmashValue* smash_value_create_function(SmashFunction func) {
+    SmashValue* value = malloc(sizeof(SmashValue));
+    value->type = SMASH_TYPE_FUNCTION;
+    value->data.function = func;
+    return value;
+}
+
+// Sleep function implementation using setTimeout with Promise
+SmashValue* smash_sleep(unsigned long ms) {
+    // Create a new Promise
+    SmashValue* promise = smash_promise_create();
+    
+    // Create a context object to hold the promise
+    SmashValue* context = smash_value_create_object();
+    smash_object_set(context, "promise", promise);
+    
+    // Create a function value for the resolver callback
+    SmashValue* resolver = smash_value_create_function(promise_resolver);
+    
+    // Use setTimeout to delay the resolution
+    smash_set_timeout(resolver, ms, 0, NULL);
+    
+    // Clean up
+    smash_value_free(resolver);
+    
+    return promise;
+}
+
 // Match a string against a pattern
 char* smash_string_match(const char* str, const char* pattern) {
     if (!str || !pattern) return NULL;
