@@ -1,0 +1,321 @@
+/**
+ * Advanced PocketBase Package Example
+ * 
+ * This example demonstrates advanced features of the PocketBase package,
+ * including file uploads, admin operations, OAuth2 authentication,
+ * and complex queries.
+ */
+
+import { pocketbase, Admin } from "../src/index.smash";
+
+// Main async function to run all examples
+async function runExamples() {
+  console.log("=== PocketBase Package Advanced Examples ===\n");
+  
+  // Create a client
+  console.log("Creating PocketBase client...");
+  const pb = pocketbase.createClient("http://127.0.0.1:8090");
+  console.log("Client created");
+  console.log("---");
+  
+  // Example 1: OAuth2 Authentication
+  console.log("=== OAuth2 Authentication ===");
+  
+  try {
+    // In a real application, you would get these values from the OAuth2 provider
+    const provider = "google";
+    const code = "4/0AeaYSHDGOT-VjDhkA2z0eiCJUxj9XwX8kJUqP_ylCXEYPyXV5vQmrXxCXzGdK7xKTFR7TQ";
+    const codeVerifier = "s256challenge";
+    const redirectUrl = "http://localhost:3000/auth/callback";
+    
+    console.log(`Authenticating with OAuth2 provider: ${provider}...`);
+    
+    // This is simulated in our implementation
+    const authData = await pb.authWithOAuth2(provider, code, codeVerifier, redirectUrl);
+    
+    console.log("OAuth2 authentication successful!");
+    console.log(`User ID: ${authData.model.id}`);
+    console.log(`Email: ${authData.model.email}`);
+    console.log(`Auth token: ${authData.token.substring(0, 10)}...`);
+  } catch (error) {
+    console.error("OAuth2 authentication failed:", error);
+    
+    // Fall back to regular authentication for the rest of the examples
+    console.log("\nFalling back to regular authentication...");
+    await pb.authWithPassword("users", "admin@example.com", "adminpassword123");
+    console.log("Regular authentication successful");
+  }
+  console.log("---");
+  
+  // Example 2: File Uploads
+  console.log("=== File Uploads ===");
+  
+  try {
+    // First, create a record to attach the file to
+    console.log("Creating a product record...");
+    const productData = {
+      name: "SmashLang T-Shirt",
+      description: "Official SmashLang programming language t-shirt",
+      price: 29.99,
+      inStock: true
+    };
+    
+    const product = await pb.createRecord("products", productData);
+    console.log(`Product created with ID: ${product.id}`);
+    
+    // Now upload a file for this product
+    console.log("\nUploading product image...");
+    
+    // In a real application, this would be a file from the file system or user upload
+    // For this example, we'll simulate a file
+    const imageData = new Blob(["Simulated image data"], { type: "image/jpeg" });
+    const filename = "tshirt.jpg";
+    
+    const updatedProduct = await pb.uploadFile("products", product.id, "image", imageData, filename);
+    
+    console.log("File uploaded successfully!");
+    console.log(`Updated product: ${updatedProduct.id}`);
+    console.log(`Image filename: ${updatedProduct.image}`);
+    
+    // Get the file URL
+    const fileUrl = pb.getFileUrl(updatedProduct, updatedProduct.image, { thumb: "100x100" });
+    console.log(`File URL: ${fileUrl}`);
+  } catch (error) {
+    console.error("File upload failed:", error);
+  }
+  console.log("---");
+  
+  // Example 3: Complex Queries
+  console.log("=== Complex Queries ===");
+  
+  try {
+    console.log("Performing complex queries on tasks collection...");
+    
+    // Create some sample tasks first
+    const taskData = [
+      {
+        title: "Implement user authentication",
+        description: "Add login, registration, and password reset",
+        status: "completed",
+        priority: "high",
+        assignee: "user1",
+        dueDate: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString() // 7 days ago
+      },
+      {
+        title: "Design database schema",
+        description: "Create tables and relationships",
+        status: "completed",
+        priority: "high",
+        assignee: "user2",
+        dueDate: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000).toISOString() // 5 days ago
+      },
+      {
+        title: "Implement API endpoints",
+        description: "Create RESTful API for the application",
+        status: "in-progress",
+        priority: "medium",
+        assignee: "user1",
+        dueDate: new Date(Date.now() + 2 * 24 * 60 * 60 * 1000).toISOString() // 2 days from now
+      },
+      {
+        title: "Write unit tests",
+        description: "Create tests for all components",
+        status: "not-started",
+        priority: "low",
+        assignee: "user3",
+        dueDate: new Date(Date.now() + 10 * 24 * 60 * 60 * 1000).toISOString() // 10 days from now
+      },
+      {
+        title: "Deploy to production",
+        description: "Set up CI/CD pipeline and deploy",
+        status: "not-started",
+        priority: "high",
+        assignee: "user2",
+        dueDate: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString() // 14 days from now
+      }
+    ];
+    
+    console.log("Creating sample tasks...");
+    for (const task of taskData) {
+      await pb.createRecord("tasks", task);
+    }
+    console.log("Sample tasks created");
+    
+    // Query 1: High priority tasks
+    console.log("\nQuery 1: High priority tasks");
+    const highPriorityTasks = await pb.getRecordList("tasks", 1, 10, "priority='high'");
+    
+    console.log(`Found ${highPriorityTasks.totalItems} high priority tasks:`);
+    highPriorityTasks.items.forEach((task, index) => {
+      console.log(`${index + 1}. ${task.title} (${task.status})`);
+    });
+    
+    // Query 2: Overdue tasks
+    console.log("\nQuery 2: Overdue tasks");
+    const now = new Date().toISOString();
+    const overdueTasks = await pb.getRecordList("tasks", 1, 10, `dueDate<'${now}' && status!='completed'`);
+    
+    console.log(`Found ${overdueTasks.totalItems} overdue tasks:`);
+    overdueTasks.items.forEach((task, index) => {
+      console.log(`${index + 1}. ${task.title} (due: ${task.dueDate})`);
+    });
+    
+    // Query 3: Tasks assigned to user1
+    console.log("\nQuery 3: Tasks assigned to user1");
+    const user1Tasks = await pb.getRecordList("tasks", 1, 10, "assignee='user1'");
+    
+    console.log(`Found ${user1Tasks.totalItems} tasks assigned to user1:`);
+    user1Tasks.items.forEach((task, index) => {
+      console.log(`${index + 1}. ${task.title} (${task.status})`);
+    });
+    
+    // Query 4: Completed high priority tasks
+    console.log("\nQuery 4: Completed high priority tasks");
+    const completedHighPriorityTasks = await pb.getRecordList("tasks", 1, 10, "status='completed' && priority='high'");
+    
+    console.log(`Found ${completedHighPriorityTasks.totalItems} completed high priority tasks:`);
+    completedHighPriorityTasks.items.forEach((task, index) => {
+      console.log(`${index + 1}. ${task.title} (assigned to: ${task.assignee})`);
+    });
+  } catch (error) {
+    console.error("Complex queries failed:", error);
+  }
+  console.log("---");
+  
+  // Example 4: Admin Operations
+  console.log("=== Admin Operations ===");
+  
+  try {
+    // Create an admin instance
+    console.log("Creating admin instance...");
+    const admin = new Admin(pb);
+    
+    // Collection management
+    console.log("\nCollection Management:");
+    
+    // Create a new collection
+    console.log("Creating a new collection...");
+    const collectionData = {
+      name: "projects",
+      schema: [
+        { name: "name", type: "text", required: true },
+        { name: "description", type: "text", required: false },
+        { name: "startDate", type: "date", required: true },
+        { name: "endDate", type: "date", required: false },
+        { name: "status", type: "select", required: true, options: ["planning", "active", "completed", "on-hold"] }
+      ]
+    };
+    
+    const collection = await admin.createCollection(collectionData);
+    
+    console.log("Collection created successfully!");
+    console.log(`Collection ID: ${collection.id}`);
+    console.log(`Collection name: ${collection.name}`);
+    console.log(`Schema fields: ${collection.schema.length}`);
+    
+    // Add a new field to the collection
+    console.log("\nAdding a new field to the collection...");
+    const fieldData = {
+      name: "budget",
+      type: "number",
+      required: false
+    };
+    
+    const field = await admin.createField(collection.id, fieldData);
+    
+    console.log("Field created successfully!");
+    console.log(`Field ID: ${field.id}`);
+    console.log(`Field name: ${field.name}`);
+    console.log(`Field type: ${field.type}`);
+    
+    // User management
+    console.log("\nUser Management:");
+    
+    // List users
+    console.log("Listing users...");
+    const users = await admin.listUsers(1, 5);
+    
+    console.log(`Found ${users.totalItems} users (showing page ${users.page} of ${users.totalPages}):`);
+    users.items.forEach((user, index) => {
+      console.log(`${index + 1}. ${user.email} (${user.verified ? 'verified' : 'unverified'}, role: ${user.role})`);
+    });
+    
+    // Create a new user
+    console.log("\nCreating a new user...");
+    const userData = {
+      email: "newuser@example.com",
+      password: "securepassword123",
+      passwordConfirm: "securepassword123",
+      username: "newuser",
+      verified: true,
+      role: "user"
+    };
+    
+    const user = await admin.createUser(userData);
+    
+    console.log("User created successfully!");
+    console.log(`User ID: ${user.id}`);
+    console.log(`Email: ${user.email}`);
+    console.log(`Username: ${user.username}`);
+    console.log(`Verified: ${user.verified}`);
+    console.log(`Role: ${user.role}`);
+  } catch (error) {
+    console.error("Admin operations failed:", error);
+  }
+  console.log("---");
+  
+  // Example 5: Token Refresh
+  console.log("=== Token Refresh ===");
+  
+  try {
+    // Check current token
+    console.log("Current token:", pb.authStore.token.substring(0, 10) + "...");
+    
+    // Refresh the token
+    console.log("Refreshing token...");
+    const refreshData = await pb.refreshAuth();
+    
+    console.log("Token refreshed successfully!");
+    console.log("New token:", refreshData.token.substring(0, 10) + "...");
+  } catch (error) {
+    console.error("Token refresh failed:", error);
+  }
+  console.log("---");
+  
+  // Example 6: Auth Store Events
+  console.log("=== Auth Store Events ===");
+  
+  console.log("Setting up auth change listener...");
+  
+  // Add a change listener
+  pb.authStore.onChange((token, model) => {
+    console.log("Auth change detected!");
+    console.log(`New token: ${token ? token.substring(0, 10) + "..." : "none"}`);
+    console.log(`User model: ${model ? model.email : "none"}`);
+  });
+  
+  // Trigger some auth changes
+  console.log("\nTriggering auth changes...");
+  
+  console.log("1. Logging out...");
+  pb.logout();
+  
+  console.log("\n2. Logging in...");
+  await pb.authWithPassword("users", "user@example.com", "password123");
+  
+  console.log("\n3. Refreshing token...");
+  await pb.refreshAuth();
+  
+  console.log("\n4. Logging out again...");
+  pb.logout();
+  
+  console.log("\nAuth change events demonstrated");
+  console.log("---");
+  
+  console.log("All advanced examples completed!");
+}
+
+// Run the examples
+runExamples().catch(error => {
+  console.error("Error running advanced examples:", error);
+});

@@ -1,36 +1,630 @@
-// database/pocketbase/tests/index.test.smash - Test file for pocketbase package
+/**
+ * PocketBase Package Tests
+ * 
+ * This file contains tests for the PocketBase package using the SmashLang testing framework.
+ * It uses mocks to test the functionality without requiring an actual PocketBase server.
+ */
 
-import * from 'database/pocketbase';
-import { test, describe, expect, beforeEach, afterEach } from 'std/testing';
+import { test, describe, expect, beforeEach, afterEach, mock } from "std/testing";
+import { pocketbase, Client, Record, AuthStore, RealtimeSubscription, Admin } from "../src/index.smash";
 
-describe('Package: pocketbase', () => {
+describe("PocketBase Package", () => {
+  describe("Record Class", () => {
+    test("should create a record with provided data", () => {
+      const data = {
+        id: "record123",
+        created: "2023-01-01T12:00:00.000Z",
+        updated: "2023-01-02T12:00:00.000Z",
+        title: "Test Record",
+        content: "This is a test record"
+      };
+      
+      const record = new Record(data);
+      
+      expect(record.id).toBe("record123");
+      expect(record.created).toBe("2023-01-01T12:00:00.000Z");
+      expect(record.updated).toBe("2023-01-02T12:00:00.000Z");
+      expect(record.title).toBe("Test Record");
+      expect(record.content).toBe("This is a test record");
+    });
+    
+    test("should create date objects for created and updated", () => {
+      const data = {
+        id: "record123",
+        created: "2023-01-01T12:00:00.000Z",
+        updated: "2023-01-02T12:00:00.000Z"
+      };
+      
+      const record = new Record(data);
+      
+      expect(record.createdAt).toBeInstanceOf(Date);
+      expect(record.updatedAt).toBeInstanceOf(Date);
+      expect(record.createdAt.toISOString()).toBe("2023-01-01T12:00:00.000Z");
+      expect(record.updatedAt.toISOString()).toBe("2023-01-02T12:00:00.000Z");
+    });
+    
+    test("should handle missing fields", () => {
+      const record = new Record();
+      
+      expect(record.id).toBe("");
+      expect(record.created).toBe("");
+      expect(record.updated).toBe("");
+      expect(record.createdAt).toBeUndefined();
+      expect(record.updatedAt).toBeUndefined();
+    });
+    
+    test("toObject should return a plain object", () => {
+      const data = {
+        id: "record123",
+        title: "Test Record"
+      };
+      
+      const record = new Record(data);
+      const obj = record.toObject();
+      
+      expect(obj).toEqual(expect.objectContaining(data));
+      expect(obj).not.toBe(data); // Should be a new object
+    });
+    
+    test("isNew should check if record has an ID", () => {
+      const newRecord = new Record();
+      const existingRecord = new Record({ id: "record123" });
+      
+      expect(newRecord.isNew()).toBe(true);
+      expect(existingRecord.isNew()).toBe(false);
+    });
+  });
+  
+  describe("AuthStore Class", () => {
+    let authStore;
+    
     beforeEach(() => {
-        // Setup code for each test
-        console.log('Setting up test for pocketbase');
+      authStore = new AuthStore();
     });
-
-    afterEach(() => {
-        // Cleanup code for each test
-        console.log('Cleaning up after test for pocketbase');
+    
+    test("should initialize with empty state", () => {
+      expect(authStore.token).toBe("");
+      expect(authStore.model).toBeNull();
+      expect(authStore.isValid()).toBe(false);
     });
-
-    test('package can be imported correctly', () => {
-        // This test verifies that the package can be imported
-        expect(typeof pocketbase).toBe('object');
+    
+    test("save should store token and model", () => {
+      const token = "auth_token_123";
+      const model = { id: "user123", email: "user@example.com" };
+      
+      authStore.save(token, model);
+      
+      expect(authStore.token).toBe(token);
+      expect(authStore.model).toBeInstanceOf(Record);
+      expect(authStore.model.id).toBe("user123");
+      expect(authStore.model.email).toBe("user@example.com");
+      expect(authStore.isValid()).toBe(true);
     });
-
-    // Add more specific tests for the package functionality
-    test('package has expected exports', () => {
-        // Check for expected exports based on the package
-        // This is a basic test that should be customized for each package
-        expect(pocketbase).not.toBe(null);
-        expect(pocketbase).not.toBe(undefined);
+    
+    test("clear should reset token and model", () => {
+      // First save some data
+      authStore.save("auth_token_123", { id: "user123" });
+      
+      // Then clear it
+      authStore.clear();
+      
+      expect(authStore.token).toBe("");
+      expect(authStore.model).toBeNull();
+      expect(authStore.isValid()).toBe(false);
     });
+    
+    test("onChange should register a listener", () => {
+      const listener = mock.fn();
+      
+      authStore.onChange(listener);
+      
+      // Save should trigger the listener
+      authStore.save("auth_token_123", { id: "user123" });
+      
+      expect(listener).toHaveBeenCalledWith("auth_token_123", expect.any(Record));
+    });
+    
+    test("removeChangeListener should unregister a listener", () => {
+      const listener = mock.fn();
+      
+      authStore.onChange(listener);
+      authStore.removeChangeListener(listener);
+      
+      // Save should not trigger the listener
+      authStore.save("auth_token_123", { id: "user123" });
+      
+      expect(listener).not.toHaveBeenCalled();
+    });
+  });
+  
+  describe("Client Class", () => {
+    let client;
+    
+    beforeEach(() => {
+      client = new Client("http://localhost:8090");
+    });
+    
+    test("should initialize with the provided URL", () => {
+      expect(client.url).toBe("http://localhost:8090");
+      expect(client.authStore).toBeInstanceOf(AuthStore);
+      expect(client.subscriptions).toBeInstanceOf(Map);
+    });
+    
+    test("authWithPassword should authenticate a user", async () => {
+      const consoleSpy = mock.spyOn(console, "log");
+      
+      const authData = await client.authWithPassword("users", "user@example.com", "password123");
+      
+      expect(authData.token).toBeDefined();
+      expect(authData.model).toBeInstanceOf(Record);
+      expect(authData.model.email).toBe("user@example.com");
+      
+      // Check that the auth store was updated
+      expect(client.authStore.token).toBe(authData.token);
+      expect(client.authStore.model).toBe(authData.model);
+      
+      // Check that the correct log message was printed
+      expect(consoleSpy).toHaveBeenCalledWith(expect.stringContaining("Authenticating user@example.com"));
+      
+      consoleSpy.mockRestore();
+    });
+    
+    test("authWithOAuth2 should authenticate a user with OAuth2", async () => {
+      const consoleSpy = mock.spyOn(console, "log");
+      
+      const authData = await client.authWithOAuth2("google", "auth_code", "code_verifier", "http://localhost:3000/callback");
+      
+      expect(authData.token).toBeDefined();
+      expect(authData.model).toBeInstanceOf(Record);
+      
+      // Check that the auth store was updated
+      expect(client.authStore.token).toBe(authData.token);
+      expect(client.authStore.model).toBe(authData.model);
+      
+      // Check that the correct log message was printed
+      expect(consoleSpy).toHaveBeenCalledWith(expect.stringContaining("Authenticating with OAuth2 provider: google"));
+      
+      consoleSpy.mockRestore();
+    });
+    
+    test("refreshAuth should refresh the auth token", async () => {
+      // First authenticate
+      await client.authWithPassword("users", "user@example.com", "password123");
+      const originalToken = client.authStore.token;
+      
+      // Then refresh
+      const refreshData = await client.refreshAuth();
+      
+      expect(refreshData.token).toBeDefined();
+      expect(refreshData.token).not.toBe(originalToken);
+      expect(client.authStore.token).toBe(refreshData.token);
+    });
+    
+    test("refreshAuth should throw if not authenticated", async () => {
+      await expect(client.refreshAuth()).rejects.toThrow("Not authenticated");
+    });
+    
+    test("logout should clear the auth store", async () => {
+      // First authenticate
+      await client.authWithPassword("users", "user@example.com", "password123");
+      
+      // Then logout
+      client.logout();
+      
+      expect(client.authStore.token).toBe("");
+      expect(client.authStore.model).toBeNull();
+      expect(client.authStore.isValid()).toBe(false);
+    });
+    
+    test("getRecord should retrieve a record", async () => {
+      const record = await client.getRecord("posts", "post123");
+      
+      expect(record).toBeInstanceOf(Record);
+      expect(record.id).toBe("post123");
+    });
+    
+    test("getRecordList should retrieve a list of records", async () => {
+      const result = await client.getRecordList("posts", 1, 20);
+      
+      expect(result.page).toBe(1);
+      expect(result.perPage).toBe(20);
+      expect(result.totalItems).toBeGreaterThan(0);
+      expect(result.items).toBeInstanceOf(Array);
+      expect(result.items[0]).toBeInstanceOf(Record);
+    });
+    
+    test("createRecord should create a new record", async () => {
+      const data = {
+        title: "New Post",
+        content: "This is a new post"
+      };
+      
+      const record = await client.createRecord("posts", data);
+      
+      expect(record).toBeInstanceOf(Record);
+      expect(record.id).toBeDefined();
+      expect(record.title).toBe("New Post");
+      expect(record.content).toBe("This is a new post");
+      expect(record.created).toBeDefined();
+      expect(record.updated).toBeDefined();
+    });
+    
+    test("updateRecord should update an existing record", async () => {
+      const data = {
+        title: "Updated Post",
+        content: "This post has been updated"
+      };
+      
+      const record = await client.updateRecord("posts", "post123", data);
+      
+      expect(record).toBeInstanceOf(Record);
+      expect(record.id).toBe("post123");
+      expect(record.title).toBe("Updated Post");
+      expect(record.content).toBe("This post has been updated");
+    });
+    
+    test("deleteRecord should delete a record", async () => {
+      const result = await client.deleteRecord("posts", "post123");
+      
+      expect(result).toBe(true);
+    });
+    
+    test("uploadFile should upload a file", async () => {
+      const fileData = new Blob(["test file content"], { type: "text/plain" });
+      
+      const record = await client.uploadFile("posts", "post123", "attachment", fileData, "test.txt");
+      
+      expect(record).toBeInstanceOf(Record);
+      expect(record.id).toBe("post123");
+      expect(record.attachment).toBe("test.txt");
+    });
+    
+    test("getFileUrl should generate a file URL", () => {
+      const record = new Record({
+        id: "post123",
+        collectionId: "posts",
+        attachment: "test.txt"
+      });
+      
+      const url = client.getFileUrl(record, "test.txt");
+      
+      expect(url).toBe("http://localhost:8090/api/files/posts/post123/test.txt");
+      
+      // With query parameters
+      const urlWithParams = client.getFileUrl(record, "test.txt", { download: 1 });
+      
+      expect(urlWithParams).toBe("http://localhost:8090/api/files/posts/post123/test.txt?download=1");
+    });
+    
+    test("getFileUrl should throw if record or filename is missing", () => {
+      expect(() => client.getFileUrl(null, "test.txt")).toThrow("Record and filename are required");
+      expect(() => client.getFileUrl({}, "test.txt")).toThrow("Record and filename are required");
+      expect(() => client.getFileUrl({ id: "post123" }, "")).toThrow("Record and filename are required");
+    });
+    
+    test("subscribe should add a realtime subscription", () => {
+      const callback = () => {};
+      
+      client.subscribe("posts", callback);
+      
+      expect(client.subscriptions.has("posts")).toBe(true);
+      const subscription = client.subscriptions.get("posts");
+      expect(subscription).toBeInstanceOf(RealtimeSubscription);
+      expect(subscription.callbacks).toContain(callback);
+    });
+    
+    test("unsubscribe should remove a realtime subscription", () => {
+      const callback1 = () => {};
+      const callback2 = () => {};
+      
+      // Add two callbacks
+      client.subscribe("posts", callback1);
+      client.subscribe("posts", callback2);
+      
+      // Remove one callback
+      client.unsubscribe("posts", callback1);
+      
+      // Check that the subscription still exists with one callback
+      expect(client.subscriptions.has("posts")).toBe(true);
+      const subscription = client.subscriptions.get("posts");
+      expect(subscription.callbacks).not.toContain(callback1);
+      expect(subscription.callbacks).toContain(callback2);
+      
+      // Remove all callbacks
+      client.unsubscribe("posts");
+      
+      // Check that the subscription was removed
+      expect(client.subscriptions.has("posts")).toBe(false);
+    });
+  });
+  
+  describe("RealtimeSubscription Class", () => {
+    let client;
+    let subscription;
+    
+    beforeEach(() => {
+      client = new Client("http://localhost:8090");
+      subscription = new RealtimeSubscription(client, "posts");
+    });
+    
+    test("should initialize with the provided client and collection", () => {
+      expect(subscription.client).toBe(client);
+      expect(subscription.collection).toBe("posts");
+      expect(subscription.callbacks).toEqual([]);
+      expect(subscription.isActive).toBe(false);
+      expect(subscription._connection).toBeNull();
+    });
+    
+    test("subscribe should add a callback", () => {
+      const callback = () => {};
+      const connectSpy = mock.spyOn(subscription, "_connect");
+      
+      subscription.subscribe(callback);
+      
+      expect(subscription.callbacks).toContain(callback);
+      expect(connectSpy).toHaveBeenCalled();
+      
+      connectSpy.mockRestore();
+    });
+    
+    test("subscribe should not add non-function callbacks", () => {
+      subscription.subscribe("not a function");
+      
+      expect(subscription.callbacks).toEqual([]);
+    });
+    
+    test("unsubscribe should remove a specific callback", () => {
+      const callback1 = () => {};
+      const callback2 = () => {};
+      const disconnectSpy = mock.spyOn(subscription, "_disconnect");
+      
+      // Add callbacks
+      subscription.subscribe(callback1);
+      subscription.subscribe(callback2);
+      
+      // Remove one callback
+      subscription.unsubscribe(callback1);
+      
+      expect(subscription.callbacks).not.toContain(callback1);
+      expect(subscription.callbacks).toContain(callback2);
+      expect(disconnectSpy).not.toHaveBeenCalled();
+      
+      disconnectSpy.mockRestore();
+    });
+    
+    test("unsubscribe should remove all callbacks if no callback is provided", () => {
+      const callback1 = () => {};
+      const callback2 = () => {};
+      const disconnectSpy = mock.spyOn(subscription, "_disconnect");
+      
+      // Add callbacks
+      subscription.subscribe(callback1);
+      subscription.subscribe(callback2);
+      
+      // Remove all callbacks
+      subscription.unsubscribe();
+      
+      expect(subscription.callbacks).toEqual([]);
+      expect(disconnectSpy).toHaveBeenCalled();
+      
+      disconnectSpy.mockRestore();
+    });
+    
+    test("_connect should establish a connection if not already active", () => {
+      const consoleSpy = mock.spyOn(console, "log");
+      const setTimeoutSpy = mock.spyOn(global, "setTimeout");
+      
+      subscription._connect();
+      
+      expect(subscription.isActive).toBe(true);
+      expect(consoleSpy).toHaveBeenCalledWith(expect.stringContaining("Connecting to realtime API"));
+      expect(setTimeoutSpy).toHaveBeenCalled();
+      
+      // Calling again should do nothing
+      consoleSpy.mockClear();
+      subscription._connect();
+      
+      expect(consoleSpy).not.toHaveBeenCalled();
+      
+      consoleSpy.mockRestore();
+      setTimeoutSpy.mockRestore();
+    });
+    
+    test("_disconnect should close the connection if active", () => {
+      const consoleSpy = mock.spyOn(console, "log");
+      const clearIntervalSpy = mock.spyOn(global, "clearInterval");
+      
+      // First connect
+      subscription._connect();
+      subscription._connection = setInterval(() => {}, 1000);
+      
+      // Then disconnect
+      subscription._disconnect();
+      
+      expect(subscription.isActive).toBe(false);
+      expect(subscription._connection).toBeNull();
+      expect(consoleSpy).toHaveBeenCalledWith(expect.stringContaining("Disconnecting from realtime API"));
+      expect(clearIntervalSpy).toHaveBeenCalled();
+      
+      // Calling again should do nothing
+      consoleSpy.mockClear();
+      clearIntervalSpy.mockClear();
+      subscription._disconnect();
+      
+      expect(consoleSpy).not.toHaveBeenCalled();
+      expect(clearIntervalSpy).not.toHaveBeenCalled();
+      
+      consoleSpy.mockRestore();
+      clearIntervalSpy.mockRestore();
+    });
+  });
+  
+  describe("Admin Class", () => {
+    let client;
+    let admin;
+    
+    beforeEach(async () => {
+      client = new Client("http://localhost:8090");
+      // Authenticate as admin
+      await client.authWithPassword("users", "admin@example.com", "adminpassword123");
+      admin = new Admin(client);
+    });
+    
+    test("should initialize with the provided client", () => {
+      expect(admin.client).toBe(client);
+    });
+    
+    test("createCollection should create a new collection", async () => {
+      const data = {
+        name: "products",
+        schema: [
+          { name: "name", type: "text", required: true },
+          { name: "price", type: "number", required: true }
+        ]
+      };
+      
+      const collection = await admin.createCollection(data);
+      
+      expect(collection).toBeInstanceOf(Record);
+      expect(collection.name).toBe("products");
+      expect(collection.schema).toEqual(data.schema);
+    });
+    
+    test("createCollection should throw if not authenticated", async () => {
+      // Logout
+      client.logout();
+      
+      await expect(admin.createCollection({ name: "products" })).rejects.toThrow("Authentication required");
+    });
+    
+    test("updateCollection should update a collection", async () => {
+      const data = {
+        name: "updated_products",
+        schema: [
+          { name: "name", type: "text", required: true },
+          { name: "price", type: "number", required: true },
+          { name: "description", type: "text", required: false }
+        ]
+      };
+      
+      const collection = await admin.updateCollection("col_123", data);
+      
+      expect(collection).toBeInstanceOf(Record);
+      expect(collection.id).toBe("col_123");
+      expect(collection.name).toBe("updated_products");
+      expect(collection.schema).toEqual(data.schema);
+    });
+    
+    test("deleteCollection should delete a collection", async () => {
+      const result = await admin.deleteCollection("col_123");
+      
+      expect(result).toBe(true);
+    });
+    
+    test("createField should add a field to a collection", async () => {
+      const data = {
+        name: "category",
+        type: "text",
+        required: false
+      };
+      
+      const field = await admin.createField("col_123", data);
+      
+      expect(field).toBeInstanceOf(Record);
+      expect(field.name).toBe("category");
+      expect(field.type).toBe("text");
+      expect(field.required).toBe(false);
+    });
+    
+    test("updateField should update a field", async () => {
+      const data = {
+        name: "category",
+        type: "select",
+        required: true,
+        options: ["electronics", "clothing", "food"]
+      };
+      
+      const field = await admin.updateField("col_123", "field_456", data);
+      
+      expect(field).toBeInstanceOf(Record);
+      expect(field.id).toBe("field_456");
+      expect(field.name).toBe("category");
+      expect(field.type).toBe("select");
+      expect(field.required).toBe(true);
+      expect(field.options).toEqual(["electronics", "clothing", "food"]);
+    });
+    
+    test("deleteField should delete a field", async () => {
+      const result = await admin.deleteField("col_123", "field_456");
+      
+      expect(result).toBe(true);
+    });
+    
+    test("listUsers should return a list of users", async () => {
+      const result = await admin.listUsers(1, 10);
+      
+      expect(result.page).toBe(1);
+      expect(result.perPage).toBe(10);
+      expect(result.totalItems).toBeGreaterThan(0);
+      expect(result.items).toBeInstanceOf(Array);
+      expect(result.items[0]).toBeInstanceOf(Record);
+      expect(result.items[0].email).toBeDefined();
+    });
+    
+    test("createUser should create a new user", async () => {
+      const data = {
+        email: "newuser@example.com",
+        username: "newuser",
+        password: "password123",
+        passwordConfirm: "password123",
+        verified: true,
+        role: "user"
+      };
+      
+      const user = await admin.createUser(data);
+      
+      expect(user).toBeInstanceOf(Record);
+      expect(user.email).toBe("newuser@example.com");
+      expect(user.username).toBe("newuser");
+      expect(user.verified).toBe(true);
+      expect(user.role).toBe("user");
+    });
+    
+    test("updateUser should update a user", async () => {
+      const data = {
+        email: "updated@example.com",
+        verified: false,
+        role: "admin"
+      };
+      
+      const user = await admin.updateUser("user_123", data);
+      
+      expect(user).toBeInstanceOf(Record);
+      expect(user.id).toBe("user_123");
+      expect(user.email).toBe("updated@example.com");
+      expect(user.verified).toBe(false);
+      expect(user.role).toBe("admin");
+    });
+    
+    test("deleteUser should delete a user", async () => {
+      const result = await admin.deleteUser("user_123");
+      
+      expect(result).toBe(true);
+    });
+  });
+  
+  describe("createClient function", () => {
+    test("should create a new Client instance", () => {
+      const client = pocketbase.createClient("http://localhost:8090");
+      
+      expect(client).toBeInstanceOf(Client);
+      expect(client.url).toBe("http://localhost:8090");
+    });
+    
+    test("should throw if URL is not provided", () => {
+      expect(() => pocketbase.createClient()).toThrow("URL is required");
+      expect(() => pocketbase.createClient("")).toThrow("URL is required");
+      expect(() => pocketbase.createClient(null)).toThrow("URL is required");
+    });
+  });
 });
-
-// Add more specific test cases below
-// Example:
-// test('specific function works as expected', () => {
-//     const result = pocketbase.someFunction();
-//     expect(result).toBe(expectedValue);
-// });

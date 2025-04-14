@@ -1,0 +1,234 @@
+/**
+ * Basic PocketBase Package Example
+ * 
+ * This example demonstrates the basic functionality of the PocketBase package,
+ * including authentication, CRUD operations, and realtime subscriptions.
+ */
+
+import { pocketbase } from "../src/index.smash";
+
+// Main async function to run all examples
+async function runExamples() {
+  console.log("=== PocketBase Package Basic Examples ===\n");
+  
+  // Create a client
+  console.log("Creating PocketBase client...");
+  const pb = pocketbase.createClient("http://127.0.0.1:8090");
+  console.log("Client created");
+  console.log("---");
+  
+  // Example 1: Authentication
+  console.log("=== Authentication ===");
+  
+  try {
+    console.log("Authenticating with email and password...");
+    const authData = await pb.authWithPassword("users", "user@example.com", "password123");
+    
+    console.log("Authentication successful!");
+    console.log(`User ID: ${authData.model.id}`);
+    console.log(`Email: ${authData.model.email}`);
+    console.log(`Auth token: ${authData.token.substring(0, 10)}...`);
+    
+    // Check if authenticated
+    console.log(`Is authenticated: ${pb.authStore.isValid()}`);
+    
+    // Get the authenticated user model
+    console.log("Authenticated user:", pb.authStore.model);
+  } catch (error) {
+    console.error("Authentication failed:", error);
+  }
+  console.log("---");
+  
+  // Example 2: Creating Records
+  console.log("=== Creating Records ===");
+  
+  try {
+    console.log("Creating a task record...");
+    const taskData = {
+      title: "Learn SmashLang",
+      description: "Master the SmashLang programming language",
+      status: "in-progress",
+      priority: "high",
+      dueDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString() // 7 days from now
+    };
+    
+    const task = await pb.createRecord("tasks", taskData);
+    
+    console.log("Task created successfully!");
+    console.log(`Task ID: ${task.id}`);
+    console.log(`Title: ${task.title}`);
+    console.log(`Status: ${task.status}`);
+    console.log(`Created: ${task.created}`);
+    
+    // Store the task ID for later examples
+    const taskId = task.id;
+    
+    // Create another task
+    console.log("\nCreating another task record...");
+    const anotherTaskData = {
+      title: "Build a SmashLang App",
+      description: "Create a full application using SmashLang",
+      status: "not-started",
+      priority: "medium",
+      dueDate: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString() // 14 days from now
+    };
+    
+    const anotherTask = await pb.createRecord("tasks", anotherTaskData);
+    
+    console.log("Second task created successfully!");
+    console.log(`Task ID: ${anotherTask.id}`);
+    console.log(`Title: ${anotherTask.title}`);
+  } catch (error) {
+    console.error("Failed to create records:", error);
+  }
+  console.log("---");
+  
+  // Example 3: Reading Records
+  console.log("=== Reading Records ===");
+  
+  try {
+    // Get a list of tasks
+    console.log("Getting a list of tasks...");
+    const taskList = await pb.getRecordList("tasks", 1, 10);
+    
+    console.log(`Found ${taskList.totalItems} tasks (showing page ${taskList.page} of ${taskList.totalPages}):`);
+    
+    taskList.items.forEach((task, index) => {
+      console.log(`${index + 1}. ${task.title} (${task.status})`);
+    });
+    
+    // Get a single task
+    if (taskList.items.length > 0) {
+      const firstTaskId = taskList.items[0].id;
+      
+      console.log(`\nGetting details for task ${firstTaskId}...`);
+      const taskDetails = await pb.getRecord("tasks", firstTaskId);
+      
+      console.log("Task details:");
+      console.log(`- Title: ${taskDetails.title}`);
+      console.log(`- Description: ${taskDetails.description}`);
+      console.log(`- Status: ${taskDetails.status}`);
+      console.log(`- Priority: ${taskDetails.priority}`);
+      console.log(`- Due Date: ${taskDetails.dueDate}`);
+      console.log(`- Created: ${taskDetails.created}`);
+      console.log(`- Updated: ${taskDetails.updated}`);
+    }
+  } catch (error) {
+    console.error("Failed to read records:", error);
+  }
+  console.log("---");
+  
+  // Example 4: Updating Records
+  console.log("=== Updating Records ===");
+  
+  try {
+    // Get the first task
+    const taskList = await pb.getRecordList("tasks", 1, 1);
+    
+    if (taskList.items.length > 0) {
+      const task = taskList.items[0];
+      
+      console.log(`Updating task ${task.id}...`);
+      console.log(`Current status: ${task.status}`);
+      
+      // Update the task
+      const updatedData = {
+        status: task.status === "in-progress" ? "completed" : "in-progress",
+        updated: new Date().toISOString()
+      };
+      
+      const updatedTask = await pb.updateRecord("tasks", task.id, updatedData);
+      
+      console.log("Task updated successfully!");
+      console.log(`New status: ${updatedTask.status}`);
+      console.log(`Updated: ${updatedTask.updated}`);
+    } else {
+      console.log("No tasks found to update");
+    }
+  } catch (error) {
+    console.error("Failed to update record:", error);
+  }
+  console.log("---");
+  
+  // Example 5: Deleting Records
+  console.log("=== Deleting Records ===");
+  
+  try {
+    // Get the last task
+    const taskList = await pb.getRecordList("tasks", 1, 10);
+    
+    if (taskList.items.length > 0) {
+      const lastTask = taskList.items[taskList.items.length - 1];
+      
+      console.log(`Deleting task ${lastTask.id} (${lastTask.title})...`);
+      
+      // Delete the task
+      const result = await pb.deleteRecord("tasks", lastTask.id);
+      
+      if (result) {
+        console.log("Task deleted successfully!");
+      } else {
+        console.log("Failed to delete task");
+      }
+      
+      // Verify deletion
+      console.log("\nVerifying deletion...");
+      const newTaskList = await pb.getRecordList("tasks", 1, 10);
+      console.log(`Now have ${newTaskList.totalItems} tasks (previously had ${taskList.totalItems})`);
+    } else {
+      console.log("No tasks found to delete");
+    }
+  } catch (error) {
+    console.error("Failed to delete record:", error);
+  }
+  console.log("---");
+  
+  // Example 6: Realtime Subscriptions
+  console.log("=== Realtime Subscriptions ===");
+  
+  console.log("Subscribing to task changes...");
+  
+  // Subscribe to task changes
+  pb.subscribe("tasks", (event) => {
+    console.log(`Realtime event received: ${event.action}`);
+    console.log(`Affected record: ${event.record.id} (${event.record.title})`);
+    
+    if (event.action === "create") {
+      console.log("A new task was created!");
+    } else if (event.action === "update") {
+      console.log("A task was updated!");
+    } else if (event.action === "delete") {
+      console.log("A task was deleted!");
+    }
+  });
+  
+  console.log("Subscription active. Waiting for events...");
+  console.log("(Events will be simulated for this example)");
+  
+  // Wait for a few seconds to receive some events
+  await new Promise(resolve => setTimeout(resolve, 10000));
+  
+  // Unsubscribe
+  console.log("\nUnsubscribing from task changes...");
+  pb.unsubscribe("tasks");
+  console.log("Unsubscribed");
+  console.log("---");
+  
+  // Example 7: Logging Out
+  console.log("=== Logging Out ===");
+  
+  console.log("Logging out...");
+  pb.logout();
+  
+  console.log(`Is authenticated: ${pb.authStore.isValid()}`);
+  console.log(`Auth token: ${pb.authStore.token}`);
+  console.log(`User model: ${pb.authStore.model}`);
+  console.log("---");
+  
+  console.log("All examples completed!");
+}
+
+// Run the examples
+runExamples().catch(error => {
+  console.error("Error running examples:", error);
+});

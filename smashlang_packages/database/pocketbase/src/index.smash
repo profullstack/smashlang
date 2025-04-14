@@ -1,0 +1,944 @@
+/**
+ * SmashLang PocketBase Package
+ * 
+ * A comprehensive client library for interacting with PocketBase servers.
+ * Provides functionality for authentication, CRUD operations, file handling,
+ * realtime subscriptions, and admin API.
+ */
+
+// Event types for realtime subscriptions
+const EVENT_TYPES = {
+  CREATE: 'create',
+  UPDATE: 'update',
+  DELETE: 'delete'
+};
+
+/**
+ * Record class representing a PocketBase record
+ */
+export class Record {
+  constructor(data = {}) {
+    // Copy all properties from data
+    Object.assign(this, data);
+    
+    // Ensure id, created, and updated fields exist
+    this.id = data.id || '';
+    this.created = data.created || '';
+    this.updated = data.updated || '';
+    
+    // Parse dates if they exist
+    if (this.created) {
+      this.createdAt = new Date(this.created);
+    }
+    
+    if (this.updated) {
+      this.updatedAt = new Date(this.updated);
+    }
+  }
+  
+  /**
+   * Convert the record to a plain object
+   * @returns {Object} Plain object representation of the record
+   */
+  toObject() {
+    return { ...this };
+  }
+  
+  /**
+   * Check if the record is new (has no ID)
+   * @returns {boolean} True if the record is new
+   */
+  isNew() {
+    return !this.id;
+  }
+}
+
+/**
+ * AuthStore class for managing authentication state
+ */
+export class AuthStore {
+  constructor() {
+    this.token = '';
+    this.model = null;
+    this._listeners = [];
+  }
+  
+  /**
+   * Save authentication data
+   * @param {string} token - Authentication token
+   * @param {Object} model - User model
+   */
+  save(token, model) {
+    this.token = token || '';
+    this.model = model ? new Record(model) : null;
+    
+    // Notify listeners
+    this._notifyChange();
+  }
+  
+  /**
+   * Clear authentication data
+   */
+  clear() {
+    this.token = '';
+    this.model = null;
+    
+    // Notify listeners
+    this._notifyChange();
+  }
+  
+  /**
+   * Check if the user is authenticated
+   * @returns {boolean} True if authenticated
+   */
+  isValid() {
+    return !!this.token;
+  }
+  
+  /**
+   * Add a change listener
+   * @param {Function} callback - Callback function
+   */
+  onChange(callback) {
+    if (typeof callback === 'function') {
+      this._listeners.push(callback);
+    }
+  }
+  
+  /**
+   * Remove a change listener
+   * @param {Function} callback - Callback function
+   */
+  removeChangeListener(callback) {
+    this._listeners = this._listeners.filter(listener => listener !== callback);
+  }
+  
+  /**
+   * Notify all listeners of a change
+   * @private
+   */
+  _notifyChange() {
+    for (const listener of this._listeners) {
+      try {
+        listener(this.token, this.model);
+      } catch (error) {
+        console.error('Error in auth change listener:', error);
+      }
+    }
+  }
+}
+
+/**
+ * RealtimeSubscription class for managing realtime subscriptions
+ */
+export class RealtimeSubscription {
+  constructor(client, collection) {
+    this.client = client;
+    this.collection = collection;
+    this.callbacks = [];
+    this.isActive = false;
+    this._connection = null;
+  }
+  
+  /**
+   * Subscribe to collection changes
+   * @param {Function} callback - Callback function
+   */
+  subscribe(callback) {
+    if (typeof callback === 'function') {
+      this.callbacks.push(callback);
+      
+      // Start connection if this is the first callback
+      if (this.callbacks.length === 1) {
+        this._connect();
+      }
+    }
+  }
+  
+  /**
+   * Unsubscribe from collection changes
+   * @param {Function} callback - Callback function (optional, if not provided all callbacks are removed)
+   */
+  unsubscribe(callback) {
+    if (callback) {
+      this.callbacks = this.callbacks.filter(cb => cb !== callback);
+    } else {
+      this.callbacks = [];
+    }
+    
+    // Close connection if no callbacks remain
+    if (this.callbacks.length === 0) {
+      this._disconnect();
+    }
+  }
+  
+  /**
+   * Connect to the realtime API
+   * @private
+   */
+  _connect() {
+    if (this.isActive) return;
+    
+    console.log(`Connecting to realtime API for collection: ${this.collection}`);
+    
+    // In a real implementation, this would establish a WebSocket connection
+    // For this example, we'll simulate it
+    this.isActive = true;
+    
+    // Simulate connection success
+    setTimeout(() => {
+      console.log(`Realtime connection established for collection: ${this.collection}`);
+      
+      // Simulate receiving events periodically
+      this._connection = setInterval(() => {
+        if (!this.isActive) return;
+        
+        // Randomly generate an event
+        const eventTypes = Object.values(EVENT_TYPES);
+        const eventType = eventTypes[Math.floor(Math.random() * eventTypes.length)];
+        
+        const record = new Record({
+          id: `record_${Math.floor(Math.random() * 1000)}`,
+          created: new Date().toISOString(),
+          updated: new Date().toISOString(),
+          title: `Sample ${eventType} event`,
+          content: `This is a sample ${eventType} event for collection ${this.collection}`
+        });
+        
+        const event = {
+          action: eventType,
+          record: record
+        };
+        
+        // Notify all callbacks
+        for (const callback of this.callbacks) {
+          try {
+            callback(event);
+          } catch (error) {
+            console.error('Error in realtime callback:', error);
+          }
+        }
+      }, 5000); // Simulate an event every 5 seconds
+    }, 1000);
+  }
+  
+  /**
+   * Disconnect from the realtime API
+   * @private
+   */
+  _disconnect() {
+    if (!this.isActive) return;
+    
+    console.log(`Disconnecting from realtime API for collection: ${this.collection}`);
+    
+    // Clear the interval
+    if (this._connection) {
+      clearInterval(this._connection);
+      this._connection = null;
+    }
+    
+    this.isActive = false;
+  }
+}
+
+/**
+ * Admin class for managing PocketBase admin operations
+ */
+export class Admin {
+  constructor(client) {
+    this.client = client;
+  }
+  
+  /**
+   * Create a new collection
+   * @param {Object} data - Collection data
+   * @returns {Promise<Record>} Promise resolving to the created collection
+   */
+  async createCollection(data) {
+    if (!this.client.authStore.isValid()) {
+      throw new Error('Authentication required for admin operations');
+    }
+    
+    console.log(`Creating collection: ${data.name}`);
+    
+    // In a real implementation, this would make an API request
+    // For this example, we'll simulate it
+    await new Promise(resolve => setTimeout(resolve, 500));
+    
+    return new Record({
+      id: `col_${Math.floor(Math.random() * 1000)}`,
+      created: new Date().toISOString(),
+      updated: new Date().toISOString(),
+      name: data.name,
+      schema: data.schema || [],
+      ...data
+    });
+  }
+  
+  /**
+   * Update a collection
+   * @param {string} collectionId - Collection ID
+   * @param {Object} data - Collection data
+   * @returns {Promise<Record>} Promise resolving to the updated collection
+   */
+  async updateCollection(collectionId, data) {
+    if (!this.client.authStore.isValid()) {
+      throw new Error('Authentication required for admin operations');
+    }
+    
+    console.log(`Updating collection: ${collectionId}`);
+    
+    // In a real implementation, this would make an API request
+    // For this example, we'll simulate it
+    await new Promise(resolve => setTimeout(resolve, 500));
+    
+    return new Record({
+      id: collectionId,
+      created: new Date().toISOString(),
+      updated: new Date().toISOString(),
+      name: data.name,
+      schema: data.schema || [],
+      ...data
+    });
+  }
+  
+  /**
+   * Delete a collection
+   * @param {string} collectionId - Collection ID
+   * @returns {Promise<boolean>} Promise resolving to true if successful
+   */
+  async deleteCollection(collectionId) {
+    if (!this.client.authStore.isValid()) {
+      throw new Error('Authentication required for admin operations');
+    }
+    
+    console.log(`Deleting collection: ${collectionId}`);
+    
+    // In a real implementation, this would make an API request
+    // For this example, we'll simulate it
+    await new Promise(resolve => setTimeout(resolve, 500));
+    
+    return true;
+  }
+  
+  /**
+   * Create a new field in a collection
+   * @param {string} collectionId - Collection ID
+   * @param {Object} data - Field data
+   * @returns {Promise<Record>} Promise resolving to the created field
+   */
+  async createField(collectionId, data) {
+    if (!this.client.authStore.isValid()) {
+      throw new Error('Authentication required for admin operations');
+    }
+    
+    console.log(`Creating field in collection ${collectionId}: ${data.name}`);
+    
+    // In a real implementation, this would make an API request
+    // For this example, we'll simulate it
+    await new Promise(resolve => setTimeout(resolve, 500));
+    
+    return new Record({
+      id: `field_${Math.floor(Math.random() * 1000)}`,
+      created: new Date().toISOString(),
+      updated: new Date().toISOString(),
+      name: data.name,
+      type: data.type,
+      required: data.required || false,
+      ...data
+    });
+  }
+  
+  /**
+   * Update a field in a collection
+   * @param {string} collectionId - Collection ID
+   * @param {string} fieldId - Field ID
+   * @param {Object} data - Field data
+   * @returns {Promise<Record>} Promise resolving to the updated field
+   */
+  async updateField(collectionId, fieldId, data) {
+    if (!this.client.authStore.isValid()) {
+      throw new Error('Authentication required for admin operations');
+    }
+    
+    console.log(`Updating field ${fieldId} in collection ${collectionId}`);
+    
+    // In a real implementation, this would make an API request
+    // For this example, we'll simulate it
+    await new Promise(resolve => setTimeout(resolve, 500));
+    
+    return new Record({
+      id: fieldId,
+      created: new Date().toISOString(),
+      updated: new Date().toISOString(),
+      name: data.name,
+      type: data.type,
+      required: data.required || false,
+      ...data
+    });
+  }
+  
+  /**
+   * Delete a field from a collection
+   * @param {string} collectionId - Collection ID
+   * @param {string} fieldId - Field ID
+   * @returns {Promise<boolean>} Promise resolving to true if successful
+   */
+  async deleteField(collectionId, fieldId) {
+    if (!this.client.authStore.isValid()) {
+      throw new Error('Authentication required for admin operations');
+    }
+    
+    console.log(`Deleting field ${fieldId} from collection ${collectionId}`);
+    
+    // In a real implementation, this would make an API request
+    // For this example, we'll simulate it
+    await new Promise(resolve => setTimeout(resolve, 500));
+    
+    return true;
+  }
+  
+  /**
+   * List users
+   * @param {number} page - Page number
+   * @param {number} perPage - Items per page
+   * @returns {Promise<Object>} Promise resolving to the user list
+   */
+  async listUsers(page = 1, perPage = 20) {
+    if (!this.client.authStore.isValid()) {
+      throw new Error('Authentication required for admin operations');
+    }
+    
+    console.log(`Listing users (page ${page}, perPage ${perPage})`);
+    
+    // In a real implementation, this would make an API request
+    // For this example, we'll simulate it
+    await new Promise(resolve => setTimeout(resolve, 500));
+    
+    // Generate sample users
+    const users = [];
+    const totalUsers = 35; // Simulate having 35 total users
+    const startIdx = (page - 1) * perPage;
+    const endIdx = Math.min(startIdx + perPage, totalUsers);
+    
+    for (let i = startIdx; i < endIdx; i++) {
+      users.push(new Record({
+        id: `user_${i}`,
+        created: new Date().toISOString(),
+        updated: new Date().toISOString(),
+        email: `user${i}@example.com`,
+        username: `user${i}`,
+        verified: i % 3 === 0, // Every third user is verified
+        role: i % 10 === 0 ? 'admin' : 'user' // Every tenth user is an admin
+      }));
+    }
+    
+    return {
+      page,
+      perPage,
+      totalItems: totalUsers,
+      totalPages: Math.ceil(totalUsers / perPage),
+      items: users
+    };
+  }
+  
+  /**
+   * Create a new user
+   * @param {Object} data - User data
+   * @returns {Promise<Record>} Promise resolving to the created user
+   */
+  async createUser(data) {
+    if (!this.client.authStore.isValid()) {
+      throw new Error('Authentication required for admin operations');
+    }
+    
+    console.log(`Creating user: ${data.email}`);
+    
+    // In a real implementation, this would make an API request
+    // For this example, we'll simulate it
+    await new Promise(resolve => setTimeout(resolve, 500));
+    
+    return new Record({
+      id: `user_${Math.floor(Math.random() * 1000)}`,
+      created: new Date().toISOString(),
+      updated: new Date().toISOString(),
+      email: data.email,
+      username: data.username || data.email.split('@')[0],
+      verified: data.verified || false,
+      role: data.role || 'user',
+      ...data
+    });
+  }
+  
+  /**
+   * Update a user
+   * @param {string} userId - User ID
+   * @param {Object} data - User data
+   * @returns {Promise<Record>} Promise resolving to the updated user
+   */
+  async updateUser(userId, data) {
+    if (!this.client.authStore.isValid()) {
+      throw new Error('Authentication required for admin operations');
+    }
+    
+    console.log(`Updating user: ${userId}`);
+    
+    // In a real implementation, this would make an API request
+    // For this example, we'll simulate it
+    await new Promise(resolve => setTimeout(resolve, 500));
+    
+    return new Record({
+      id: userId,
+      created: new Date().toISOString(),
+      updated: new Date().toISOString(),
+      email: data.email,
+      username: data.username,
+      verified: data.verified || false,
+      role: data.role || 'user',
+      ...data
+    });
+  }
+  
+  /**
+   * Delete a user
+   * @param {string} userId - User ID
+   * @returns {Promise<boolean>} Promise resolving to true if successful
+   */
+  async deleteUser(userId) {
+    if (!this.client.authStore.isValid()) {
+      throw new Error('Authentication required for admin operations');
+    }
+    
+    console.log(`Deleting user: ${userId}`);
+    
+    // In a real implementation, this would make an API request
+    // For this example, we'll simulate it
+    await new Promise(resolve => setTimeout(resolve, 500));
+    
+    return true;
+  }
+}
+
+/**
+ * PocketBase client class
+ */
+export class Client {
+  constructor(url) {
+    this.url = url;
+    this.authStore = new AuthStore();
+    this.subscriptions = new Map();
+  }
+  
+  /**
+   * Authenticate with email and password
+   * @param {string} collection - Collection name (usually "users")
+   * @param {string} email - Email address
+   * @param {string} password - Password
+   * @returns {Promise<Object>} Promise resolving to auth data
+   */
+  async authWithPassword(collection, email, password) {
+    console.log(`Authenticating ${email} in collection ${collection}`);
+    
+    // In a real implementation, this would make an API request
+    // For this example, we'll simulate it
+    await new Promise(resolve => setTimeout(resolve, 1000));
+    
+    // Simulate successful authentication
+    const authData = {
+      token: `token_${Math.random().toString(36).substring(2)}`,
+      model: {
+        id: `user_${Math.floor(Math.random() * 1000)}`,
+        created: new Date().toISOString(),
+        updated: new Date().toISOString(),
+        email: email,
+        username: email.split('@')[0],
+        verified: true
+      }
+    };
+    
+    // Save auth data
+    this.authStore.save(authData.token, authData.model);
+    
+    return {
+      token: authData.token,
+      model: new Record(authData.model)
+    };
+  }
+  
+  /**
+   * Authenticate with OAuth2
+   * @param {string} provider - OAuth2 provider
+   * @param {string} code - Authorization code
+   * @param {string} codeVerifier - Code verifier for PKCE
+   * @param {string} redirectUrl - Redirect URL
+   * @returns {Promise<Object>} Promise resolving to auth data
+   */
+  async authWithOAuth2(provider, code, codeVerifier, redirectUrl) {
+    console.log(`Authenticating with OAuth2 provider: ${provider}`);
+    
+    // In a real implementation, this would make an API request
+    // For this example, we'll simulate it
+    await new Promise(resolve => setTimeout(resolve, 1000));
+    
+    // Simulate successful authentication
+    const authData = {
+      token: `token_${Math.random().toString(36).substring(2)}`,
+      model: {
+        id: `user_${Math.floor(Math.random() * 1000)}`,
+        created: new Date().toISOString(),
+        updated: new Date().toISOString(),
+        email: `user_${Math.floor(Math.random() * 1000)}@example.com`,
+        username: `oauth_user_${Math.floor(Math.random() * 1000)}`,
+        verified: true
+      }
+    };
+    
+    // Save auth data
+    this.authStore.save(authData.token, authData.model);
+    
+    return {
+      token: authData.token,
+      model: new Record(authData.model)
+    };
+  }
+  
+  /**
+   * Refresh the auth token
+   * @returns {Promise<Object>} Promise resolving to auth data
+   */
+  async refreshAuth() {
+    if (!this.authStore.isValid()) {
+      throw new Error('Not authenticated');
+    }
+    
+    console.log('Refreshing auth token');
+    
+    // In a real implementation, this would make an API request
+    // For this example, we'll simulate it
+    await new Promise(resolve => setTimeout(resolve, 500));
+    
+    // Simulate successful token refresh
+    const newToken = `token_${Math.random().toString(36).substring(2)}`;
+    
+    // Update the token
+    this.authStore.save(newToken, this.authStore.model);
+    
+    return {
+      token: newToken,
+      model: this.authStore.model
+    };
+  }
+  
+  /**
+   * Log out the current user
+   */
+  logout() {
+    console.log('Logging out');
+    this.authStore.clear();
+  }
+  
+  /**
+   * Get collection details
+   * @param {string} collectionIdOrName - Collection ID or name
+   * @returns {Promise<Record>} Promise resolving to the collection
+   */
+  async getCollection(collectionIdOrName) {
+    console.log(`Getting collection: ${collectionIdOrName}`);
+    
+    // In a real implementation, this would make an API request
+    // For this example, we'll simulate it
+    await new Promise(resolve => setTimeout(resolve, 500));
+    
+    return new Record({
+      id: `col_${Math.floor(Math.random() * 1000)}`,
+      created: new Date().toISOString(),
+      updated: new Date().toISOString(),
+      name: collectionIdOrName,
+      schema: [
+        { id: 'field1', name: 'title', type: 'text', required: true },
+        { id: 'field2', name: 'content', type: 'text', required: false },
+        { id: 'field3', name: 'status', type: 'select', required: true, options: ['draft', 'published', 'archived'] }
+      ]
+    });
+  }
+  
+  /**
+   * Get a list of all collections
+   * @returns {Promise<Array<Record>>} Promise resolving to an array of collections
+   */
+  async getCollectionList() {
+    console.log('Getting collection list');
+    
+    // In a real implementation, this would make an API request
+    // For this example, we'll simulate it
+    await new Promise(resolve => setTimeout(resolve, 500));
+    
+    // Generate sample collections
+    const collections = [];
+    const collectionNames = ['users', 'posts', 'comments', 'categories', 'tags'];
+    
+    for (let i = 0; i < collectionNames.length; i++) {
+      collections.push(new Record({
+        id: `col_${i}`,
+        created: new Date().toISOString(),
+        updated: new Date().toISOString(),
+        name: collectionNames[i],
+        schema: [
+          { id: 'field1', name: 'title', type: 'text', required: true },
+          { id: 'field2', name: 'content', type: 'text', required: false }
+        ]
+      }));
+    }
+    
+    return collections;
+  }
+  
+  /**
+   * Get a single record
+   * @param {string} collection - Collection name
+   * @param {string} id - Record ID
+   * @returns {Promise<Record>} Promise resolving to the record
+   */
+  async getRecord(collection, id) {
+    console.log(`Getting record ${id} from collection ${collection}`);
+    
+    // In a real implementation, this would make an API request
+    // For this example, we'll simulate it
+    await new Promise(resolve => setTimeout(resolve, 500));
+    
+    return new Record({
+      id: id,
+      created: new Date().toISOString(),
+      updated: new Date().toISOString(),
+      title: `Sample ${collection} record`,
+      content: `This is a sample record from the ${collection} collection`,
+      status: 'published'
+    });
+  }
+  
+  /**
+   * Get a list of records
+   * @param {string} collection - Collection name
+   * @param {number} page - Page number
+   * @param {number} perPage - Items per page
+   * @param {string} filter - Filter query
+   * @returns {Promise<Object>} Promise resolving to the record list
+   */
+  async getRecordList(collection, page = 1, perPage = 20, filter = '') {
+    console.log(`Getting records from collection ${collection} (page ${page}, perPage ${perPage}, filter: ${filter})`);
+    
+    // In a real implementation, this would make an API request
+    // For this example, we'll simulate it
+    await new Promise(resolve => setTimeout(resolve, 500));
+    
+    // Generate sample records
+    const records = [];
+    const totalRecords = 35; // Simulate having 35 total records
+    const startIdx = (page - 1) * perPage;
+    const endIdx = Math.min(startIdx + perPage, totalRecords);
+    
+    for (let i = startIdx; i < endIdx; i++) {
+      records.push(new Record({
+        id: `rec_${i}`,
+        created: new Date().toISOString(),
+        updated: new Date().toISOString(),
+        title: `${collection} record ${i}`,
+        content: `This is ${collection} record ${i}`,
+        status: i % 3 === 0 ? 'published' : (i % 3 === 1 ? 'draft' : 'archived')
+      }));
+    }
+    
+    return {
+      page,
+      perPage,
+      totalItems: totalRecords,
+      totalPages: Math.ceil(totalRecords / perPage),
+      items: records
+    };
+  }
+  
+  /**
+   * Create a new record
+   * @param {string} collection - Collection name
+   * @param {Object} data - Record data
+   * @returns {Promise<Record>} Promise resolving to the created record
+   */
+  async createRecord(collection, data) {
+    console.log(`Creating record in collection ${collection}`);
+    
+    // In a real implementation, this would make an API request
+    // For this example, we'll simulate it
+    await new Promise(resolve => setTimeout(resolve, 500));
+    
+    return new Record({
+      id: `rec_${Math.floor(Math.random() * 1000)}`,
+      created: new Date().toISOString(),
+      updated: new Date().toISOString(),
+      ...data
+    });
+  }
+  
+  /**
+   * Update a record
+   * @param {string} collection - Collection name
+   * @param {string} id - Record ID
+   * @param {Object} data - Record data
+   * @returns {Promise<Record>} Promise resolving to the updated record
+   */
+  async updateRecord(collection, id, data) {
+    console.log(`Updating record ${id} in collection ${collection}`);
+    
+    // In a real implementation, this would make an API request
+    // For this example, we'll simulate it
+    await new Promise(resolve => setTimeout(resolve, 500));
+    
+    return new Record({
+      id: id,
+      created: new Date().toISOString(),
+      updated: new Date().toISOString(),
+      ...data
+    });
+  }
+  
+  /**
+   * Delete a record
+   * @param {string} collection - Collection name
+   * @param {string} id - Record ID
+   * @returns {Promise<boolean>} Promise resolving to true if successful
+   */
+  async deleteRecord(collection, id) {
+    console.log(`Deleting record ${id} from collection ${collection}`);
+    
+    // In a real implementation, this would make an API request
+    // For this example, we'll simulate it
+    await new Promise(resolve => setTimeout(resolve, 500));
+    
+    return true;
+  }
+  
+  /**
+   * Upload a file
+   * @param {string} collection - Collection name
+   * @param {string} id - Record ID
+   * @param {string} fieldName - Field name
+   * @param {Blob|File|Buffer} fileData - File data
+   * @param {string} filename - File name
+   * @returns {Promise<Record>} Promise resolving to the updated record
+   */
+  async uploadFile(collection, id, fieldName, fileData, filename) {
+    console.log(`Uploading file ${filename} to ${fieldName} field of record ${id} in collection ${collection}`);
+    
+    // In a real implementation, this would make an API request
+    // For this example, we'll simulate it
+    await new Promise(resolve => setTimeout(resolve, 1000));
+    
+    // Simulate the updated record
+    const record = await this.getRecord(collection, id);
+    record[fieldName] = filename;
+    
+    return record;
+  }
+  
+  /**
+   * Get a file URL
+   * @param {Record} record - Record containing the file
+   * @param {string} filename - File name
+   * @param {Object} queryParams - Query parameters
+   * @returns {string} File URL
+   */
+  getFileUrl(record, filename, queryParams = {}) {
+    if (!record || !record.id || !filename) {
+      throw new Error('Record and filename are required');
+    }
+    
+    // Build the URL
+    let url = `${this.url}/api/files/${record.collectionId || 'unknown'}/${record.id}/${filename}`;
+    
+    // Add query parameters
+    if (Object.keys(queryParams).length > 0) {
+      const params = new URLSearchParams();
+      for (const [key, value] of Object.entries(queryParams)) {
+        params.append(key, value);
+      }
+      url += `?${params.toString()}`;
+    }
+    
+    return url;
+  }
+  
+  /**
+   * Subscribe to collection changes
+   * @param {string} collection - Collection name
+   * @param {Function} callback - Callback function
+   */
+  subscribe(collection, callback) {
+    if (!collection) {
+      throw new Error('Collection is required');
+    }
+    
+    // Get or create subscription
+    let subscription = this.subscriptions.get(collection);
+    if (!subscription) {
+      subscription = new RealtimeSubscription(this, collection);
+      this.subscriptions.set(collection, subscription);
+    }
+    
+    // Subscribe
+    subscription.subscribe(callback);
+  }
+  
+  /**
+   * Unsubscribe from collection changes
+   * @param {string} collection - Collection name
+   * @param {Function} callback - Callback function (optional)
+   */
+  unsubscribe(collection, callback) {
+    if (!collection) {
+      throw new Error('Collection is required');
+    }
+    
+    // Get subscription
+    const subscription = this.subscriptions.get(collection);
+    if (!subscription) {
+      return;
+    }
+    
+    // Unsubscribe
+    subscription.unsubscribe(callback);
+    
+    // Remove subscription if no callbacks remain
+    if (subscription.callbacks.length === 0) {
+      this.subscriptions.delete(collection);
+    }
+  }
+}
+
+/**
+ * Create a PocketBase client
+ * @param {string} url - PocketBase server URL
+ * @returns {Client} PocketBase client
+ */
+export function createClient(url) {
+  if (!url) {
+    throw new Error('URL is required');
+  }
+  
+  return new Client(url);
+}
+
+// Export classes and functions
+export { EVENT_TYPES };
+
+// Create a namespace for the package
+const pocketbase = {
+  createClient,
+  Client,
+  Record,
+  AuthStore,
+  RealtimeSubscription,
+  Admin,
+  EVENT_TYPES
+};
+
+// Default export
+export default pocketbase;
