@@ -4,27 +4,6 @@
   <img src="assets/logo.png" alt="SmashLang Logo" width="200">
 </p>
 
-<p align="center">
-  <a href="https://github.com/profullstack/smashlang/actions/workflows/ci.yml">
-    <img src="https://github.com/profullstack/smashlang/actions/workflows/ci.yml/badge.svg" alt="CI Status">
-  </a>
-  <a href="https://crates.io/crates/smashlang">
-    <img src="https://img.shields.io/crates/v/smashlang.svg" alt="Crates.io">
-  </a>
-  <a href="https://github.com/profullstack/smashlang/blob/main/LICENSE">
-    <img src="https://img.shields.io/badge/license-MIT-blue.svg" alt="License: MIT">
-  </a>
-  <a href="https://docs.rs/smashlang">
-    <img src="https://docs.rs/smashlang/badge.svg" alt="Documentation">
-  </a>
-  <a href="https://discord.gg/smashlang">
-    <img src="https://img.shields.io/discord/1234567890?color=7289DA&label=discord&logo=discord&logoColor=white" alt="Discord">
-  </a>
-  <a href="https://twitter.com/smashlang">
-    <img src="https://img.shields.io/twitter/follow/smashlang?style=social" alt="Twitter Follow">
-  </a>
-</p>
-
 SmashLang is a JavaScript-inspired programming language implemented in Rust that compiles to native binaries across all major platforms (desktop, mobile, server, WebAssembly, etc.). The language supports dynamic typing, native date/time, regular expressions, and control flow constructs like `if`, `for`, and `while`.
 
 ## 🚀 Features
@@ -172,4 +151,4 @@ Contributions are welcome! Please feel free to submit a Pull Request.
 
 ## 📄 License
 
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+This project is licensed under the ISC License - see the [LICENSE](LICENSE) file for details.
