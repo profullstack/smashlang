@@ -122,7 +122,7 @@ export class AuthStore {
       try {
         listener(this.token, this.model);
       } catch (error) {
-        console.error('Error in auth change listener:', error);
+        print('Error in auth change listener:', error);
       }
     }
   }
@@ -179,7 +179,7 @@ export class RealtimeSubscription {
   _connect() {
     if (this.isActive) return;
     
-    console.log(`Connecting to realtime API for collection: ${this.collection}`);
+    print(`Connecting to realtime API for collection: ${this.collection}`);
     
     // In a real implementation, this would establish a WebSocket connection
     // For this example, we'll simulate it
@@ -187,7 +187,7 @@ export class RealtimeSubscription {
     
     // Simulate connection success
     setTimeout(() => {
-      console.log(`Realtime connection established for collection: ${this.collection}`);
+      print(`Realtime connection established for collection: ${this.collection}`);
       
       // Simulate receiving events periodically
       this._connection = setInterval(() => {
@@ -215,7 +215,7 @@ export class RealtimeSubscription {
           try {
             callback(event);
           } catch (error) {
-            console.error('Error in realtime callback:', error);
+            print('Error in realtime callback:', error);
           }
         }
       }, 5000); // Simulate an event every 5 seconds
@@ -229,7 +229,7 @@ export class RealtimeSubscription {
   _disconnect() {
     if (!this.isActive) return;
     
-    console.log(`Disconnecting from realtime API for collection: ${this.collection}`);
+    print(`Disconnecting from realtime API for collection: ${this.collection}`);
     
     // Clear the interval
     if (this._connection) {
@@ -259,7 +259,7 @@ export class Admin {
       throw new Error('Authentication required for admin operations');
     }
     
-    console.log(`Creating collection: ${data.name}`);
+    print(`Creating collection: ${data.name}`);
     
     // In a real implementation, this would make an API request
     // For this example, we'll simulate it
@@ -286,7 +286,7 @@ export class Admin {
       throw new Error('Authentication required for admin operations');
     }
     
-    console.log(`Updating collection: ${collectionId}`);
+    print(`Updating collection: ${collectionId}`);
     
     // In a real implementation, this would make an API request
     // For this example, we'll simulate it
@@ -312,7 +312,7 @@ export class Admin {
       throw new Error('Authentication required for admin operations');
     }
     
-    console.log(`Deleting collection: ${collectionId}`);
+    print(`Deleting collection: ${collectionId}`);
     
     // In a real implementation, this would make an API request
     // For this example, we'll simulate it
@@ -332,7 +332,7 @@ export class Admin {
       throw new Error('Authentication required for admin operations');
     }
     
-    console.log(`Creating field in collection ${collectionId}: ${data.name}`);
+    print(`Creating field in collection ${collectionId}: ${data.name}`);
     
     // In a real implementation, this would make an API request
     // For this example, we'll simulate it
@@ -361,7 +361,7 @@ export class Admin {
       throw new Error('Authentication required for admin operations');
     }
     
-    console.log(`Updating field ${fieldId} in collection ${collectionId}`);
+    print(`Updating field ${fieldId} in collection ${collectionId}`);
     
     // In a real implementation, this would make an API request
     // For this example, we'll simulate it
@@ -389,7 +389,7 @@ export class Admin {
       throw new Error('Authentication required for admin operations');
     }
     
-    console.log(`Deleting field ${fieldId} from collection ${collectionId}`);
+    print(`Deleting field ${fieldId} from collection ${collectionId}`);
     
     // In a real implementation, this would make an API request
     // For this example, we'll simulate it
@@ -409,7 +409,7 @@ export class Admin {
       throw new Error('Authentication required for admin operations');
     }
     
-    console.log(`Listing users (page ${page}, perPage ${perPage})`);
+    print(`Listing users (page ${page}, perPage ${perPage})`);
     
     // In a real implementation, this would make an API request
     // For this example, we'll simulate it
@@ -452,7 +452,7 @@ export class Admin {
       throw new Error('Authentication required for admin operations');
     }
     
-    console.log(`Creating user: ${data.email}`);
+    print(`Creating user: ${data.email}`);
     
     // In a real implementation, this would make an API request
     // For this example, we'll simulate it
@@ -481,7 +481,7 @@ export class Admin {
       throw new Error('Authentication required for admin operations');
     }
     
-    console.log(`Updating user: ${userId}`);
+    print(`Updating user: ${userId}`);
     
     // In a real implementation, this would make an API request
     // For this example, we'll simulate it
@@ -509,7 +509,7 @@ export class Admin {
       throw new Error('Authentication required for admin operations');
     }
     
-    console.log(`Deleting user: ${userId}`);
+    print(`Deleting user: ${userId}`);
     
     // In a real implementation, this would make an API request
     // For this example, we'll simulate it
@@ -537,7 +537,7 @@ export class Client {
    * @returns {Promise<Object>} Promise resolving to auth data
    */
   async authWithPassword(collection, email, password) {
-    console.log(`Authenticating ${email} in collection ${collection}`);
+    print(`Authenticating ${email} in collection ${collection}`);
     
     // In a real implementation, this would make an API request
     // For this example, we'll simulate it
@@ -574,7 +574,7 @@ export class Client {
    * @returns {Promise<Object>} Promise resolving to auth data
    */
   async authWithOAuth2(provider, code, codeVerifier, redirectUrl) {
-    console.log(`Authenticating with OAuth2 provider: ${provider}`);
+    print(`Authenticating with OAuth2 provider: ${provider}`);
     
     // In a real implementation, this would make an API request
     // For this example, we'll simulate it
@@ -611,7 +611,7 @@ export class Client {
       throw new Error('Not authenticated');
     }
     
-    console.log('Refreshing auth token');
+    print('Refreshing auth token');
     
     // In a real implementation, this would make an API request
     // For this example, we'll simulate it
@@ -633,7 +633,7 @@ export class Client {
    * Log out the current user
    */
   logout() {
-    console.log('Logging out');
+    print('Logging out');
     this.authStore.clear();
   }
   
@@ -643,7 +643,7 @@ export class Client {
    * @returns {Promise<Record>} Promise resolving to the collection
    */
   async getCollection(collectionIdOrName) {
-    console.log(`Getting collection: ${collectionIdOrName}`);
+    print(`Getting collection: ${collectionIdOrName}`);
     
     // In a real implementation, this would make an API request
     // For this example, we'll simulate it
@@ -667,7 +667,7 @@ export class Client {
    * @returns {Promise<Array<Record>>} Promise resolving to an array of collections
    */
   async getCollectionList() {
-    console.log('Getting collection list');
+    print('Getting collection list');
     
     // In a real implementation, this would make an API request
     // For this example, we'll simulate it
@@ -700,7 +700,7 @@ export class Client {
    * @returns {Promise<Record>} Promise resolving to the record
    */
   async getRecord(collection, id) {
-    console.log(`Getting record ${id} from collection ${collection}`);
+    print(`Getting record ${id} from collection ${collection}`);
     
     // In a real implementation, this would make an API request
     // For this example, we'll simulate it
@@ -725,7 +725,7 @@ export class Client {
    * @returns {Promise<Object>} Promise resolving to the record list
    */
   async getRecordList(collection, page = 1, perPage = 20, filter = '') {
-    console.log(`Getting records from collection ${collection} (page ${page}, perPage ${perPage}, filter: ${filter})`);
+    print(`Getting records from collection ${collection} (page ${page}, perPage ${perPage}, filter: ${filter})`);
     
     // In a real implementation, this would make an API request
     // For this example, we'll simulate it
@@ -764,7 +764,7 @@ export class Client {
    * @returns {Promise<Record>} Promise resolving to the created record
    */
   async createRecord(collection, data) {
-    console.log(`Creating record in collection ${collection}`);
+    print(`Creating record in collection ${collection}`);
     
     // In a real implementation, this would make an API request
     // For this example, we'll simulate it
@@ -786,7 +786,7 @@ export class Client {
    * @returns {Promise<Record>} Promise resolving to the updated record
    */
   async updateRecord(collection, id, data) {
-    console.log(`Updating record ${id} in collection ${collection}`);
+    print(`Updating record ${id} in collection ${collection}`);
     
     // In a real implementation, this would make an API request
     // For this example, we'll simulate it
@@ -807,7 +807,7 @@ export class Client {
    * @returns {Promise<boolean>} Promise resolving to true if successful
    */
   async deleteRecord(collection, id) {
-    console.log(`Deleting record ${id} from collection ${collection}`);
+    print(`Deleting record ${id} from collection ${collection}`);
     
     // In a real implementation, this would make an API request
     // For this example, we'll simulate it
@@ -826,7 +826,7 @@ export class Client {
    * @returns {Promise<Record>} Promise resolving to the updated record
    */
   async uploadFile(collection, id, fieldName, fileData, filename) {
-    console.log(`Uploading file ${filename} to ${fieldName} field of record ${id} in collection ${collection}`);
+    print(`Uploading file ${filename} to ${fieldName} field of record ${id} in collection ${collection}`);
     
     // In a real implementation, this would make an API request
     // For this example, we'll simulate it
@@ -918,7 +918,7 @@ export class Client {
  * @param {string} url - PocketBase server URL
  * @returns {Client} PocketBase client
  */
-export function createClient(url) {
+export fn createClient(url) {
   if (!url) {
     throw new Error('URL is required');
   }

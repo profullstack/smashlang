@@ -411,27 +411,27 @@ describe("PocketBase Package", () => {
     });
     
     test("_connect should establish a connection if not already active", () => {
-      const consoleSpy = mock.spyOn(console, "log");
+      const printSpy = mock.spyOn(global, "print");
       const setTimeoutSpy = mock.spyOn(global, "setTimeout");
       
       subscription._connect();
       
       expect(subscription.isActive).toBe(true);
-      expect(consoleSpy).toHaveBeenCalledWith(expect.stringContaining("Connecting to realtime API"));
+      expect(printSpy).toHaveBeenCalledWith(expect.stringContaining("Connecting to realtime API"));
       expect(setTimeoutSpy).toHaveBeenCalled();
       
       // Calling again should do nothing
-      consoleSpy.mockClear();
+      printSpy.mockClear();
       subscription._connect();
       
-      expect(consoleSpy).not.toHaveBeenCalled();
+      expect(printSpy).not.toHaveBeenCalled();
       
-      consoleSpy.mockRestore();
+      printSpy.mockRestore();
       setTimeoutSpy.mockRestore();
     });
     
     test("_disconnect should close the connection if active", () => {
-      const consoleSpy = mock.spyOn(console, "log");
+      const printSpy = mock.spyOn(global, "print");
       const clearIntervalSpy = mock.spyOn(global, "clearInterval");
       
       // First connect
@@ -443,18 +443,18 @@ describe("PocketBase Package", () => {
       
       expect(subscription.isActive).toBe(false);
       expect(subscription._connection).toBeNull();
-      expect(consoleSpy).toHaveBeenCalledWith(expect.stringContaining("Disconnecting from realtime API"));
+      expect(printSpy).toHaveBeenCalledWith(expect.stringContaining("Disconnecting from realtime API"));
       expect(clearIntervalSpy).toHaveBeenCalled();
       
       // Calling again should do nothing
-      consoleSpy.mockClear();
+      printSpy.mockClear();
       clearIntervalSpy.mockClear();
       subscription._disconnect();
       
-      expect(consoleSpy).not.toHaveBeenCalled();
+      expect(printSpy).not.toHaveBeenCalled();
       expect(clearIntervalSpy).not.toHaveBeenCalled();
       
-      consoleSpy.mockRestore();
+      printSpy.mockRestore();
       clearIntervalSpy.mockRestore();
     });
   });
