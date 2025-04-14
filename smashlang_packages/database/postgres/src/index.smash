@@ -51,3 +51,430 @@ function parseConnectionString(connectionString) {
       return {
         host: config.host || 'localhost',
         port: config.port ? parseInt(config.port, 10) : 5432,
+        database: config.dbname || config.database,
+        user: config.user || config.username,
+        password: config.password,
+        ssl: config.ssl === 'true'
+      };
+    }
+  } catch (error) {
+    throw new Error(`Invalid connection string: ${error.message}`);
+  }
+}
+
+/**
+ * Result class representing a PostgreSQL query result
+ */
+export class Result {
+  constructor(rows = [], rowCount = 0, fields = []) {
+    this.rows = rows;
+    this.rowCount = rowCount;
+    this.fields = fields;
+  }
+  
+  /**
+   * Get the first row of the result
+   */
+  get first() {
+    return this.rows.length > 0 ? this.rows[0] : null;
+  }
+  
+  /**
+   * Check if the result is empty
+   */
+  get isEmpty() {
+    return this.rows.length === 0;
+  }
+  
+  /**
+   * Get a specific column from all rows
+   * @param {string} column - Column name
+   * @returns {Array} Array of column values
+   */
+  getColumn(column) {
+    return this.rows.map(row => row[column]);
+  }
+  
+  /**
+   * Convert the result to a map using a key column
+   * @param {string} keyColumn - Column to use as keys
+   * @returns {Object} Object with keys from keyColumn and values as row objects
+   */
+  toMap(keyColumn) {
+    const map = {};
+    this.rows.forEach(row => {
+      if (row[keyColumn] !== undefined) {
+        map[row[keyColumn]] = row;
+      }
+    });
+    return map;
+  }
+}
+
+/**
+ * Transaction class for managing PostgreSQL transactions
+ */
+export class Transaction {
+  constructor(connection) {
+    this._connection = connection;
+    this._active = false;
+  }
+  
+  /**
+   * Check if the transaction is active
+   */
+  get isActive() {
+    return this._active;
+  }
+  
+  /**
+   * Begin the transaction
+   */
+  async begin() {
+    if (this._active) {
+      throw new Error("Transaction already active");
+    }
+    
+    await this._connection._execute("BEGIN");
+    this._active = true;
+    return this;
+  }
+  
+  /**
+   * Execute a query within the transaction
+   * @param {string} text - SQL query text
+   * @param {Array} params - Query parameters
+   * @returns {Promise<Result>} Promise resolving to a Result object
+   */
+  async query(text, params = []) {
+    if (!this._active) {
+      throw new Error("Transaction not active");
+    }
+    
+    return this._connection._execute(text, params);
+  }
+  
+  /**
+   * Commit the transaction
+   */
+  async commit() {
+    if (!this._active) {
+      throw new Error("Transaction not active");
+    }
+    
+    await this._connection._execute("COMMIT");
+    this._active = false;
+  }
+  
+  /**
+   * Rollback the transaction
+   */
+  async rollback() {
+    if (!this._active) {
+      throw new Error("Transaction not active");
+    }
+    
+    await this._connection._execute("ROLLBACK");
+    this._active = false;
+  }
+}
+
+/**
+ * Connection class for a PostgreSQL database connection
+ */
+export class Connection {
+  constructor(config) {
+    this._config = config;
+    this._client = null;
+    this._connected = false;
+  }
+  
+  /**
+   * Check if the connection is established
+   */
+  get isConnected() {
+    return this._connected;
+  }
+  
+  /**
+   * Connect to the database
+   */
+  async connect() {
+    if (this._connected) {
+      return this;
+    }
+    
+    try {
+      // In a real implementation, this would use a native PostgreSQL client
+      // For this example, we'll simulate the connection
+      this._client = {
+        query: async (text, params) => {
+          // Simulate query execution
+          console.log(`Executing query: ${text}`);
+          console.log(`With parameters: ${JSON.stringify(params)}`);
+          
+          // Return simulated results based on the query
+          if (text.match(/SELECT\s+version/i)) {
+            return {
+              rows: [{ version: "PostgreSQL 14.5" }],
+              rowCount: 1,
+              fields: [{ name: "version" }]
+            };
+          }
+          
+          // Default empty result
+          return {
+            rows: [],
+            rowCount: 0,
+            fields: []
+          };
+        },
+        end: async () => {
+          console.log("Closing connection");
+        }
+      };
+      
+      this._connected = true;
+      
+      // Test the connection
+      await this._execute("SELECT version()");
+      
+      return this;
+    } catch (error) {
+      this._connected = false;
+      throw new Error(`Failed to connect to PostgreSQL: ${error.message}`);
+    }
+  }
+  
+  /**
+   * Execute a query
+   * @param {string} text - SQL query text
+   * @param {Array} params - Query parameters
+   * @returns {Promise<Result>} Promise resolving to a Result object
+   */
+  async query(text, params = []) {
+    if (!this._connected) {
+      await this.connect();
+    }
+    
+    return this._execute(text, params);
+  }
+  
+  /**
+   * Internal method to execute a query
+   * @private
+   */
+  async _execute(text, params = []) {
+    if (!this._client) {
+      throw new Error("Not connected to database");
+    }
+    
+    try {
+      const result = await this._client.query(text, params);
+      return new Result(result.rows, result.rowCount, result.fields);
+    } catch (error) {
+      throw new Error(`Query failed: ${error.message}`);
+    }
+  }
+  
+  /**
+   * Begin a new transaction
+   * @returns {Promise<Transaction>} Promise resolving to a Transaction object
+   */
+  async beginTransaction() {
+    if (!this._connected) {
+      await this.connect();
+    }
+    
+    const transaction = new Transaction(this);
+    return transaction.begin();
+  }
+  
+  /**
+   * Close the connection
+   */
+  async close() {
+    if (this._connected && this._client) {
+      await this._client.end();
+      this._client = null;
+      this._connected = false;
+    }
+  }
+}
+
+/**
+ * Pool class for managing PostgreSQL connection pools
+ */
+export class Pool {
+  constructor(options) {
+    this._options = typeof options === 'string' ? { connectionString: options } : options;
+    this._config = typeof options === 'string' ? parseConnectionString(options) : options;
+    this._pool = null;
+    this._connections = [];
+    this._maxConnections = this._options.max || 10;
+    this._minConnections = this._options.min || 0;
+    this._idleTimeout = this._options.idleTimeout || 30000;
+    this._initialized = false;
+  }
+  
+  /**
+   * Initialize the pool
+   * @private
+   */
+  async _initialize() {
+    if (this._initialized) {
+      return;
+    }
+    
+    // In a real implementation, this would create a connection pool
+    // For this example, we'll simulate the pool
+    this._pool = {
+      connect: async () => {
+        const connection = new Connection(this._config);
+        await connection.connect();
+        this._connections.push(connection);
+        return new PoolClient(connection, this);
+      },
+      end: async () => {
+        await Promise.all(this._connections.map(conn => conn.close()));
+        this._connections = [];
+      }
+    };
+    
+    this._initialized = true;
+    
+    // Create minimum connections
+    for (let i = 0; i < this._minConnections; i++) {
+      const connection = new Connection(this._config);
+      await connection.connect();
+      this._connections.push(connection);
+    }
+  }
+  
+  /**
+   * Get a client from the pool
+   * @returns {Promise<PoolClient>} Promise resolving to a PoolClient
+   */
+  async connect() {
+    if (!this._initialized) {
+      await this._initialize();
+    }
+    
+    return this._pool.connect();
+  }
+  
+  /**
+   * Execute a query using a connection from the pool
+   * @param {string} text - SQL query text
+   * @param {Array} params - Query parameters
+   * @returns {Promise<Result>} Promise resolving to a Result object
+   */
+  async query(text, params = []) {
+    if (!this._initialized) {
+      await this._initialize();
+    }
+    
+    const client = await this.connect();
+    try {
+      const result = await client.query(text, params);
+      return result;
+    } finally {
+      client.release();
+    }
+  }
+  
+  /**
+   * Close all connections in the pool
+   */
+  async end() {
+    if (this._initialized && this._pool) {
+      await this._pool.end();
+      this._initialized = false;
+    }
+  }
+}
+
+/**
+ * PoolClient class representing a client from a connection pool
+ */
+export class PoolClient {
+  constructor(connection, pool) {
+    this._connection = connection;
+    this._pool = pool;
+    this._released = false;
+  }
+  
+  /**
+   * Execute a query
+   * @param {string} text - SQL query text
+   * @param {Array} params - Query parameters
+   * @returns {Promise<Result>} Promise resolving to a Result object
+   */
+  async query(text, params = []) {
+    if (this._released) {
+      throw new Error("Client has been released");
+    }
+    
+    return this._connection.query(text, params);
+  }
+  
+  /**
+   * Begin a new transaction
+   * @returns {Promise<Transaction>} Promise resolving to a Transaction object
+   */
+  async beginTransaction() {
+    if (this._released) {
+      throw new Error("Client has been released");
+    }
+    
+    return this._connection.beginTransaction();
+  }
+  
+  /**
+   * Release the client back to the pool
+   */
+  release() {
+    this._released = true;
+    // In a real implementation, this would return the connection to the pool
+  }
+}
+
+/**
+ * Main PostgreSQL client
+ */
+class PostgresClient {
+  /**
+   * Connect to a PostgreSQL database
+   * @param {string|Object} connectionString - Connection string or config object
+   * @param {Object} options - Additional options
+   * @returns {Promise<Connection>} Promise resolving to a Connection object
+   */
+  async connect(connectionString, options = {}) {
+    const config = typeof connectionString === 'string' 
+      ? parseConnectionString(connectionString)
+      : { ...connectionString };
+      
+    // Merge options
+    Object.assign(config, options);
+    
+    const connection = new Connection(config);
+    await connection.connect();
+    
+    return connection;
+  }
+  
+  /**
+   * Create a connection pool
+   * @param {Object} options - Pool configuration
+   * @returns {Pool} Connection pool
+   */
+  createPool(options) {
+    return new Pool(options);
+  }
+}
+
+// Create a singleton instance
+export const postgres = new PostgresClient();
+
+// Default export
+export default postgres;

@@ -1,0 +1,154 @@
+/**
+ * Basic PostgreSQL Package Example
+ * 
+ * This example demonstrates the basic functionality of the PostgreSQL package,
+ * including connecting to a database, executing queries, and working with results.
+ */
+
+import { postgres } from "../src/index.smash";
+
+// Function to log a result in a readable format
+function logResult(result) {
+  console.log(`Query returned ${result.rowCount} rows`);
+  
+  if (result.fields.length > 0) {
+    console.log("Fields:", result.fields.map(field => field.name).join(", "));
+  }
+  
+  if (result.rows.length > 0) {
+    console.log("Rows:");
+    result.rows.forEach((row, index) => {
+      console.log(`  ${index + 1}:`, row);
+    });
+  } else {
+    console.log("No rows returned");
+  }
+  
+  console.log("---");
+}
+
+// Main async function to run all examples
+async function runExamples() {
+  console.log("=== PostgreSQL Package Basic Examples ===\n");
+  
+  // Connect to the database
+  console.log("Connecting to PostgreSQL database...");
+  let connection;
+  
+  try {
+    // In a real application, you would use your actual database credentials
+    connection = await postgres.connect("postgresql://username:password@localhost:5432/mydatabase");
+    console.log("Connected successfully!");
+    console.log("---");
+    
+    // Simple query
+    console.log("Executing a simple query...");
+    const versionResult = await connection.query("SELECT version()");
+    logResult(versionResult);
+    
+    // Create a table
+    console.log("Creating a users table...");
+    await connection.query(`
+      CREATE TABLE IF NOT EXISTS users (
+        id SERIAL PRIMARY KEY,
+        name VARCHAR(100) NOT NULL,
+        email VARCHAR(100) UNIQUE NOT NULL,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      )
+    `);
+    console.log("Table created successfully");
+    console.log("---");
+    
+    // Insert data
+    console.log("Inserting data into the users table...");
+    const insertResult = await connection.query(
+      "INSERT INTO users (name, email) VALUES ($1, $2) RETURNING id, name, email",
+      ["John Doe", "john@example.com"]
+    );
+    logResult(insertResult);
+    
+    // Insert multiple rows
+    console.log("Inserting multiple rows...");
+    const users = [
+      ["Jane Smith", "jane@example.com"],
+      ["Bob Johnson", "bob@example.com"],
+      ["Alice Brown", "alice@example.com"]
+    ];
+    
+    for (const [name, email] of users) {
+      await connection.query(
+        "INSERT INTO users (name, email) VALUES ($1, $2)",
+        [name, email]
+      );
+    }
+    console.log("Multiple rows inserted");
+    console.log("---");
+    
+    // Query all users
+    console.log("Querying all users...");
+    const allUsersResult = await connection.query("SELECT * FROM users ORDER BY id");
+    logResult(allUsersResult);
+    
+    // Query with conditions
+    console.log("Querying users with conditions...");
+    const filteredResult = await connection.query(
+      "SELECT * FROM users WHERE name LIKE $1",
+      ["%Smith%"]
+    );
+    logResult(filteredResult);
+    
+    // Update data
+    console.log("Updating a user...");
+    const updateResult = await connection.query(
+      "UPDATE users SET name = $1 WHERE email = $2 RETURNING id, name, email",
+      ["Jane Smith-Johnson", "jane@example.com"]
+    );
+    logResult(updateResult);
+    
+    // Delete data
+    console.log("Deleting a user...");
+    const deleteResult = await connection.query(
+      "DELETE FROM users WHERE email = $1 RETURNING id, name",
+      ["bob@example.com"]
+    );
+    logResult(deleteResult);
+    
+    // Count remaining users
+    console.log("Counting remaining users...");
+    const countResult = await connection.query("SELECT COUNT(*) FROM users");
+    logResult(countResult);
+    
+    // Using the Result class methods
+    console.log("Using Result class methods...");
+    const usersResult = await connection.query("SELECT id, name, email FROM users");
+    
+    console.log("First user:", usersResult.first);
+    console.log("Is empty:", usersResult.isEmpty);
+    console.log("Names column:", usersResult.getColumn("name"));
+    console.log("Users map by ID:", usersResult.toMap("id"));
+    console.log("---");
+    
+    // Clean up - drop the table
+    console.log("Cleaning up - dropping the users table...");
+    await connection.query("DROP TABLE IF EXISTS users");
+    console.log("Table dropped successfully");
+    console.log("---");
+    
+  } catch (error) {
+    console.error("Error:", error.message);
+  } finally {
+    // Close the connection
+    if (connection) {
+      console.log("Closing the database connection...");
+      await connection.close();
+      console.log("Connection closed");
+    }
+  }
+  
+  console.log("\nAll examples completed!");
+}
+
+// Run the examples
+runExamples().catch(error => {
+  console.error("Error running examples:", error);
+});

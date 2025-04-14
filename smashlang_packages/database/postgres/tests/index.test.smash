@@ -1,36 +1,533 @@
-// database/postgres/tests/index.test.smash - Test file for postgres package
+/**
+ * PostgreSQL Package Tests
+ * 
+ * This file contains tests for the PostgreSQL package using the SmashLang testing framework.
+ * It uses mocked database connections to test the functionality without requiring a real database.
+ */
 
-import * from 'database/postgres';
-import { test, describe, expect, beforeEach, afterEach } from 'std/testing';
+import { test, describe, expect, beforeEach, afterEach, mock } from "std/testing";
+import { postgres, Connection, Pool, Result, Transaction, PoolClient } from "../src/index.smash";
 
-describe('Package: postgres', () => {
+describe("PostgreSQL Package", () => {
+  describe("Connection String Parser", () => {
+    test("should parse a PostgreSQL URL connection string", () => {
+      // This is testing an internal function, so we'll need to expose it for testing
+      // or test it indirectly through the public API
+      const connection = new Connection("postgresql://user:pass@localhost:5432/dbname");
+      expect(connection._config).toEqual(expect.objectContaining({
+        host: "localhost",
+        port: 5432,
+        database: "dbname",
+        user: "user",
+        password: "pass"
+      }));
+    });
+    
+    test("should parse a key=value connection string", () => {
+      const connection = new Connection("host=localhost port=5432 dbname=mydb user=postgres password=secret");
+      expect(connection._config).toEqual(expect.objectContaining({
+        host: "localhost",
+        port: 5432,
+        database: "mydb",
+        user: "postgres",
+        password: "secret"
+      }));
+    });
+    
+    test("should accept a connection object", () => {
+      const config = {
+        host: "db.example.com",
+        port: 5433,
+        database: "appdb",
+        user: "appuser",
+        password: "apppass",
+        ssl: true
+      };
+      
+      const connection = new Connection(config);
+      expect(connection._config).toEqual(expect.objectContaining(config));
+    });
+    
+    test("should use default values for missing properties", () => {
+      const connection = new Connection("postgresql://localhost/testdb");
+      expect(connection._config).toEqual(expect.objectContaining({
+        host: "localhost",
+        port: 5432,
+        database: "testdb"
+      }));
+    });
+    
+    test("should throw an error for invalid connection strings", () => {
+      expect(() => new Connection("invalid-connection-string")).toThrow();
+      expect(() => new Connection("")).toThrow("Connection string is required");
+      expect(() => new Connection(null)).toThrow("Connection string is required");
+    });
+  });
+  
+  describe("Result Class", () => {
+    let result;
+    
     beforeEach(() => {
-        // Setup code for each test
-        console.log('Setting up test for postgres');
+      result = new Result(
+        [
+          { id: 1, name: "John", email: "john@example.com" },
+          { id: 2, name: "Jane", email: "jane@example.com" },
+          { id: 3, name: "Bob", email: "bob@example.com" }
+        ],
+        3,
+        [
+          { name: "id" },
+          { name: "name" },
+          { name: "email" }
+        ]
+      );
     });
-
-    afterEach(() => {
-        // Cleanup code for each test
-        console.log('Cleaning up after test for postgres');
+    
+    test("should store rows, rowCount, and fields", () => {
+      expect(result.rows.length).toBe(3);
+      expect(result.rowCount).toBe(3);
+      expect(result.fields.length).toBe(3);
     });
-
-    test('package can be imported correctly', () => {
-        // This test verifies that the package can be imported
-        expect(typeof postgres).toBe('object');
+    
+    test("first should return the first row", () => {
+      expect(result.first).toEqual({ id: 1, name: "John", email: "john@example.com" });
+      
+      const emptyResult = new Result([], 0, []);
+      expect(emptyResult.first).toBeNull();
     });
-
-    // Add more specific tests for the package functionality
-    test('package has expected exports', () => {
-        // Check for expected exports based on the package
-        // This is a basic test that should be customized for each package
-        expect(postgres).not.toBe(null);
-        expect(postgres).not.toBe(undefined);
+    
+    test("isEmpty should check if there are no rows", () => {
+      expect(result.isEmpty).toBe(false);
+      
+      const emptyResult = new Result([], 0, []);
+      expect(emptyResult.isEmpty).toBe(true);
     });
+    
+    test("getColumn should extract a column from all rows", () => {
+      expect(result.getColumn("name")).toEqual(["John", "Jane", "Bob"]);
+      expect(result.getColumn("id")).toEqual([1, 2, 3]);
+    });
+    
+    test("toMap should convert rows to a map using a key column", () => {
+      const map = result.toMap("id");
+      expect(map[1]).toEqual({ id: 1, name: "John", email: "john@example.com" });
+      expect(map[2]).toEqual({ id: 2, name: "Jane", email: "jane@example.com" });
+      expect(map[3]).toEqual({ id: 3, name: "Bob", email: "bob@example.com" });
+      
+      const emailMap = result.toMap("email");
+      expect(emailMap["john@example.com"]).toEqual({ id: 1, name: "John", email: "john@example.com" });
+    });
+  });
+  
+  describe("Connection Class", () => {
+    let connection;
+    let mockClient;
+    
+    beforeEach(() => {
+      // Create a mock client
+      mockClient = {
+        query: mock.fn(),
+        end: mock.fn()
+      };
+      
+      // Create a connection with the mock client
+      connection = new Connection("postgresql://localhost/testdb");
+      connection._client = mockClient;
+      connection._connected = true;
+    });
+    
+    test("connect should establish a connection", async () => {
+      // Reset the connection
+      connection._client = null;
+      connection._connected = false;
+      
+      // Mock the client creation
+      const originalClient = connection._client;
+      
+      // Mock a successful query response for the version check
+      mockClient.query.mockResolvedValueOnce({
+        rows: [{ version: "PostgreSQL 14.5" }],
+        rowCount: 1,
+        fields: [{ name: "version" }]
+      });
+      
+      // Call connect
+      await connection.connect();
+      
+      // Check that we're connected
+      expect(connection.isConnected).toBe(true);
+      expect(connection._client).not.toBeNull();
+      
+      // Restore the original client
+      connection._client = originalClient;
+    });
+    
+    test("query should execute a SQL query", async () => {
+      // Mock a successful query response
+      mockClient.query.mockResolvedValueOnce({
+        rows: [{ id: 1, name: "Test" }],
+        rowCount: 1,
+        fields: [{ name: "id" }, { name: "name" }]
+      });
+      
+      // Execute a query
+      const result = await connection.query("SELECT * FROM test WHERE id = $1", [1]);
+      
+      // Check that the query was called with the right parameters
+      expect(mockClient.query).toHaveBeenCalledWith("SELECT * FROM test WHERE id = $1", [1]);
+      
+      // Check the result
+      expect(result).toBeInstanceOf(Result);
+      expect(result.rows).toEqual([{ id: 1, name: "Test" }]);
+      expect(result.rowCount).toBe(1);
+    });
+    
+    test("query should throw an error if not connected", async () => {
+      // Reset the connection
+      connection._client = null;
+      connection._connected = false;
+      
+      // Mock connect to fail
+      connection.connect = mock.fn().mockRejectedValueOnce(new Error("Connection failed"));
+      
+      // Execute a query
+      await expect(connection.query("SELECT 1")).rejects.toThrow("Connection failed");
+    });
+    
+    test("beginTransaction should create and begin a transaction", async () => {
+      // Mock successful BEGIN query
+      mockClient.query.mockResolvedValueOnce({
+        rows: [],
+        rowCount: 0,
+        fields: []
+      });
+      
+      // Begin a transaction
+      const transaction = await connection.beginTransaction();
+      
+      // Check that BEGIN was executed
+      expect(mockClient.query).toHaveBeenCalledWith("BEGIN", []);
+      
+      // Check the transaction
+      expect(transaction).toBeInstanceOf(Transaction);
+      expect(transaction.isActive).toBe(true);
+    });
+    
+    test("close should close the connection", async () => {
+      // Close the connection
+      await connection.close();
+      
+      // Check that end was called
+      expect(mockClient.end).toHaveBeenCalled();
+      
+      // Check that we're disconnected
+      expect(connection.isConnected).toBe(false);
+      expect(connection._client).toBeNull();
+    });
+  });
+  
+  describe("Transaction Class", () => {
+    let connection;
+    let transaction;
+    let mockClient;
+    
+    beforeEach(async () => {
+      // Create a mock client
+      mockClient = {
+        query: mock.fn()
+      };
+      
+      // Create a connection with the mock client
+      connection = new Connection("postgresql://localhost/testdb");
+      connection._client = mockClient;
+      connection._connected = true;
+      
+      // Mock the _execute method
+      connection._execute = mock.fn().mockImplementation(async (text, params) => {
+        return new Result([], 0, []);
+      });
+      
+      // Create a transaction
+      transaction = new Transaction(connection);
+      transaction._active = true;
+    });
+    
+    test("begin should start a transaction", async () => {
+      // Reset the transaction
+      transaction._active = false;
+      
+      // Mock BEGIN
+      connection._execute.mockResolvedValueOnce(new Result([], 0, []));
+      
+      // Begin the transaction
+      await transaction.begin();
+      
+      // Check that BEGIN was executed
+      expect(connection._execute).toHaveBeenCalledWith("BEGIN");
+      
+      // Check that the transaction is active
+      expect(transaction.isActive).toBe(true);
+    });
+    
+    test("begin should throw if transaction is already active", async () => {
+      // Transaction is already active
+      transaction._active = true;
+      
+      // Begin the transaction
+      await expect(transaction.begin()).rejects.toThrow("Transaction already active");
+    });
+    
+    test("query should execute a query within the transaction", async () => {
+      // Mock a query
+      connection._execute.mockResolvedValueOnce(new Result([{ id: 1 }], 1, [{ name: "id" }]));
+      
+      // Execute a query
+      const result = await transaction.query("SELECT * FROM test WHERE id = $1", [1]);
+      
+      // Check that the query was executed
+      expect(connection._execute).toHaveBeenCalledWith("SELECT * FROM test WHERE id = $1", [1]);
+      
+      // Check the result
+      expect(result).toBeInstanceOf(Result);
+      expect(result.rows).toEqual([{ id: 1 }]);
+    });
+    
+    test("query should throw if transaction is not active", async () => {
+      // Transaction is not active
+      transaction._active = false;
+      
+      // Execute a query
+      await expect(transaction.query("SELECT 1")).rejects.toThrow("Transaction not active");
+    });
+    
+    test("commit should commit the transaction", async () => {
+      // Mock COMMIT
+      connection._execute.mockResolvedValueOnce(new Result([], 0, []));
+      
+      // Commit the transaction
+      await transaction.commit();
+      
+      // Check that COMMIT was executed
+      expect(connection._execute).toHaveBeenCalledWith("COMMIT");
+      
+      // Check that the transaction is not active
+      expect(transaction.isActive).toBe(false);
+    });
+    
+    test("commit should throw if transaction is not active", async () => {
+      // Transaction is not active
+      transaction._active = false;
+      
+      // Commit the transaction
+      await expect(transaction.commit()).rejects.toThrow("Transaction not active");
+    });
+    
+    test("rollback should roll back the transaction", async () => {
+      // Mock ROLLBACK
+      connection._execute.mockResolvedValueOnce(new Result([], 0, []));
+      
+      // Rollback the transaction
+      await transaction.rollback();
+      
+      // Check that ROLLBACK was executed
+      expect(connection._execute).toHaveBeenCalledWith("ROLLBACK");
+      
+      // Check that the transaction is not active
+      expect(transaction.isActive).toBe(false);
+    });
+    
+    test("rollback should throw if transaction is not active", async () => {
+      // Transaction is not active
+      transaction._active = false;
+      
+      // Rollback the transaction
+      await expect(transaction.rollback()).rejects.toThrow("Transaction not active");
+    });
+  });
+  
+  describe("Pool Class", () => {
+    let pool;
+    
+    beforeEach(() => {
+      // Create a pool
+      pool = new Pool("postgresql://localhost/testdb");
+      
+      // Mock the _initialize method
+      pool._initialize = mock.fn().mockResolvedValue(undefined);
+      
+      // Set initialized to true
+      pool._initialized = true;
+      
+      // Create a mock pool
+      pool._pool = {
+        connect: mock.fn(),
+        end: mock.fn()
+      };
+    });
+    
+    test("connect should get a client from the pool", async () => {
+      // Mock a client
+      const mockClient = new PoolClient(new Connection("postgresql://localhost/testdb"), pool);
+      pool._pool.connect.mockResolvedValueOnce(mockClient);
+      
+      // Get a client
+      const client = await pool.connect();
+      
+      // Check that connect was called
+      expect(pool._pool.connect).toHaveBeenCalled();
+      
+      // Check the client
+      expect(client).toBeInstanceOf(PoolClient);
+    });
+    
+    test("query should execute a query using a connection from the pool", async () => {
+      // Mock a client
+      const mockClient = {
+        query: mock.fn().mockResolvedValueOnce(new Result([{ id: 1 }], 1, [{ name: "id" }])),
+        release: mock.fn()
+      };
+      
+      pool._pool.connect.mockResolvedValueOnce(mockClient);
+      
+      // Execute a query
+      const result = await pool.query("SELECT * FROM test WHERE id = $1", [1]);
+      
+      // Check that connect was called
+      expect(pool._pool.connect).toHaveBeenCalled();
+      
+      // Check that query was called
+      expect(mockClient.query).toHaveBeenCalledWith("SELECT * FROM test WHERE id = $1", [1]);
+      
+      // Check that release was called
+      expect(mockClient.release).toHaveBeenCalled();
+      
+      // Check the result
+      expect(result).toBeInstanceOf(Result);
+      expect(result.rows).toEqual([{ id: 1 }]);
+    });
+    
+    test("end should close all connections in the pool", async () => {
+      // End the pool
+      await pool.end();
+      
+      // Check that end was called
+      expect(pool._pool.end).toHaveBeenCalled();
+      
+      // Check that the pool is not initialized
+      expect(pool._initialized).toBe(false);
+    });
+  });
+  
+  describe("PoolClient Class", () => {
+    let connection;
+    let pool;
+    let client;
+    
+    beforeEach(() => {
+      // Create a connection
+      connection = new Connection("postgresql://localhost/testdb");
+      
+      // Mock the query method
+      connection.query = mock.fn();
+      
+      // Mock the beginTransaction method
+      connection.beginTransaction = mock.fn();
+      
+      // Create a pool
+      pool = new Pool("postgresql://localhost/testdb");
+      
+      // Create a client
+      client = new PoolClient(connection, pool);
+    });
+    
+    test("query should execute a query using the connection", async () => {
+      // Mock a query result
+      connection.query.mockResolvedValueOnce(new Result([{ id: 1 }], 1, [{ name: "id" }]));
+      
+      // Execute a query
+      const result = await client.query("SELECT * FROM test WHERE id = $1", [1]);
+      
+      // Check that query was called
+      expect(connection.query).toHaveBeenCalledWith("SELECT * FROM test WHERE id = $1", [1]);
+      
+      // Check the result
+      expect(result).toBeInstanceOf(Result);
+    });
+    
+    test("query should throw if client has been released", async () => {
+      // Release the client
+      client.release();
+      
+      // Execute a query
+      await expect(client.query("SELECT 1")).rejects.toThrow("Client has been released");
+    });
+    
+    test("beginTransaction should begin a transaction using the connection", async () => {
+      // Mock a transaction
+      const mockTransaction = new Transaction(connection);
+      mockTransaction._active = true;
+      
+      connection.beginTransaction.mockResolvedValueOnce(mockTransaction);
+      
+      // Begin a transaction
+      const transaction = await client.beginTransaction();
+      
+      // Check that beginTransaction was called
+      expect(connection.beginTransaction).toHaveBeenCalled();
+      
+      // Check the transaction
+      expect(transaction).toBeInstanceOf(Transaction);
+      expect(transaction.isActive).toBe(true);
+    });
+    
+    test("beginTransaction should throw if client has been released", async () => {
+      // Release the client
+      client.release();
+      
+      // Begin a transaction
+      await expect(client.beginTransaction()).rejects.toThrow("Client has been released");
+    });
+    
+    test("release should mark the client as released", () => {
+      // Release the client
+      client.release();
+      
+      // Check that the client is released
+      expect(client._released).toBe(true);
+    });
+  });
+  
+  describe("PostgreSQL Client", () => {
+    test("connect should create and connect to a database", async () => {
+      // Mock the Connection class
+      const originalConnection = Connection;
+      const mockConnection = mock.fn();
+      mockConnection.prototype.connect = mock.fn().mockResolvedValue({});
+      global.Connection = mockConnection;
+      
+      // Connect to a database
+      await postgres.connect("postgresql://localhost/testdb");
+      
+      // Check that Connection was called with the right parameters
+      expect(mockConnection).toHaveBeenCalledWith(expect.objectContaining({
+        host: "localhost",
+        database: "testdb"
+      }));
+      
+      // Check that connect was called
+      expect(mockConnection.prototype.connect).toHaveBeenCalled();
+      
+      // Restore the original Connection class
+      global.Connection = originalConnection;
+    });
+    
+    test("createPool should create a connection pool", () => {
+      // Create a pool
+      const pool = postgres.createPool("postgresql://localhost/testdb");
+      
+      // Check the pool
+      expect(pool).toBeInstanceOf(Pool);
+      expect(pool._options.connectionString).toBe("postgresql://localhost/testdb");
+    });
+  });
 });
-
-// Add more specific test cases below
-// Example:
-// test('specific function works as expected', () => {
-//     const result = postgres.someFunction();
-//     expect(result).toBe(expectedValue);
-// });
