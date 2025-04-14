@@ -1,36 +1,383 @@
-// core/math/tests/index.test.smash - Test file for math package
+/**
+ * Math Package Tests
+ * 
+ * This file contains tests for the math package using the SmashLang testing framework.
+ */
 
-import * from 'core/math';
-import { test, describe, expect, beforeEach, afterEach } from 'std/testing';
+import { test, describe, expect, beforeEach } from "std/testing";
+import { math, Vector, Matrix, stats } from "../src/index.smash";
 
-describe('Package: math', () => {
+describe("Math Package", () => {
+  describe("Basic Arithmetic", () => {
+    test("add should correctly add two numbers", () => {
+      expect(math.add(2, 3)).toBe(5);
+      expect(math.add(-2, 3)).toBe(1);
+      expect(math.add(2.5, 3.5)).toBe(6);
+    });
+    
+    test("subtract should correctly subtract two numbers", () => {
+      expect(math.subtract(5, 3)).toBe(2);
+      expect(math.subtract(3, 5)).toBe(-2);
+      expect(math.subtract(5.5, 3.5)).toBe(2);
+    });
+    
+    test("multiply should correctly multiply two numbers", () => {
+      expect(math.multiply(2, 3)).toBe(6);
+      expect(math.multiply(-2, 3)).toBe(-6);
+      expect(math.multiply(2.5, 2)).toBe(5);
+    });
+    
+    test("divide should correctly divide two numbers", () => {
+      expect(math.divide(6, 3)).toBe(2);
+      expect(math.divide(5, 2)).toBe(2.5);
+      expect(math.divide(-6, 3)).toBe(-2);
+    });
+    
+    test("divide should throw an error when dividing by zero", () => {
+      expect(() => math.divide(5, 0)).toThrow("Division by zero");
+    });
+    
+    test("mod should correctly calculate the modulo", () => {
+      expect(math.mod(7, 3)).toBe(1);
+      expect(math.mod(8, 4)).toBe(0);
+      expect(math.mod(-7, 3)).toBe(-1);
+    });
+    
+    test("power should correctly calculate exponentiation", () => {
+      expect(math.power(2, 3)).toBe(8);
+      expect(math.power(3, 2)).toBe(9);
+      expect(math.power(2, 0)).toBe(1);
+      expect(math.power(2, -1)).toBe(0.5);
+    });
+  });
+  
+  describe("Advanced Mathematical Functions", () => {
+    test("sqrt should correctly calculate square root", () => {
+      expect(math.sqrt(4)).toBe(2);
+      expect(math.sqrt(9)).toBe(3);
+      expect(math.sqrt(2)).toBeCloseTo(1.414, 3);
+    });
+    
+    test("sqrt should throw an error for negative numbers", () => {
+      expect(() => math.sqrt(-1)).toThrow("Cannot calculate square root of negative number");
+    });
+    
+    test("abs should correctly calculate absolute value", () => {
+      expect(math.abs(5)).toBe(5);
+      expect(math.abs(-5)).toBe(5);
+      expect(math.abs(0)).toBe(0);
+    });
+    
+    test("floor should correctly round down", () => {
+      expect(math.floor(3.7)).toBe(3);
+      expect(math.floor(3.2)).toBe(3);
+      expect(math.floor(-3.7)).toBe(-4);
+    });
+    
+    test("ceil should correctly round up", () => {
+      expect(math.ceil(3.7)).toBe(4);
+      expect(math.ceil(3.2)).toBe(4);
+      expect(math.ceil(-3.7)).toBe(-3);
+    });
+    
+    test("round should correctly round to nearest integer", () => {
+      expect(math.round(3.7)).toBe(4);
+      expect(math.round(3.2)).toBe(3);
+      expect(math.round(3.5)).toBe(4);
+      expect(math.round(-3.7)).toBe(-4);
+    });
+    
+    test("trigonometric functions should work correctly", () => {
+      expect(math.sin(Math.PI / 2)).toBeCloseTo(1, 10);
+      expect(math.cos(Math.PI)).toBeCloseTo(-1, 10);
+      expect(math.tan(Math.PI / 4)).toBeCloseTo(1, 10);
+    });
+    
+    test("logarithmic functions should work correctly", () => {
+      expect(math.log(100, 10)).toBeCloseTo(2, 10);
+      expect(math.ln(Math.E)).toBeCloseTo(1, 10);
+      expect(math.log10(1000)).toBeCloseTo(3, 10);
+      expect(math.log2(8)).toBeCloseTo(3, 10);
+    });
+    
+    test("logarithmic functions should throw errors for invalid inputs", () => {
+      expect(() => math.log(0)).toThrow("Cannot calculate logarithm of non-positive number");
+      expect(() => math.log(10, 1)).toThrow("Invalid logarithm base");
+      expect(() => math.log(10, 0)).toThrow("Invalid logarithm base");
+      expect(() => math.log(10, -1)).toThrow("Invalid logarithm base");
+    });
+  });
+  
+  describe("Statistical Functions", () => {
+    let testData;
+    
     beforeEach(() => {
-        // Setup code for each test
-        console.log('Setting up test for math');
+      testData = [2, 4, 6, 8, 10];
     });
-
-    afterEach(() => {
-        // Cleanup code for each test
-        console.log('Cleaning up after test for math');
+    
+    test("sum should correctly calculate the sum", () => {
+      expect(math.sum(testData)).toBe(30);
+      expect(math.sum([])).toBe(0);
+      expect(math.sum([5])).toBe(5);
     });
-
-    test('package can be imported correctly', () => {
-        // This test verifies that the package can be imported
-        expect(typeof math).toBe('object');
+    
+    test("mean should correctly calculate the average", () => {
+      expect(math.mean(testData)).toBe(6);
+      expect(math.mean([])).toBe(0);
+      expect(math.mean([5])).toBe(5);
     });
-
-    // Add more specific tests for the package functionality
-    test('package has expected exports', () => {
-        // Check for expected exports based on the package
-        // This is a basic test that should be customized for each package
-        expect(math).not.toBe(null);
-        expect(math).not.toBe(undefined);
+    
+    test("median should correctly calculate the middle value", () => {
+      expect(math.median(testData)).toBe(6);
+      expect(math.median([1, 2, 3, 4])).toBe(2.5);
+      expect(math.median([])).toBe(0);
+      expect(math.median([5])).toBe(5);
     });
+    
+    test("mode should correctly find the most frequent value", () => {
+      expect(math.mode([1, 2, 2, 3, 4])).toBe(2);
+      expect(math.mode([1, 1, 2, 2, 3])).toEqual([1, 2]);
+      expect(math.mode(testData)).toBeNull();
+      expect(math.mode([])).toBeNull();
+    });
+    
+    test("min should find the minimum value", () => {
+      expect(math.min(testData)).toBe(2);
+      expect(math.min([5, 3, 8, 1, 10])).toBe(1);
+    });
+    
+    test("max should find the maximum value", () => {
+      expect(math.max(testData)).toBe(10);
+      expect(math.max([5, 3, 8, 1, 10])).toBe(10);
+    });
+    
+    test("range should calculate the difference between max and min", () => {
+      expect(math.range(testData)).toBe(8);
+      expect(math.range([5, 3, 8, 1, 10])).toBe(9);
+    });
+    
+    test("variance should calculate the variance correctly", () => {
+      expect(math.variance(testData)).toBeCloseTo(8, 10);
+      expect(math.variance([1, 1, 1])).toBe(0);
+      expect(math.variance([1])).toBe(0);
+      expect(math.variance([])).toBe(0);
+    });
+    
+    test("stdDev should calculate the standard deviation correctly", () => {
+      expect(math.stdDev(testData)).toBeCloseTo(2.83, 2);
+      expect(math.stdDev([1, 1, 1])).toBe(0);
+    });
+    
+    test("quartiles should calculate Q1, Q2, and Q3 correctly", () => {
+      expect(stats.quartiles(testData)).toEqual([3, 6, 9]);
+      expect(stats.quartiles([1, 2, 3, 4, 5, 6, 7, 8])).toEqual([2.5, 4.5, 6.5]);
+    });
+    
+    test("iqr should calculate interquartile range correctly", () => {
+      expect(stats.iqr(testData)).toBe(6);
+      expect(stats.iqr([1, 2, 3, 4, 5, 6, 7, 8])).toBe(4);
+    });
+  });
+  
+  describe("Vector Class", () => {
+    let v1, v2;
+    
+    beforeEach(() => {
+      v1 = new Vector([1, 2, 3]);
+      v2 = new Vector([4, 5, 6]);
+    });
+    
+    test("constructor should create a vector with the given components", () => {
+      expect(v1.components).toEqual([1, 2, 3]);
+      expect(v1.dimension).toBe(3);
+    });
+    
+    test("get should return the component at the given index", () => {
+      expect(v1.get(0)).toBe(1);
+      expect(v1.get(1)).toBe(2);
+      expect(v1.get(2)).toBe(3);
+    });
+    
+    test("get should throw an error for invalid indices", () => {
+      expect(() => v1.get(-1)).toThrow("Index out of bounds");
+      expect(() => v1.get(3)).toThrow("Index out of bounds");
+    });
+    
+    test("set should return a new vector with the component at the given index changed", () => {
+      const v3 = v1.set(1, 10);
+      expect(v3.components).toEqual([1, 10, 3]);
+      expect(v1.components).toEqual([1, 2, 3]); // Original unchanged
+    });
+    
+    test("add should correctly add two vectors", () => {
+      const result = v1.add(v2);
+      expect(result.components).toEqual([5, 7, 9]);
+    });
+    
+    test("add should throw an error when adding vectors of different dimensions", () => {
+      const v3 = new Vector([1, 2]);
+      expect(() => v1.add(v3)).toThrow("Vectors must have the same dimension");
+    });
+    
+    test("subtract should correctly subtract two vectors", () => {
+      const result = v1.subtract(v2);
+      expect(result.components).toEqual([-3, -3, -3]);
+    });
+    
+    test("scale should correctly multiply a vector by a scalar", () => {
+      const result = v1.scale(2);
+      expect(result.components).toEqual([2, 4, 6]);
+    });
+    
+    test("dot should correctly calculate the dot product", () => {
+      const result = v1.dot(v2);
+      expect(result).toBe(1*4 + 2*5 + 3*6); // 32
+    });
+    
+    test("cross should correctly calculate the cross product for 3D vectors", () => {
+      const result = v1.cross(v2);
+      expect(result.components).toEqual([
+        2*6 - 3*5,  // -3
+        3*4 - 1*6,  // 6
+        1*5 - 2*4   // -3
+      ]);
+    });
+    
+    test("cross should throw an error for non-3D vectors", () => {
+      const v3 = new Vector([1, 2]);
+      expect(() => v1.cross(v3)).toThrow("Cross product is only defined for 3D vectors");
+    });
+    
+    test("magnitude should correctly calculate the length of the vector", () => {
+      expect(v1.magnitude()).toBeCloseTo(Math.sqrt(1*1 + 2*2 + 3*3), 10); // ~3.74
+    });
+    
+    test("normalize should return a unit vector in the same direction", () => {
+      const mag = v1.magnitude();
+      const result = v1.normalize();
+      expect(result.components[0]).toBeCloseTo(1/mag, 10);
+      expect(result.components[1]).toBeCloseTo(2/mag, 10);
+      expect(result.components[2]).toBeCloseTo(3/mag, 10);
+      expect(result.magnitude()).toBeCloseTo(1, 10);
+    });
+  });
+  
+  describe("Matrix Class", () => {
+    let m1, m2;
+    
+    beforeEach(() => {
+      m1 = new Matrix([
+        [1, 2],
+        [3, 4]
+      ]);
+      
+      m2 = new Matrix([
+        [5, 6],
+        [7, 8]
+      ]);
+    });
+    
+    test("constructor should create a matrix with the given data", () => {
+      expect(m1.data).toEqual([[1, 2], [3, 4]]);
+      expect(m1.rows).toBe(2);
+      expect(m1.columns).toBe(2);
+    });
+    
+    test("get should return the element at the given position", () => {
+      expect(m1.get(0, 0)).toBe(1);
+      expect(m1.get(0, 1)).toBe(2);
+      expect(m1.get(1, 0)).toBe(3);
+      expect(m1.get(1, 1)).toBe(4);
+    });
+    
+    test("get should throw an error for invalid indices", () => {
+      expect(() => m1.get(-1, 0)).toThrow("Index out of bounds");
+      expect(() => m1.get(0, -1)).toThrow("Index out of bounds");
+      expect(() => m1.get(2, 0)).toThrow("Index out of bounds");
+      expect(() => m1.get(0, 2)).toThrow("Index out of bounds");
+    });
+    
+    test("set should return a new matrix with the element at the given position changed", () => {
+      const m3 = m1.set(0, 1, 10);
+      expect(m3.data).toEqual([[1, 10], [3, 4]]);
+      expect(m1.data).toEqual([[1, 2], [3, 4]]); // Original unchanged
+    });
+    
+    test("add should correctly add two matrices", () => {
+      const result = m1.add(m2);
+      expect(result.data).toEqual([
+        [1+5, 2+6],
+        [3+7, 4+8]
+      ]);
+    });
+    
+    test("add should throw an error when adding matrices of different dimensions", () => {
+      const m3 = new Matrix([[1, 2, 3], [4, 5, 6]]);
+      expect(() => m1.add(m3)).toThrow("Matrices must have the same dimensions");
+    });
+    
+    test("subtract should correctly subtract two matrices", () => {
+      const result = m1.subtract(m2);
+      expect(result.data).toEqual([
+        [1-5, 2-6],
+        [3-7, 4-8]
+      ]);
+    });
+    
+    test("multiply should correctly multiply two matrices", () => {
+      const result = m1.multiply(m2);
+      expect(result.data).toEqual([
+        [1*5 + 2*7, 1*6 + 2*8],
+        [3*5 + 4*7, 3*6 + 4*8]
+      ]);
+    });
+    
+    test("multiply should throw an error when dimensions don't match", () => {
+      const m3 = new Matrix([[1, 2, 3], [4, 5, 6]]);
+      expect(() => m1.multiply(m3)).toThrow("Number of columns in first matrix must equal number of rows in second matrix");
+    });
+    
+    test("scale should correctly multiply a matrix by a scalar", () => {
+      const result = m1.scale(2);
+      expect(result.data).toEqual([
+        [2, 4],
+        [6, 8]
+      ]);
+    });
+    
+    test("transpose should correctly transpose a matrix", () => {
+      const result = m1.transpose();
+      expect(result.data).toEqual([
+        [1, 3],
+        [2, 4]
+      ]);
+    });
+    
+    test("determinant should correctly calculate the determinant", () => {
+      expect(m1.determinant()).toBe(1*4 - 2*3); // -2
+    });
+    
+    test("determinant should throw an error for non-square matrices", () => {
+      const m3 = new Matrix([[1, 2, 3], [4, 5, 6]]);
+      expect(() => m3.determinant()).toThrow("Determinant is only defined for square matrices");
+    });
+    
+    test("inverse should correctly calculate the inverse matrix", () => {
+      const result = m1.inverse();
+      // For a 2x2 matrix [[a, b], [c, d]], the inverse is [[d, -b], [-c, a]] / (ad - bc)
+      const det = 1*4 - 2*3; // -2
+      expect(result.data[0][0]).toBeCloseTo(4/det, 10); // -2
+      expect(result.data[0][1]).toBeCloseTo(-2/det, 10); // 1
+      expect(result.data[1][0]).toBeCloseTo(-3/det, 10); // 1.5
+      expect(result.data[1][1]).toBeCloseTo(1/det, 10); // -0.5
+    });
+    
+    test("inverse should throw an error for non-invertible matrices", () => {
+      const m3 = new Matrix([
+        [1, 2],
+        [2, 4]
+      ]); // Determinant is 0
+      expect(() => m3.inverse()).toThrow("Matrix is not invertible");
+    });
+  });
 });
-
-// Add more specific test cases below
-// Example:
-// test('specific function works as expected', () => {
-//     const result = math.someFunction();
-//     expect(result).toBe(expectedValue);
-// });

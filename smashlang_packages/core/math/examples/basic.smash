@@ -1,0 +1,115 @@
+/**
+ * Basic Math Package Example
+ * 
+ * This example demonstrates the basic functionality of the math package,
+ * including arithmetic operations, mathematical functions, and constants.
+ */
+
+import { math, Vector, Matrix } from "../src/index.smash";
+
+// Basic arithmetic
+console.log("=== Basic Arithmetic ===");
+console.log(`Addition: 5 + 3 = ${math.add(5, 3)}`);
+console.log(`Subtraction: 5 - 3 = ${math.subtract(5, 3)}`);
+console.log(`Multiplication: 5 * 3 = ${math.multiply(5, 3)}`);
+console.log(`Division: 6 / 3 = ${math.divide(6, 3)}`);
+console.log(`Modulo: 7 % 3 = ${math.mod(7, 3)}`);
+console.log(`Power: 2^3 = ${math.power(2, 3)}`);
+console.log();
+
+// Mathematical constants
+console.log("=== Mathematical Constants ===");
+console.log(`PI: ${math.PI}`);
+console.log(`E: ${math.E}`);
+console.log(`Square root of 2: ${math.SQRT2}`);
+console.log();
+
+// Advanced mathematical functions
+console.log("=== Advanced Mathematical Functions ===");
+console.log(`Square root of 16: ${math.sqrt(16)}`);
+console.log(`Absolute value of -5: ${math.abs(-5)}`);
+console.log(`Sine of PI/2: ${math.sin(math.PI / 2)}`);
+console.log(`Cosine of PI: ${math.cos(math.PI)}`);
+console.log(`Natural logarithm of 10: ${math.ln(10)}`);
+console.log(`Base-10 logarithm of 100: ${math.log10(100)}`);
+console.log();
+
+// Random number generation
+console.log("=== Random Numbers ===");
+console.log(`Random number between 0 and 1: ${math.random()}`);
+console.log(`Random integer between 1 and 10: ${math.randomInt(1, 10)}`);
+console.log(`Random float between 0 and 100: ${math.randomFloat(0, 100)}`);
+console.log();
+
+// Statistical functions
+console.log("=== Statistical Functions ===");
+const data = [2, 4, 6, 8, 10];
+console.log(`Data: [${data.join(", ")}]`);
+console.log(`Sum: ${math.sum(data)}`);
+console.log(`Mean (average): ${math.mean(data)}`);
+console.log(`Median: ${math.median(data)}`);
+console.log(`Minimum: ${math.min(data)}`);
+console.log(`Maximum: ${math.max(data)}`);
+console.log(`Range: ${math.range(data)}`);
+console.log(`Variance: ${math.variance(data)}`);
+console.log(`Standard Deviation: ${math.stdDev(data)}`);
+console.log();
+
+// Vector operations
+console.log("=== Vector Operations ===");
+const v1 = new Vector([1, 2, 3]);
+const v2 = new Vector([4, 5, 6]);
+console.log(`Vector 1: ${v1}`);
+console.log(`Vector 2: ${v2}`);
+console.log(`Vector 1 + Vector 2: ${v1.add(v2)}`);
+console.log(`Vector 1 - Vector 2: ${v1.subtract(v2)}`);
+console.log(`Vector 1 scaled by 2: ${v1.scale(2)}`);
+console.log(`Dot product: ${v1.dot(v2)}`);
+console.log(`Cross product: ${v1.cross(v2)}`);
+console.log(`Magnitude of Vector 1: ${v1.magnitude()}`);
+console.log(`Normalized Vector 1: ${v1.normalize()}`);
+console.log();
+
+// Matrix operations
+console.log("=== Matrix Operations ===");
+const m1 = new Matrix([
+  [1, 2],
+  [3, 4]
+]);
+const m2 = new Matrix([
+  [5, 6],
+  [7, 8]
+]);
+console.log("Matrix 1:");
+console.log(m1.toString());
+console.log();
+
+console.log("Matrix 2:");
+console.log(m2.toString());
+console.log();
+
+console.log("Matrix 1 + Matrix 2:");
+console.log(m1.add(m2).toString());
+console.log();
+
+console.log("Matrix 1 * Matrix 2:");
+console.log(m1.multiply(m2).toString());
+console.log();
+
+console.log("Transpose of Matrix 1:");
+console.log(m1.transpose().toString());
+console.log();
+
+console.log("Determinant of Matrix 1:", m1.determinant());
+console.log();
+
+console.log("Inverse of Matrix 1:");
+console.log(m1.inverse().toString());
+console.log();
+
+// Verify the inverse
+console.log("Matrix 1 * Inverse (should be identity matrix):");
+console.log(m1.multiply(m1.inverse()).toString());
+console.log();
+
+console.log("Example completed successfully!");

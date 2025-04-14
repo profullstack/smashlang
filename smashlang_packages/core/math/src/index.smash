@@ -1,0 +1,552 @@
+/**
+ * SmashLang Math Package
+ * 
+ * A comprehensive mathematical library for SmashLang applications.
+ * Provides basic arithmetic, advanced mathematical functions, and
+ * support for vectors and matrices.
+ */
+
+// Basic arithmetic functions
+export const add = (a, b) => a + b;
+export const subtract = (a, b) => a - b;
+export const multiply = (a, b) => a * b;
+export const divide = (a, b) => {
+  if (b === 0) {
+    throw new Error("Division by zero");
+  }
+  return a / b;
+};
+export const mod = (a, b) => a % b;
+export const power = (a, b) => a ** b;
+
+// Advanced mathematical functions
+export const sqrt = (x) => {
+  if (x < 0) {
+    throw new Error("Cannot calculate square root of negative number");
+  }
+  return Math.sqrt(x);
+};
+
+export const abs = (x) => Math.abs(x);
+export const floor = (x) => Math.floor(x);
+export const ceil = (x) => Math.ceil(x);
+export const round = (x) => Math.round(x);
+export const trunc = (x) => Math.trunc(x);
+
+// Trigonometric functions
+export const sin = (x) => Math.sin(x);
+export const cos = (x) => Math.cos(x);
+export const tan = (x) => Math.tan(x);
+export const asin = (x) => Math.asin(x);
+export const acos = (x) => Math.acos(x);
+export const atan = (x) => Math.atan(x);
+export const atan2 = (y, x) => Math.atan2(y, x);
+
+// Logarithmic functions
+export const log = (x, base = Math.E) => {
+  if (x <= 0) {
+    throw new Error("Cannot calculate logarithm of non-positive number");
+  }
+  if (base <= 0 || base === 1) {
+    throw new Error("Invalid logarithm base");
+  }
+  return Math.log(x) / Math.log(base);
+};
+
+export const ln = (x) => log(x, Math.E);
+export const log10 = (x) => log(x, 10);
+export const log2 = (x) => log(x, 2);
+
+// Constants
+export const PI = Math.PI;
+export const E = Math.E;
+export const SQRT2 = Math.SQRT2;
+export const SQRT1_2 = Math.SQRT1_2;
+export const LN2 = Math.LN2;
+export const LN10 = Math.LN10;
+
+// Random number generation
+export const random = () => Math.random();
+export const randomInt = (min, max) => {
+  min = Math.ceil(min);
+  max = Math.floor(max);
+  return Math.floor(Math.random() * (max - min + 1)) + min;
+};
+export const randomFloat = (min, max) => Math.random() * (max - min) + min;
+
+// Statistical functions
+export const sum = (arr) => arr.reduce((acc, val) => acc + val, 0);
+export const mean = (arr) => {
+  if (arr.length === 0) return 0;
+  return sum(arr) / arr.length;
+};
+export const median = (arr) => {
+  if (arr.length === 0) return 0;
+  
+  const sorted = [...arr].sort((a, b) => a - b);
+  const mid = Math.floor(sorted.length / 2);
+  
+  return sorted.length % 2 === 0
+    ? (sorted[mid - 1] + sorted[mid]) / 2
+    : sorted[mid];
+};
+export const mode = (arr) => {
+  if (arr.length === 0) return null;
+  
+  const counts = {};
+  let maxCount = 0;
+  let modes = [];
+  
+  for (const val of arr) {
+    counts[val] = (counts[val] || 0) + 1;
+    if (counts[val] > maxCount) {
+      maxCount = counts[val];
+      modes = [val];
+    } else if (counts[val] === maxCount) {
+      modes.push(val);
+    }
+  }
+  
+  return modes.length === arr.length ? null : modes.length === 1 ? modes[0] : modes;
+};
+export const variance = (arr) => {
+  if (arr.length <= 1) return 0;
+  
+  const avg = mean(arr);
+  return mean(arr.map(x => (x - avg) ** 2));
+};
+export const stdDev = (arr) => Math.sqrt(variance(arr));
+export const min = (arr) => Math.min(...arr);
+export const max = (arr) => Math.max(...arr);
+export const range = (arr) => max(arr) - min(arr);
+
+// Vector class
+export class Vector {
+  constructor(components) {
+    this.components = Array.isArray(components) ? [...components] : [];
+  }
+  
+  get dimension() {
+    return this.components.length;
+  }
+  
+  get(index) {
+    if (index < 0 || index >= this.dimension) {
+      throw new Error("Index out of bounds");
+    }
+    return this.components[index];
+  }
+  
+  set(index, value) {
+    if (index < 0 || index >= this.dimension) {
+      throw new Error("Index out of bounds");
+    }
+    const newComponents = [...this.components];
+    newComponents[index] = value;
+    return new Vector(newComponents);
+  }
+  
+  add(v) {
+    if (!(v instanceof Vector)) {
+      throw new Error("Can only add another vector");
+    }
+    if (this.dimension !== v.dimension) {
+      throw new Error("Vectors must have the same dimension");
+    }
+    
+    const result = this.components.map((val, i) => val + v.components[i]);
+    return new Vector(result);
+  }
+  
+  subtract(v) {
+    if (!(v instanceof Vector)) {
+      throw new Error("Can only subtract another vector");
+    }
+    if (this.dimension !== v.dimension) {
+      throw new Error("Vectors must have the same dimension");
+    }
+    
+    const result = this.components.map((val, i) => val - v.components[i]);
+    return new Vector(result);
+  }
+  
+  scale(scalar) {
+    const result = this.components.map(val => val * scalar);
+    return new Vector(result);
+  }
+  
+  dot(v) {
+    if (!(v instanceof Vector)) {
+      throw new Error("Can only calculate dot product with another vector");
+    }
+    if (this.dimension !== v.dimension) {
+      throw new Error("Vectors must have the same dimension");
+    }
+    
+    return this.components.reduce((sum, val, i) => sum + val * v.components[i], 0);
+  }
+  
+  cross(v) {
+    if (!(v instanceof Vector)) {
+      throw new Error("Can only calculate cross product with another vector");
+    }
+    if (this.dimension !== 3 || v.dimension !== 3) {
+      throw new Error("Cross product is only defined for 3D vectors");
+    }
+    
+    const [a1, a2, a3] = this.components;
+    const [b1, b2, b3] = v.components;
+    
+    return new Vector([
+      a2 * b3 - a3 * b2,
+      a3 * b1 - a1 * b3,
+      a1 * b2 - a2 * b1
+    ]);
+  }
+  
+  magnitude() {
+    return Math.sqrt(this.components.reduce((sum, val) => sum + val * val, 0));
+  }
+  
+  normalize() {
+    const mag = this.magnitude();
+    if (mag === 0) {
+      throw new Error("Cannot normalize zero vector");
+    }
+    
+    return this.scale(1 / mag);
+  }
+  
+  toString() {
+    return `Vector(${this.components.join(", ")})`;
+  }
+}
+
+// Matrix class
+export class Matrix {
+  constructor(data) {
+    if (!Array.isArray(data) || data.length === 0 || !Array.isArray(data[0])) {
+      this.data = [[0]];
+    } else {
+      // Deep copy the data
+      this.data = data.map(row => [...row]);
+    }
+  }
+  
+  get rows() {
+    return this.data.length;
+  }
+  
+  get columns() {
+    return this.data[0].length;
+  }
+  
+  get(row, col) {
+    if (row < 0 || row >= this.rows || col < 0 || col >= this.columns) {
+      throw new Error("Index out of bounds");
+    }
+    return this.data[row][col];
+  }
+  
+  set(row, col, value) {
+    if (row < 0 || row >= this.rows || col < 0 || col >= this.columns) {
+      throw new Error("Index out of bounds");
+    }
+    
+    const newData = this.data.map(r => [...r]);
+    newData[row][col] = value;
+    return new Matrix(newData);
+  }
+  
+  add(m) {
+    if (!(m instanceof Matrix)) {
+      throw new Error("Can only add another matrix");
+    }
+    if (this.rows !== m.rows || this.columns !== m.columns) {
+      throw new Error("Matrices must have the same dimensions");
+    }
+    
+    const result = this.data.map((row, i) => 
+      row.map((val, j) => val + m.data[i][j])
+    );
+    
+    return new Matrix(result);
+  }
+  
+  subtract(m) {
+    if (!(m instanceof Matrix)) {
+      throw new Error("Can only subtract another matrix");
+    }
+    if (this.rows !== m.rows || this.columns !== m.columns) {
+      throw new Error("Matrices must have the same dimensions");
+    }
+    
+    const result = this.data.map((row, i) => 
+      row.map((val, j) => val - m.data[i][j])
+    );
+    
+    return new Matrix(result);
+  }
+  
+  multiply(m) {
+    if (!(m instanceof Matrix)) {
+      throw new Error("Can only multiply by another matrix");
+    }
+    if (this.columns !== m.rows) {
+      throw new Error("Number of columns in first matrix must equal number of rows in second matrix");
+    }
+    
+    const result = [];
+    for (let i = 0; i < this.rows; i++) {
+      result[i] = [];
+      for (let j = 0; j < m.columns; j++) {
+        let sum = 0;
+        for (let k = 0; k < this.columns; k++) {
+          sum += this.data[i][k] * m.data[k][j];
+        }
+        result[i][j] = sum;
+      }
+    }
+    
+    return new Matrix(result);
+  }
+  
+  scale(scalar) {
+    const result = this.data.map(row => 
+      row.map(val => val * scalar)
+    );
+    
+    return new Matrix(result);
+  }
+  
+  transpose() {
+    const result = [];
+    for (let j = 0; j < this.columns; j++) {
+      result[j] = [];
+      for (let i = 0; i < this.rows; i++) {
+        result[j][i] = this.data[i][j];
+      }
+    }
+    
+    return new Matrix(result);
+  }
+  
+  determinant() {
+    if (this.rows !== this.columns) {
+      throw new Error("Determinant is only defined for square matrices");
+    }
+    
+    if (this.rows === 1) {
+      return this.data[0][0];
+    }
+    
+    if (this.rows === 2) {
+      return this.data[0][0] * this.data[1][1] - this.data[0][1] * this.data[1][0];
+    }
+    
+    let det = 0;
+    for (let j = 0; j < this.columns; j++) {
+      det += this.data[0][j] * this.cofactor(0, j);
+    }
+    
+    return det;
+  }
+  
+  minor(row, col) {
+    const subMatrix = [];
+    for (let i = 0; i < this.rows; i++) {
+      if (i === row) continue;
+      
+      const newRow = [];
+      for (let j = 0; j < this.columns; j++) {
+        if (j === col) continue;
+        newRow.push(this.data[i][j]);
+      }
+      
+      subMatrix.push(newRow);
+    }
+    
+    return new Matrix(subMatrix).determinant();
+  }
+  
+  cofactor(row, col) {
+    const sign = (row + col) % 2 === 0 ? 1 : -1;
+    return sign * this.minor(row, col);
+  }
+  
+  adjugate() {
+    if (this.rows !== this.columns) {
+      throw new Error("Adjugate is only defined for square matrices");
+    }
+    
+    const result = [];
+    for (let i = 0; i < this.rows; i++) {
+      result[i] = [];
+      for (let j = 0; j < this.columns; j++) {
+        result[i][j] = this.cofactor(j, i); // Note: i and j are swapped for transpose
+      }
+    }
+    
+    return new Matrix(result);
+  }
+  
+  inverse() {
+    const det = this.determinant();
+    if (det === 0) {
+      throw new Error("Matrix is not invertible");
+    }
+    
+    return this.adjugate().scale(1 / det);
+  }
+  
+  toString() {
+    return this.data.map(row => row.join("\t")).join("\n");
+  }
+}
+
+// Create a namespace for statistical functions
+export const stats = {
+  sum,
+  mean,
+  median,
+  mode,
+  variance,
+  stdDev,
+  min,
+  max,
+  range,
+  
+  // Additional statistical functions
+  quartiles: (arr) => {
+    if (arr.length === 0) return [0, 0, 0];
+    
+    const sorted = [...arr].sort((a, b) => a - b);
+    const q2 = median(sorted);
+    
+    const lowerHalf = sorted.slice(0, Math.floor(sorted.length / 2));
+    const upperHalf = sorted.slice(Math.ceil(sorted.length / 2));
+    
+    const q1 = median(lowerHalf);
+    const q3 = median(upperHalf);
+    
+    return [q1, q2, q3];
+  },
+  
+  iqr: (arr) => {
+    const [q1, , q3] = stats.quartiles(arr);
+    return q3 - q1;
+  },
+  
+  percentile: (arr, p) => {
+    if (arr.length === 0) return 0;
+    if (p < 0 || p > 100) {
+      throw new Error("Percentile must be between 0 and 100");
+    }
+    
+    const sorted = [...arr].sort((a, b) => a - b);
+    const index = (p / 100) * (sorted.length - 1);
+    const lower = Math.floor(index);
+    const upper = Math.ceil(index);
+    
+    if (lower === upper) {
+      return sorted[lower];
+    }
+    
+    const weight = index - lower;
+    return (1 - weight) * sorted[lower] + weight * sorted[upper];
+  },
+  
+  correlation: (x, y) => {
+    if (x.length !== y.length || x.length === 0) {
+      throw new Error("Arrays must have the same non-zero length");
+    }
+    
+    const meanX = mean(x);
+    const meanY = mean(y);
+    
+    let numerator = 0;
+    let denomX = 0;
+    let denomY = 0;
+    
+    for (let i = 0; i < x.length; i++) {
+      const xDiff = x[i] - meanX;
+      const yDiff = y[i] - meanY;
+      
+      numerator += xDiff * yDiff;
+      denomX += xDiff * xDiff;
+      denomY += yDiff * yDiff;
+    }
+    
+    if (denomX === 0 || denomY === 0) {
+      return 0;
+    }
+    
+    return numerator / Math.sqrt(denomX * denomY);
+  }
+};
+
+// Export a namespace for all math functions
+export const math = {
+  // Basic arithmetic
+  add,
+  subtract,
+  multiply,
+  divide,
+  mod,
+  power,
+  
+  // Advanced functions
+  sqrt,
+  abs,
+  floor,
+  ceil,
+  round,
+  trunc,
+  
+  // Trigonometric functions
+  sin,
+  cos,
+  tan,
+  asin,
+  acos,
+  atan,
+  atan2,
+  
+  // Logarithmic functions
+  log,
+  ln,
+  log10,
+  log2,
+  
+  // Constants
+  PI,
+  E,
+  SQRT2,
+  SQRT1_2,
+  LN2,
+  LN10,
+  
+  // Random number generation
+  random,
+  randomInt,
+  randomFloat,
+  
+  // Statistical functions
+  sum,
+  mean,
+  median,
+  mode,
+  variance,
+  stdDev,
+  min,
+  max,
+  range
+};
+
+// Default export
+export default {
+  math,
+  stats,
+  Vector,
+  Matrix
+};
