@@ -1,0 +1,84 @@
+// SmashLang Control Flow Examples
+
+// If-else statement
+let x = 10;
+if (x > 5) {
+    print("x is greater than 5");
+} else {
+    print("x is not greater than 5");
+}
+
+// If-else if-else statement
+let y = 3;
+if (y > 5) {
+    print("y is greater than 5");
+} else if (y > 0) {
+    print("y is positive but not greater than 5");
+} else {
+    print("y is not positive");
+}
+
+// While loop
+let counter = 0;
+while (counter < 5) {
+    print("Counter: " + counter);
+    counter = counter + 1;
+}
+
+// Do-while loop
+let i = 0;
+do {
+    print("Do-while counter: " + i);
+    i = i + 1;
+} while (i < 3);
+
+// For loop
+for (let j = 0; j < 3; j = j + 1) {
+    print("For loop iteration: " + j);
+}
+
+// For-in loop (for objects)
+let person = { name: "John", age: 30, job: "Developer" };
+for (let key in person) {
+    print(key + ": " + person[key]);
+}
+
+// For-of loop (for arrays)
+let numbers = [1, 2, 3, 4, 5];
+for (let num of numbers) {
+    print("Number: " + num);
+}
+
+// Switch statement
+let fruit = "apple";
+switch (fruit) {
+    case "apple":
+        print("Selected fruit is apple");
+        break;
+    case "banana":
+        print("Selected fruit is banana");
+        break;
+    case "orange":
+        print("Selected fruit is orange");
+        break;
+    default:
+        print("Unknown fruit");
+}
+
+// Break statement in a loop
+for (let k = 0; k < 10; k = k + 1) {
+    if (k === 5) {
+        print("Breaking the loop at k = 5");
+        break;
+    }
+    print("k = " + k);
+}
+
+// Continue statement in a loop
+for (let m = 0; m < 5; m = m + 1) {
+    if (m === 2) {
+        print("Skipping iteration where m = 2");
+        continue;
+    }
+    print("m = " + m);
+}

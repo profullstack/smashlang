@@ -1,0 +1,147 @@
+// SmashLang Syntax Examples
+
+// Comments
+// This is a single-line comment
+
+/* This is a
+   multi-line comment */
+
+// Variables and Constants
+let x = 10;          // Variable declaration with 'let'
+const PI = 3.14159;  // Constant declaration with 'const'
+
+// Basic Data Types
+let num = 42;                // Number (integer)
+let float = 3.14;            // Number (floating point)
+let str = "Hello, world!";   // String with double quotes
+let str2 = 'Single quotes';  // String with single quotes
+let bool = true;             // Boolean (true)
+let bool2 = false;           // Boolean (false)
+let nullValue = null;        // Null value
+let undefinedValue;          // Undefined value
+
+// Template Strings
+let name = "John";
+let greeting = `Hello, ${name}!`;  // Template string with interpolation
+print(greeting);  // Output: Hello, John!
+
+// Arrays
+let emptyArray = [];
+let numbers = [1, 2, 3, 4, 5];
+let mixed = [1, "two", true, null];
+
+// Accessing array elements
+print(numbers[0]);  // Output: 1
+print(numbers[2]);  // Output: 3
+
+// Array methods
+numbers.push(6);           // Add element to the end
+let lastNumber = numbers.pop();  // Remove last element
+let firstNumber = numbers.shift();  // Remove first element
+numbers.unshift(0);        // Add element to the beginning
+let sliced = numbers.slice(1, 3);  // Get a slice of the array
+
+// Objects
+let emptyObject = {};
+let person = {
+    name: "John",
+    age: 30,
+    isEmployed: true,
+    address: {
+        street: "123 Main St",
+        city: "Anytown",
+        zipCode: "12345"
+    }
+};
+
+// Accessing object properties
+print(person.name);  // Output: John
+print(person["age"]);  // Output: 30
+print(person.address.city);  // Output: Anytown
+
+// Operators
+// Arithmetic operators
+let a = 10;
+let b = 3;
+print(a + b);  // Addition: 13
+print(a - b);  // Subtraction: 7
+print(a * b);  // Multiplication: 30
+print(a / b);  // Division: 3.333...
+print(a % b);  // Modulo: 1
+print(a ** b); // Exponentiation: 1000
+
+// Increment and decrement
+let c = 5;
+c++;  // Increment: c is now 6
+c--;  // Decrement: c is now 5
+
+// Assignment operators
+let d = 10;
+d += 5;  // d = d + 5: d is now 15
+d -= 3;  // d = d - 3: d is now 12
+d *= 2;  // d = d * 2: d is now 24
+d /= 4;  // d = d / 4: d is now 6
+d %= 4;  // d = d % 4: d is now 2
+
+// Comparison operators
+print(5 == "5");   // Equal (value): true
+print(5 === "5");  // Strict equal (value and type): false
+print(5 != "5");   // Not equal (value): false
+print(5 !== "5");  // Strict not equal (value and type): true
+print(5 > 3);      // Greater than: true
+print(5 >= 5);     // Greater than or equal: true
+print(3 < 5);      // Less than: true
+print(3 <= 3);     // Less than or equal: true
+
+// Logical operators
+print(true && false);  // Logical AND: false
+print(true || false);  // Logical OR: true
+print(!true);          // Logical NOT: false
+
+// Ternary operator
+let age = 20;
+let status = age >= 18 ? "Adult" : "Minor";
+print(status);  // Output: Adult
+
+// Nullish coalescing operator
+let username = null;
+let displayName = username ?? "Anonymous";
+print(displayName);  // Output: Anonymous
+
+// Optional chaining
+let user = {
+    profile: {
+        // address: { city: "New York" }
+    }
+};
+let city = user.profile?.address?.city ?? "Unknown";
+print(city);  // Output: Unknown
+
+// Spread operator
+let arr1 = [1, 2, 3];
+let arr2 = [...arr1, 4, 5];  // [1, 2, 3, 4, 5]
+
+let obj1 = { a: 1, b: 2 };
+let obj2 = { ...obj1, c: 3 };  // { a: 1, b: 2, c: 3 }
+
+// Rest parameters
+function sum(...numbers) {
+    return numbers.reduce((total, num) => total + num, 0);
+}
+print(sum(1, 2, 3, 4));  // Output: 10
+
+// Destructuring
+// Array destructuring
+let [first, second, ...rest] = [1, 2, 3, 4, 5];
+print(first);  // Output: 1
+print(second);  // Output: 2
+print(rest);  // Output: [3, 4, 5]
+
+// Object destructuring
+let { name: personName, age: personAge } = person;
+print(personName);  // Output: John
+print(personAge);  // Output: 30
+
+// Nested destructuring
+let { address: { city: personCity } } = person;
+print(personCity);  // Output: Anytown

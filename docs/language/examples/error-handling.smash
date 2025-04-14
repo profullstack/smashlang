@@ -1,0 +1,80 @@
+// SmashLang Error Handling Examples
+
+// Basic try-catch
+try {
+    // Code that might throw an error
+    let x = JSON.parse('{"invalid": json}');
+} catch (error) {
+    print("Caught an error: " + error);
+}
+
+// Try-catch-finally
+try {
+    // Code that might throw an error
+    throw "Something went wrong!";
+} catch (error) {
+    print("Caught an error: " + error);
+} finally {
+    print("This will always execute");
+}
+
+// Nested try-catch blocks
+try {
+    print("Outer try block");
+    try {
+        print("Inner try block");
+        throw "Inner error";
+    } catch (innerError) {
+        print("Caught inner error: " + innerError);
+        throw "Rethrown error";
+    }
+} catch (outerError) {
+    print("Caught outer error: " + outerError);
+}
+
+// Custom error handling function
+function handleError(fn) {
+    try {
+        return fn();
+    } catch (error) {
+        print("Error handled: " + error);
+        return null;
+    }
+}
+
+// Using the custom error handler
+let result = handleError(function() {
+    throw "Custom error";
+});
+print("Result: " + result);
+
+// Conditional error handling
+function divide(a, b) {
+    if (b === 0) {
+        throw "Division by zero";
+    }
+    return a / b;
+}
+
+try {
+    let result1 = divide(10, 2);
+    print("10 / 2 = " + result1);
+    
+    let result2 = divide(10, 0);
+    print("This line won't execute");
+} catch (error) {
+    print("Caught division error: " + error);
+}
+
+// Error objects
+try {
+    throw {
+        name: "CustomError",
+        message: "This is a custom error object",
+        code: 123
+    };
+} catch (error) {
+    print("Error name: " + error.name);
+    print("Error message: " + error.message);
+    print("Error code: " + error.code);
+}

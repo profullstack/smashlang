@@ -1,0 +1,114 @@
+// SmashLang Pattern Matching Examples
+
+// Basic pattern matching with match expression
+function describeValue(value) {
+    match (value) {
+        case 0:
+            return "Zero";
+        case 1:
+            return "One";
+        case 2:
+            return "Two";
+        default:
+            return "Other number";
+    }
+}
+
+print(describeValue(0));  // Output: Zero
+print(describeValue(1));  // Output: One
+print(describeValue(5));  // Output: Other number
+
+// Pattern matching with types
+function typeOf(value) {
+    match (value) {
+        case is Number:
+            return "Number";
+        case is String:
+            return "String";
+        case is Boolean:
+            return "Boolean";
+        case is Array:
+            return "Array";
+        case is Object:
+            return "Object";
+        case is Function:
+            return "Function";
+        default:
+            return "Unknown";
+    }
+}
+
+print(typeOf(42));        // Output: Number
+print(typeOf("hello"));   // Output: String
+print(typeOf(true));      // Output: Boolean
+print(typeOf([1, 2, 3])); // Output: Array
+print(typeOf({a: 1}));    // Output: Object
+print(typeOf(() => {}));  // Output: Function
+
+// Pattern matching with destructuring
+function processPoint(point) {
+    match (point) {
+        case {x: 0, y: 0}:
+            return "Origin";
+        case {x: x, y: 0}:
+            return "On X-axis at " + x;
+        case {x: 0, y: y}:
+            return "On Y-axis at " + y;
+        case {x: x, y: y} if x === y:
+            return "On the diagonal at " + x;
+        case {x: x, y: y}:
+            return "Point at (" + x + ", " + y + ")";
+        default:
+            return "Not a valid point";
+    }
+}
+
+print(processPoint({x: 0, y: 0}));   // Output: Origin
+print(processPoint({x: 5, y: 0}));   // Output: On X-axis at 5
+print(processPoint({x: 0, y: 7}));   // Output: On Y-axis at 7
+print(processPoint({x: 3, y: 3}));   // Output: On the diagonal at 3
+print(processPoint({x: 2, y: 4}));   // Output: Point at (2, 4)
+
+// Pattern matching with arrays
+function processArray(arr) {
+    match (arr) {
+        case []:
+            return "Empty array";
+        case [x]:
+            return "Single element: " + x;
+        case [x, y]:
+            return "Two elements: " + x + " and " + y;
+        case [x, ...rest]:
+            return "First element: " + x + ", rest: " + rest;
+        default:
+            return "Not an array";
+    }
+}
+
+print(processArray([]));           // Output: Empty array
+print(processArray([42]));         // Output: Single element: 42
+print(processArray([1, 2]));       // Output: Two elements: 1 and 2
+print(processArray([1, 2, 3, 4])); // Output: First element: 1, rest: 2,3,4
+
+// Pattern matching with nested structures
+function processData(data) {
+    match (data) {
+        case {type: "user", data: {name, age}}:
+            return "User: " + name + ", age: " + age;
+        case {type: "product", data: {name, price}}:
+            return "Product: " + name + ", price: $" + price;
+        case {type: "error", message}:
+            return "Error: " + message;
+        default:
+            return "Unknown data structure";
+    }
+}
+
+print(processData({type: "user", data: {name: "John", age: 30}}));
+// Output: User: John, age: 30
+
+print(processData({type: "product", data: {name: "Laptop", price: 999}}));
+// Output: Product: Laptop, price: $999
+
+print(processData({type: "error", message: "Not found"}));
+// Output: Error: Not found

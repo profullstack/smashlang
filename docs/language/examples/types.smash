@@ -1,0 +1,193 @@
+// SmashLang Types Examples
+
+// Primitive Types
+// ---------------
+
+// Number type
+let integer = 42;
+let float = 3.14159;
+let negative = -10;
+let scientific = 1.23e6;  // 1.23 * 10^6 = 1,230,000
+let binary = 0b1010;      // Binary: 10
+let octal = 0o744;        // Octal: 484
+let hex = 0xFF;           // Hexadecimal: 255
+
+print("Types of numbers:");
+print(typeof integer);     // Output: number
+print(typeof float);       // Output: number
+print(typeof scientific);  // Output: number
+
+// String type
+let singleQuotes = 'Hello, world!';
+let doubleQuotes = "Hello, world!";
+let templateString = `Hello, ${integer}!`;
+
+print("Types of strings:");
+print(typeof singleQuotes);    // Output: string
+print(typeof doubleQuotes);    // Output: string
+print(typeof templateString);  // Output: string
+
+// Boolean type
+let trueValue = true;
+let falseValue = false;
+
+print("Types of booleans:");
+print(typeof trueValue);   // Output: boolean
+print(typeof falseValue);  // Output: boolean
+
+// Null and Undefined
+let nullValue = null;
+let undefinedValue;
+
+print("Types of null and undefined:");
+print(typeof nullValue);      // Output: object (JavaScript quirk)
+print(typeof undefinedValue); // Output: undefined
+
+// Symbol type (unique identifiers)
+let symbol = Symbol("description");
+let anotherSymbol = Symbol("description");
+
+print("Types of symbols:");
+print(typeof symbol);  // Output: symbol
+print(symbol === anotherSymbol);  // Output: false (symbols are always unique)
+
+// BigInt type (for large integers)
+let bigInt = 9007199254740991n;  // n suffix for BigInt
+let anotherBigInt = BigInt("9007199254740992");
+
+print("Types of BigInts:");
+print(typeof bigInt);  // Output: bigint
+print(bigInt + 1n);    // Output: 9007199254740992n
+
+// Reference Types
+// --------------
+
+// Object type
+let person = {
+    name: "John",
+    age: 30,
+    isEmployed: true
+};
+
+print("Type of object:");
+print(typeof person);  // Output: object
+
+// Array type (special kind of object)
+let numbers = [1, 2, 3, 4, 5];
+let mixed = [1, "two", true, null, { key: "value" }];
+
+print("Type of arrays:");
+print(typeof numbers);  // Output: object
+print(Array.isArray(numbers));  // Output: true
+print(Array.isArray(person));   // Output: false
+
+// Function type
+function greet(name) {
+    return "Hello, " + name + "!";
+}
+
+let arrowFunction = (x) => x * x;
+
+print("Types of functions:");
+print(typeof greet);          // Output: function
+print(typeof arrowFunction);  // Output: function
+
+// Date type
+let now = new Date();
+print("Type of date:");
+print(typeof now);  // Output: object
+print(now instanceof Date);  // Output: true
+
+// RegExp type
+let regex = /[a-z]+/g;
+let regexObj = new RegExp("[a-z]+", "g");
+
+print("Types of regular expressions:");
+print(typeof regex);     // Output: object
+print(typeof regexObj);  // Output: object
+print(regex instanceof RegExp);  // Output: true
+
+// Map type
+let map = new Map();
+map.set("key1", "value1");
+map.set("key2", "value2");
+
+print("Type of Map:");
+print(typeof map);  // Output: object
+print(map instanceof Map);  // Output: true
+
+// Set type
+let set = new Set([1, 2, 3, 3, 4]);  // Duplicates are automatically removed
+
+print("Type of Set:");
+print(typeof set);  // Output: object
+print(set instanceof Set);  // Output: true
+print(set.size);  // Output: 4 (3 appears only once)
+
+// Type Conversion
+// --------------
+
+// String to Number
+let strNumber = "42";
+let convertedNumber = Number(strNumber);
+let parsedInt = parseInt(strNumber, 10);
+let parsedFloat = parseFloat("3.14");
+
+print("String to Number conversions:");
+print(convertedNumber);  // Output: 42
+print(parsedInt);        // Output: 42
+print(parsedFloat);      // Output: 3.14
+
+// Number to String
+let num = 42;
+let numStr = String(num);
+let numToStr = num.toString();
+
+print("Number to String conversions:");
+print(numStr);     // Output: "42"
+print(numToStr);   // Output: "42"
+
+// To Boolean
+print("To Boolean conversions:");
+print(Boolean(1));        // Output: true
+print(Boolean(0));        // Output: false
+print(Boolean("hello"));  // Output: true
+print(Boolean(""));       // Output: false
+print(Boolean(null));     // Output: false
+print(Boolean(undefined)); // Output: false
+
+// Type Checking
+// ------------
+
+function checkType(value) {
+    if (typeof value === "number") {
+        return "It's a number";
+    } else if (typeof value === "string") {
+        return "It's a string";
+    } else if (typeof value === "boolean") {
+        return "It's a boolean";
+    } else if (typeof value === "function") {
+        return "It's a function";
+    } else if (typeof value === "object") {
+        if (value === null) {
+            return "It's null";
+        } else if (Array.isArray(value)) {
+            return "It's an array";
+        } else if (value instanceof Date) {
+            return "It's a date";
+        } else {
+            return "It's an object";
+        }
+    } else {
+        return "Unknown type";
+    }
+}
+
+print(checkType(42));           // Output: It's a number
+print(checkType("hello"));      // Output: It's a string
+print(checkType(true));         // Output: It's a boolean
+print(checkType(function(){})); // Output: It's a function
+print(checkType(null));         // Output: It's null
+print(checkType([1, 2, 3]));    // Output: It's an array
+print(checkType(new Date()));   // Output: It's a date
+print(checkType({a: 1}));       // Output: It's an object

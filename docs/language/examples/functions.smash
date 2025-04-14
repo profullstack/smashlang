@@ -1,0 +1,106 @@
+// SmashLang Functions Examples
+
+// Basic function declaration
+function greet(name) {
+    return "Hello, " + name + "!";
+}
+
+// Function call
+let greeting = greet("World");
+print(greeting);  // Output: Hello, World!
+
+// Function with default parameters
+function greetWithDefault(name = "Guest") {
+    return "Hello, " + name + "!";
+}
+
+print(greetWithDefault());  // Output: Hello, Guest!
+print(greetWithDefault("John"));  // Output: Hello, John!
+
+// Function with multiple parameters
+function add(a, b) {
+    return a + b;
+}
+
+print("Sum: " + add(5, 3));  // Output: Sum: 8
+
+// Function with rest parameters
+function sum(...numbers) {
+    let total = 0;
+    for (let num of numbers) {
+        total += num;
+    }
+    return total;
+}
+
+print("Sum of 1, 2, 3: " + sum(1, 2, 3));  // Output: Sum of 1, 2, 3: 6
+print("Sum of 5, 10, 15, 20: " + sum(5, 10, 15, 20));  // Output: Sum of 5, 10, 15, 20: 50
+
+// Arrow functions
+const multiply = (a, b) => a * b;
+print("5 * 3 = " + multiply(5, 3));  // Output: 5 * 3 = 15
+
+// Arrow function with block body
+const square = (x) => {
+    let result = x * x;
+    return result;
+};
+print("Square of 4: " + square(4));  // Output: Square of 4: 16
+
+// Higher-order functions
+function operate(a, b, operation) {
+    return operation(a, b);
+}
+
+print("Addition: " + operate(5, 3, add));  // Output: Addition: 8
+print("Multiplication: " + operate(5, 3, multiply));  // Output: Multiplication: 15
+
+// Closures
+function createCounter() {
+    let count = 0;
+    return function() {
+        count += 1;
+        return count;
+    };
+}
+
+const counter = createCounter();
+print(counter());  // Output: 1
+print(counter());  // Output: 2
+print(counter());  // Output: 3
+
+// Immediately Invoked Function Expression (IIFE)
+const result = (function() {
+    let x = 10;
+    let y = 20;
+    return x + y;
+})();
+print("IIFE result: " + result);  // Output: IIFE result: 30
+
+// Recursive functions
+function factorial(n) {
+    if (n <= 1) {
+        return 1;
+    }
+    return n * factorial(n - 1);
+}
+
+print("Factorial of 5: " + factorial(5));  // Output: Factorial of 5: 120
+
+// Async functions
+async function fetchData() {
+    // Simulate async operation
+    await new Promise(resolve => setTimeout(resolve, 1000));
+    return "Data fetched";
+}
+
+// Using async function
+async function processData() {
+    print("Fetching data...");
+    const data = await fetchData();
+    print(data);
+    return "Processing complete";
+}
+
+// Call async function
+processData().then(result => print(result));

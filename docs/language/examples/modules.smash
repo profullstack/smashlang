@@ -1,0 +1,100 @@
+// SmashLang Modules Examples
+
+// Importing a module
+import "math.smash";
+
+// Using functions from the imported module
+let result = math.add(5, 3);
+print("5 + 3 = " + result);  // Output: 5 + 3 = 8
+
+let squareRoot = math.sqrt(16);
+print("Square root of 16: " + squareRoot);  // Output: Square root of 16: 4
+
+// Importing specific functions from a module
+import { subtract, multiply } from "math.smash";
+
+print("5 - 3 = " + subtract(5, 3));  // Output: 5 - 3 = 2
+print("5 * 3 = " + multiply(5, 3));  // Output: 5 * 3 = 15
+
+// Importing with alias
+import { divide as div } from "math.smash";
+
+print("10 / 2 = " + div(10, 2));  // Output: 10 / 2 = 5
+
+// Importing everything with an alias
+import * as mathUtils from "math.smash";
+
+print("PI: " + mathUtils.PI);  // Output: PI: 3.14159
+print("10^2: " + mathUtils.power(10, 2));  // Output: 10^2: 100
+
+// Creating a module
+// In file: logger.smash
+export function log(message) {
+    print("[LOG] " + message);
+}
+
+export function error(message) {
+    print("[ERROR] " + message);
+}
+
+export const LOG_LEVELS = {
+    INFO: "info",
+    WARNING: "warning",
+    ERROR: "error"
+};
+
+// Default export
+export default function(message) {
+    print("[DEFAULT] " + message);
+}
+
+// Using the created module
+// In another file
+import defaultLogger, { log, error, LOG_LEVELS } from "logger.smash";
+
+log("This is an info message");  // Output: [LOG] This is an info message
+error("Something went wrong");  // Output: [ERROR] Something went wrong
+defaultLogger("Default log message");  // Output: [DEFAULT] Default log message
+print("Log level: " + LOG_LEVELS.INFO);  // Output: Log level: info
+
+// Dynamic imports
+async function loadModule() {
+    const utils = await import("utils.smash");
+    utils.doSomething();
+}
+
+loadModule();
+
+// Module with initialization
+// In file: database.smash
+let connection = null;
+
+export function connect(url) {
+    print("Connecting to database at " + url);
+    connection = { url: url, status: "connected" };
+    return connection;
+}
+
+export function query(sql) {
+    if (!connection) {
+        throw "Not connected to database";
+    }
+    print("Executing query: " + sql);
+    return ["result1", "result2"];
+}
+
+export function disconnect() {
+    if (connection) {
+        print("Disconnecting from database");
+        connection = null;
+    }
+}
+
+// Using the database module
+// In another file
+import { connect, query, disconnect } from "database.smash";
+
+connect("mongodb://localhost:27017");
+let results = query("SELECT * FROM users");
+print("Query results: " + results);
+disconnect();
