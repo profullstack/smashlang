@@ -1,0 +1,1008 @@
+/**
+ * SmashLang SmashHono Package
+ * 
+ * A comprehensive web framework for SmashLang applications based on Hono.
+ * Provides functionality for creating web servers, routing, middleware,
+ * and handling HTTP requests and responses.
+ */
+
+// HTTP methods
+const HTTP_METHODS = {
+  GET: 'GET',
+  POST: 'POST',
+  PUT: 'PUT',
+  DELETE: 'DELETE',
+  PATCH: 'PATCH',
+  HEAD: 'HEAD',
+  OPTIONS: 'OPTIONS',
+  TRACE: 'TRACE',
+  CONNECT: 'CONNECT'
+};
+
+// HTTP status codes
+const STATUS_CODES = {
+  // 1xx Informational
+  CONTINUE: 100,
+  SWITCHING_PROTOCOLS: 101,
+  PROCESSING: 102,
+  EARLY_HINTS: 103,
+  
+  // 2xx Success
+  OK: 200,
+  CREATED: 201,
+  ACCEPTED: 202,
+  NON_AUTHORITATIVE_INFORMATION: 203,
+  NO_CONTENT: 204,
+  RESET_CONTENT: 205,
+  PARTIAL_CONTENT: 206,
+  MULTI_STATUS: 207,
+  ALREADY_REPORTED: 208,
+  IM_USED: 226,
+  
+  // 3xx Redirection
+  MULTIPLE_CHOICES: 300,
+  MOVED_PERMANENTLY: 301,
+  FOUND: 302,
+  SEE_OTHER: 303,
+  NOT_MODIFIED: 304,
+  USE_PROXY: 305,
+  TEMPORARY_REDIRECT: 307,
+  PERMANENT_REDIRECT: 308,
+  
+  // 4xx Client Error
+  BAD_REQUEST: 400,
+  UNAUTHORIZED: 401,
+  PAYMENT_REQUIRED: 402,
+  FORBIDDEN: 403,
+  NOT_FOUND: 404,
+  METHOD_NOT_ALLOWED: 405,
+  NOT_ACCEPTABLE: 406,
+  PROXY_AUTHENTICATION_REQUIRED: 407,
+  REQUEST_TIMEOUT: 408,
+  CONFLICT: 409,
+  GONE: 410,
+  LENGTH_REQUIRED: 411,
+  PRECONDITION_FAILED: 412,
+  PAYLOAD_TOO_LARGE: 413,
+  URI_TOO_LONG: 414,
+  UNSUPPORTED_MEDIA_TYPE: 415,
+  RANGE_NOT_SATISFIABLE: 416,
+  EXPECTATION_FAILED: 417,
+  IM_A_TEAPOT: 418,
+  MISDIRECTED_REQUEST: 421,
+  UNPROCESSABLE_ENTITY: 422,
+  LOCKED: 423,
+  FAILED_DEPENDENCY: 424,
+  TOO_EARLY: 425,
+  UPGRADE_REQUIRED: 426,
+  PRECONDITION_REQUIRED: 428,
+  TOO_MANY_REQUESTS: 429,
+  REQUEST_HEADER_FIELDS_TOO_LARGE: 431,
+  UNAVAILABLE_FOR_LEGAL_REASONS: 451,
+  
+  // 5xx Server Error
+  INTERNAL_SERVER_ERROR: 500,
+  NOT_IMPLEMENTED: 501,
+  BAD_GATEWAY: 502,
+  SERVICE_UNAVAILABLE: 503,
+  GATEWAY_TIMEOUT: 504,
+  HTTP_VERSION_NOT_SUPPORTED: 505,
+  VARIANT_ALSO_NEGOTIATES: 506,
+  INSUFFICIENT_STORAGE: 507,
+  LOOP_DETECTED: 508,
+  NOT_EXTENDED: 510,
+  NETWORK_AUTHENTICATION_REQUIRED: 511
+};
+
+/**
+ * Request class representing an HTTP request
+ */
+export class Request {
+  /**
+   * Create a new Request
+   * @param {Object} options - Request options
+   */
+  constructor(options = {}) {
+    this.method = options.method || HTTP_METHODS.GET;
+    this.url = options.url || '/';
+    this.headers = new Headers(options.headers || {});
+    this.params = options.params || {};
+    this.query = options.query || {};
+    this.body = options.body || null;
+    this.raw = options.raw || null;
+  }
+  
+  /**
+   * Get a request header
+   * @param {string} name - Header name
+   * @returns {string|null} Header value
+   */
+  header(name) {
+    return this.headers.get(name);
+  }
+  
+  /**
+   * Check if the request has a specific header
+   * @param {string} name - Header name
+   * @returns {boolean} True if the header exists
+   */
+  hasHeader(name) {
+    return this.headers.has(name);
+  }
+  
+  /**
+   * Get a URL parameter
+   * @param {string} name - Parameter name
+   * @returns {string|null} Parameter value
+   */
+  param(name) {
+    return this.params[name] || null;
+  }
+  
+  /**
+   * Get a query parameter
+   * @param {string} name - Parameter name
+   * @returns {string|null} Parameter value
+   */
+  queryParam(name) {
+    return this.query[name] || null;
+  }
+  
+  /**
+   * Parse the request body as JSON
+   * @returns {Promise<Object>} Parsed body
+   */
+  async json() {
+    if (typeof this.body === 'string') {
+      try {
+        return JSON.parse(this.body);
+      } catch (error) {
+        throw new Error(`Failed to parse JSON: ${error.message}`);
+      }
+    } else if (this.body && typeof this.body === 'object') {
+      return this.body;
+    }
+    
+    return null;
+  }
+  
+  /**
+   * Parse the request body as text
+   * @returns {Promise<string>} Body text
+   */
+  async text() {
+    if (typeof this.body === 'string') {
+      return this.body;
+    } else if (this.body && typeof this.body === 'object') {
+      return JSON.stringify(this.body);
+    }
+    
+    return '';
+  }
+  
+  /**
+   * Parse the request body as form data
+   * @returns {Promise<Object>} Parsed form data
+   */
+  async formData() {
+    if (typeof this.body === 'string') {
+      try {
+        const formData = {};
+        const pairs = this.body.split('&');
+        
+        for (const pair of pairs) {
+          const [key, value] = pair.split('=');
+          formData[decodeURIComponent(key)] = decodeURIComponent(value || '');
+        }
+        
+        return formData;
+      } catch (error) {
+        throw new Error(`Failed to parse form data: ${error.message}`);
+      }
+    } else if (this.body && typeof this.body === 'object') {
+      return this.body;
+    }
+    
+    return {};
+  }
+}
+
+/**
+ * Response class representing an HTTP response
+ */
+export class Response {
+  /**
+   * Create a new Response
+   * @param {Object} options - Response options
+   */
+  constructor(options = {}) {
+    this.status = options.status || STATUS_CODES.OK;
+    this.headers = new Headers(options.headers || {});
+    this.body = options.body || null;
+  }
+  
+  /**
+   * Set a response header
+   * @param {string} name - Header name
+   * @param {string} value - Header value
+   * @returns {Response} This response
+   */
+  header(name, value) {
+    this.headers.set(name, value);
+    return this;
+  }
+  
+  /**
+   * Set the response status
+   * @param {number} status - Status code
+   * @returns {Response} This response
+   */
+  statusCode(status) {
+    this.status = status;
+    return this;
+  }
+  
+  /**
+   * Set the response body
+   * @param {*} body - Response body
+   * @returns {Response} This response
+   */
+  send(body) {
+    this.body = body;
+    return this;
+  }
+  
+  /**
+   * Send a JSON response
+   * @param {Object} data - JSON data
+   * @returns {Response} This response
+   */
+  json(data) {
+    this.header('Content-Type', 'application/json');
+    this.body = JSON.stringify(data);
+    return this;
+  }
+  
+  /**
+   * Send a text response
+   * @param {string} text - Response text
+   * @returns {Response} This response
+   */
+  text(text) {
+    this.header('Content-Type', 'text/plain');
+    this.body = text;
+    return this;
+  }
+  
+  /**
+   * Send an HTML response
+   * @param {string} html - HTML content
+   * @returns {Response} This response
+   */
+  html(html) {
+    this.header('Content-Type', 'text/html');
+    this.body = html;
+    return this;
+  }
+  
+  /**
+   * Redirect to a URL
+   * @param {string} url - Redirect URL
+   * @param {number} status - Status code
+   * @returns {Response} This response
+   */
+  redirect(url, status = STATUS_CODES.FOUND) {
+    this.header('Location', url);
+    this.status = status;
+    return this;
+  }
+}
+
+/**
+ * Context class representing a request/response context
+ */
+export class Context {
+  /**
+   * Create a new Context
+   * @param {Request} req - Request object
+   * @param {Response} res - Response object
+   */
+  constructor(req, res) {
+    this.req = req;
+    this.res = res;
+    this.state = {};
+  }
+  
+  /**
+   * Get a request header
+   * @param {string} name - Header name
+   * @returns {string|null} Header value
+   */
+  header(name) {
+    return this.req.header(name);
+  }
+  
+  /**
+   * Get a URL parameter
+   * @param {string} name - Parameter name
+   * @returns {string|null} Parameter value
+   */
+  param(name) {
+    return this.req.param(name);
+  }
+  
+  /**
+   * Get a query parameter
+   * @param {string} name - Parameter name
+   * @returns {string|null} Parameter value
+   */
+  query(name) {
+    return this.req.queryParam(name);
+  }
+  
+  /**
+   * Parse the request body as JSON
+   * @returns {Promise<Object>} Parsed body
+   */
+  json() {
+    return this.req.json();
+  }
+  
+  /**
+   * Parse the request body as text
+   * @returns {Promise<string>} Body text
+   */
+  text() {
+    return this.req.text();
+  }
+  
+  /**
+   * Parse the request body as form data
+   * @returns {Promise<Object>} Parsed form data
+   */
+  formData() {
+    return this.req.formData();
+  }
+  
+  /**
+   * Set a response header
+   * @param {string} name - Header name
+   * @param {string} value - Header value
+   * @returns {Context} This context
+   */
+  setHeader(name, value) {
+    this.res.header(name, value);
+    return this;
+  }
+  
+  /**
+   * Set the response status
+   * @param {number} status - Status code
+   * @returns {Context} This context
+   */
+  status(status) {
+    this.res.statusCode(status);
+    return this;
+  }
+  
+  /**
+   * Send a response
+   * @param {*} body - Response body
+   * @returns {Context} This context
+   */
+  send(body) {
+    this.res.send(body);
+    return this;
+  }
+  
+  /**
+   * Send a JSON response
+   * @param {Object} data - JSON data
+   * @returns {Context} This context
+   */
+  json(data) {
+    this.res.json(data);
+    return this;
+  }
+  
+  /**
+   * Send a text response
+   * @param {string} text - Response text
+   * @returns {Context} This context
+   */
+  text(text) {
+    this.res.text(text);
+    return this;
+  }
+  
+  /**
+   * Send an HTML response
+   * @param {string} html - HTML content
+   * @returns {Context} This context
+   */
+  html(html) {
+    this.res.html(html);
+    return this;
+  }
+  
+  /**
+   * Redirect to a URL
+   * @param {string} url - Redirect URL
+   * @param {number} status - Status code
+   * @returns {Context} This context
+   */
+  redirect(url, status) {
+    this.res.redirect(url, status);
+    return this;
+  }
+  
+  /**
+   * Set a state value
+   * @param {string} key - State key
+   * @param {*} value - State value
+   * @returns {Context} This context
+   */
+  setState(key, value) {
+    this.state[key] = value;
+    return this;
+  }
+  
+  /**
+   * Get a state value
+   * @param {string} key - State key
+   * @returns {*} State value
+   */
+  getState(key) {
+    return this.state[key];
+  }
+}
+
+/**
+ * Router class for handling routes
+ */
+export class Router {
+  /**
+   * Create a new Router
+   * @param {Object} options - Router options
+   */
+  constructor(options = {}) {
+    this.routes = [];
+    this.middleware = [];
+    this.options = options;
+    this.basePath = options.basePath || '';
+  }
+  
+  /**
+   * Add a route
+   * @param {string} method - HTTP method
+   * @param {string} path - Route path
+   * @param {Function|Function[]} handlers - Route handlers
+   * @returns {Router} This router
+   */
+  route(method, path, ...handlers) {
+    const fullPath = this.basePath + path;
+    
+    this.routes.push({
+      method,
+      path: fullPath,
+      handlers: handlers.flat()
+    });
+    
+    return this;
+  }
+  
+  /**
+   * Add a GET route
+   * @param {string} path - Route path
+   * @param {Function|Function[]} handlers - Route handlers
+   * @returns {Router} This router
+   */
+  get(path, ...handlers) {
+    return this.route(HTTP_METHODS.GET, path, ...handlers);
+  }
+  
+  /**
+   * Add a POST route
+   * @param {string} path - Route path
+   * @param {Function|Function[]} handlers - Route handlers
+   * @returns {Router} This router
+   */
+  post(path, ...handlers) {
+    return this.route(HTTP_METHODS.POST, path, ...handlers);
+  }
+  
+  /**
+   * Add a PUT route
+   * @param {string} path - Route path
+   * @param {Function|Function[]} handlers - Route handlers
+   * @returns {Router} This router
+   */
+  put(path, ...handlers) {
+    return this.route(HTTP_METHODS.PUT, path, ...handlers);
+  }
+  
+  /**
+   * Add a DELETE route
+   * @param {string} path - Route path
+   * @param {Function|Function[]} handlers - Route handlers
+   * @returns {Router} This router
+   */
+  delete(path, ...handlers) {
+    return this.route(HTTP_METHODS.DELETE, path, ...handlers);
+  }
+  
+  /**
+   * Add a PATCH route
+   * @param {string} path - Route path
+   * @param {Function|Function[]} handlers - Route handlers
+   * @returns {Router} This router
+   */
+  patch(path, ...handlers) {
+    return this.route(HTTP_METHODS.PATCH, path, ...handlers);
+  }
+  
+  /**
+   * Add middleware
+   * @param {Function|Function[]} handlers - Middleware handlers
+   * @returns {Router} This router
+   */
+  use(...handlers) {
+    this.middleware.push(...handlers.flat());
+    return this;
+  }
+  
+  /**
+   * Match a request to a route
+   * @param {Request} req - Request object
+   * @returns {Object|null} Matched route and params
+   */
+  match(req) {
+    for (const route of this.routes) {
+      if (route.method !== req.method && route.method !== '*') {
+        continue;
+      }
+      
+      const params = this._matchPath(route.path, req.url);
+      
+      if (params) {
+        return {
+          route,
+          params
+        };
+      }
+    }
+    
+    return null;
+  }
+  
+  /**
+   * Match a path against a pattern
+   * @private
+   */
+  _matchPath(pattern, path) {
+    // Convert pattern to regex
+    const paramNames = [];
+    const regexPattern = pattern
+      .replace(/\/\*$/, '(?:/.*)?') // Handle trailing wildcard
+      .replace(/:([a-zA-Z0-9_]+)/g, (_, name) => {
+        paramNames.push(name);
+        return '([^/]+)';
+      });
+    
+    const regex = new RegExp(`^${regexPattern}$`);
+    const match = path.match(regex);
+    
+    if (!match) {
+      return null;
+    }
+    
+    const params = {};
+    
+    for (let i = 0; i < paramNames.length; i++) {
+      params[paramNames[i]] = match[i + 1];
+    }
+    
+    return params;
+  }
+}
+
+/**
+ * App class for creating a web application
+ */
+export class App {
+  /**
+   * Create a new App
+   * @param {Object} options - App options
+   */
+  constructor(options = {}) {
+    this.router = new Router();
+    this.options = options;
+    this.server = null;
+  }
+  
+  /**
+   * Add a route
+   * @param {string} method - HTTP method
+   * @param {string} path - Route path
+   * @param {Function|Function[]} handlers - Route handlers
+   * @returns {App} This app
+   */
+  route(method, path, ...handlers) {
+    this.router.route(method, path, ...handlers);
+    return this;
+  }
+  
+  /**
+   * Add a GET route
+   * @param {string} path - Route path
+   * @param {Function|Function[]} handlers - Route handlers
+   * @returns {App} This app
+   */
+  get(path, ...handlers) {
+    this.router.get(path, ...handlers);
+    return this;
+  }
+  
+  /**
+   * Add a POST route
+   * @param {string} path - Route path
+   * @param {Function|Function[]} handlers - Route handlers
+   * @returns {App} This app
+   */
+  post(path, ...handlers) {
+    this.router.post(path, ...handlers);
+    return this;
+  }
+  
+  /**
+   * Add a PUT route
+   * @param {string} path - Route path
+   * @param {Function|Function[]} handlers - Route handlers
+   * @returns {App} This app
+   */
+  put(path, ...handlers) {
+    this.router.put(path, ...handlers);
+    return this;
+  }
+  
+  /**
+   * Add a DELETE route
+   * @param {string} path - Route path
+   * @param {Function|Function[]} handlers - Route handlers
+   * @returns {App} This app
+   */
+  delete(path, ...handlers) {
+    this.router.delete(path, ...handlers);
+    return this;
+  }
+  
+  /**
+   * Add a PATCH route
+   * @param {string} path - Route path
+   * @param {Function|Function[]} handlers - Route handlers
+   * @returns {App} This app
+   */
+  patch(path, ...handlers) {
+    this.router.patch(path, ...handlers);
+    return this;
+  }
+  
+  /**
+   * Add middleware
+   * @param {Function|Function[]} handlers - Middleware handlers
+   * @returns {App} This app
+   */
+  use(...handlers) {
+    this.router.use(...handlers);
+    return this;
+  }
+  
+  /**
+   * Use a router
+   * @param {string} path - Base path
+   * @param {Router} router - Router
+   * @returns {App} This app
+   */
+  useRouter(path, router) {
+    for (const route of router.routes) {
+      this.router.route(route.method, path + route.path, ...route.handlers);
+    }
+    
+    return this;
+  }
+  
+  /**
+   * Start the server
+   * @param {number} port - Port number
+   * @param {string} host - Host name
+   * @returns {Promise<Object>} Server info
+   */
+  listen(port = 3000, host = 'localhost') {
+    return new Promise((resolve) => {
+      print(`Starting server on ${host}:${port}`);
+      
+      // In a real implementation, this would start an HTTP server
+      // For this example, we'll simulate it
+      this.server = {
+        port,
+        host,
+        close: () => {
+          print(`Stopping server on ${host}:${port}`);
+          this.server = null;
+        }
+      };
+      
+      resolve(this.server);
+    });
+  }
+  
+  /**
+   * Stop the server
+   * @returns {Promise<void>} Promise resolving when the server is stopped
+   */
+  close() {
+    return new Promise((resolve) => {
+      if (this.server) {
+        this.server.close();
+      }
+      
+      resolve();
+    });
+  }
+  
+  /**
+   * Handle a request
+   * @param {Request} req - Request object
+   * @returns {Promise<Response>} Response object
+   */
+  async handle(req) {
+    const res = new Response();
+    const ctx = new Context(req, res);
+    
+    try {
+      // Run middleware
+      for (const middleware of this.router.middleware) {
+        await middleware(ctx);
+        
+        // If the response is already sent, stop processing
+        if (res.body !== null) {
+          return res;
+        }
+      }
+      
+      // Match route
+      const match = this.router.match(req);
+      
+      if (!match) {
+        return res.statusCode(STATUS_CODES.NOT_FOUND).json({
+          error: 'Not Found',
+          message: `Route ${req.method} ${req.url} not found`
+        });
+      }
+      
+      // Set route params
+      req.params = match.params;
+      
+      // Run route handlers
+      for (const handler of match.route.handlers) {
+        await handler(ctx);
+        
+        // If the response is already sent, stop processing
+        if (res.body !== null) {
+          return res;
+        }
+      }
+      
+      // If no response was sent, return a 404
+      return res.statusCode(STATUS_CODES.NOT_FOUND).json({
+        error: 'Not Found',
+        message: 'No response was sent'
+      });
+    } catch (error) {
+      // Handle errors
+      return res.statusCode(STATUS_CODES.INTERNAL_SERVER_ERROR).json({
+        error: 'Internal Server Error',
+        message: error.message
+      });
+    }
+  }
+}
+
+/**
+ * Create a new App
+ * @param {Object} options - App options
+ * @returns {App} App instance
+ */
+export fn createApp(options = {}) {
+  return new App(options);
+}
+
+/**
+ * Create a new Router
+ * @param {Object} options - Router options
+ * @returns {Router} Router instance
+ */
+export fn createRouter(options = {}) {
+  return new Router(options);
+}
+
+/**
+ * Create a new Request
+ * @param {Object} options - Request options
+ * @returns {Request} Request instance
+ */
+export fn createRequest(options = {}) {
+  return new Request(options);
+}
+
+/**
+ * Create a new Response
+ * @param {Object} options - Response options
+ * @returns {Response} Response instance
+ */
+export fn createResponse(options = {}) {
+  return new Response(options);
+}
+
+/**
+ * Create a new Context
+ * @param {Request} req - Request object
+ * @param {Response} res - Response object
+ * @returns {Context} Context instance
+ */
+export fn createContext(req, res) {
+  return new Context(req, res);
+}
+
+/**
+ * Create a middleware that serves static files
+ * @param {string} root - Root directory
+ * @param {Object} options - Options
+ * @returns {Function} Middleware function
+ */
+export fn serveStatic(root, options = {}) {
+  return async (ctx) => {
+    // In a real implementation, this would serve static files
+    // For this example, we'll simulate it
+    const path = ctx.req.url;
+    
+    if (path.includes('..')) {
+      return ctx.status(STATUS_CODES.FORBIDDEN).json({
+        error: 'Forbidden',
+        message: 'Path traversal is not allowed'
+      });
+    }
+    
+    print(`Serving static file: ${root}${path}`);
+    
+    // Simulate file serving
+    if (path.endsWith('.html')) {
+      ctx.setHeader('Content-Type', 'text/html');
+      ctx.send(`<html><body><h1>HTML File: ${path}</h1></body></html>`);
+    } else if (path.endsWith('.css')) {
+      ctx.setHeader('Content-Type', 'text/css');
+      ctx.send(`/* CSS File: ${path} */`);
+    } else if (path.endsWith('.js')) {
+      ctx.setHeader('Content-Type', 'application/javascript');
+      ctx.send(`// JavaScript File: ${path}`);
+    } else if (path.endsWith('.json')) {
+      ctx.setHeader('Content-Type', 'application/json');
+      ctx.json({ file: path });
+    } else if (path.endsWith('.png') || path.endsWith('.jpg') || path.endsWith('.gif')) {
+      ctx.setHeader('Content-Type', `image/${path.split('.').pop()}`);
+      ctx.send(`Binary image data for ${path}`);
+    } else {
+      ctx.setHeader('Content-Type', 'text/plain');
+      ctx.send(`Text file: ${path}`);
+    }
+  };
+}
+
+/**
+ * Create a middleware that parses JSON request bodies
+ * @param {Object} options - Options
+ * @returns {Function} Middleware function
+ */
+export fn json(options = {}) {
+  return async (ctx) => {
+    if (ctx.req.headers.get('Content-Type') === 'application/json') {
+      try {
+        const body = await ctx.req.json();
+        ctx.req.body = body;
+      } catch (error) {
+        if (options.strict !== false) {
+          return ctx.status(STATUS_CODES.BAD_REQUEST).json({
+            error: 'Bad Request',
+            message: 'Invalid JSON'
+          });
+        }
+      }
+    }
+  };
+}
+
+/**
+ * Create a middleware that parses URL-encoded request bodies
+ * @param {Object} options - Options
+ * @returns {Function} Middleware function
+ */
+export fn urlencoded(options = {}) {
+  return async (ctx) => {
+    if (ctx.req.headers.get('Content-Type') === 'application/x-www-form-urlencoded') {
+      try {
+        const body = await ctx.req.formData();
+        ctx.req.body = body;
+      } catch (error) {
+        if (options.strict !== false) {
+          return ctx.status(STATUS_CODES.BAD_REQUEST).json({
+            error: 'Bad Request',
+            message: 'Invalid form data'
+          });
+        }
+      }
+    }
+  };
+}
+
+/**
+ * Create a middleware that adds CORS headers
+ * @param {Object} options - Options
+ * @returns {Function} Middleware function
+ */
+export fn cors(options = {}) {
+  const defaults = {
+    origin: '*',
+    methods: 'GET,HEAD,PUT,PATCH,POST,DELETE',
+    preflightContinue: false,
+    optionsSuccessStatus: 204
+  };
+  
+  const settings = { ...defaults, ...options };
+  
+  return async (ctx) => {
+    // Set CORS headers
+    ctx.setHeader('Access-Control-Allow-Origin', settings.origin);
+    
+    if (ctx.req.method === HTTP_METHODS.OPTIONS) {
+      ctx.setHeader('Access-Control-Allow-Methods', settings.methods);
+      
+      if (settings.allowHeaders) {
+        ctx.setHeader('Access-Control-Allow-Headers', settings.allowHeaders);
+      }
+      
+      if (settings.maxAge) {
+        ctx.setHeader('Access-Control-Max-Age', settings.maxAge);
+      }
+      
+      if (!settings.preflightContinue) {
+        ctx.status(settings.optionsSuccessStatus).send('');
+      }
+    }
+  };
+}
+
+// Export constants
+export { HTTP_METHODS, STATUS_CODES };
+
+// Create a namespace for the package
+const smashhono = {
+  createApp,
+  createRouter,
+  createRequest,
+  createResponse,
+  createContext,
+  serveStatic,
+  json,
+  urlencoded,
+  cors,
+  App,
+  Router,
+  Request,
+  Response,
+  Context,
+  HTTP_METHODS,
+  STATUS_CODES
+};
+
+// Default export
+export default smashhono;

@@ -1,0 +1,963 @@
+/**
+ * SmashLang Redis Package
+ * 
+ * A comprehensive Redis client for SmashLang applications.
+ * Provides functionality for interacting with Redis databases,
+ * including key-value operations, pub/sub, transactions, and more.
+ */
+
+// Redis data types
+const DATA_TYPES = {
+  STRING: 'string',
+  LIST: 'list',
+  SET: 'set',
+  SORTED_SET: 'zset',
+  HASH: 'hash',
+  STREAM: 'stream'
+};
+
+// Redis connection states
+const CONNECTION_STATES = {
+  CONNECTING: 'connecting',
+  CONNECTED: 'connected',
+  DISCONNECTING: 'disconnecting',
+  DISCONNECTED: 'disconnected',
+  ERROR: 'error'
+};
+
+/**
+ * Redis client class
+ */
+export class RedisClient {
+  /**
+   * Create a new Redis client
+   * @param {Object} options - Connection options
+   */
+  constructor(options = {}) {
+    this.options = {
+      host: 'localhost',
+      port: 6379,
+      password: null,
+      db: 0,
+      ...options
+    };
+    
+    this.state = CONNECTION_STATES.DISCONNECTED;
+    this.connection = null;
+    this.subscribers = {};
+    
+    print(`Creating Redis client for ${this.options.host}:${this.options.port}`);
+  }
+  
+  /**
+   * Connect to the Redis server
+   * @returns {Promise<RedisClient>} Promise resolving to this client
+   */
+  async connect() {
+    if (this.state === CONNECTION_STATES.CONNECTED) {
+      return this;
+    }
+    
+    print(`Connecting to Redis at ${this.options.host}:${this.options.port}`);
+    
+    this.state = CONNECTION_STATES.CONNECTING;
+    
+    try {
+      // In a real implementation, this would establish a connection to Redis
+      // For this example, we'll simulate it
+      await new Promise(resolve => setTimeout(resolve, 100));
+      
+      this.state = CONNECTION_STATES.CONNECTED;
+      print('Connected to Redis');
+      
+      return this;
+    } catch (error) {
+      this.state = CONNECTION_STATES.ERROR;
+      print(`Redis connection error: ${error.message}`);
+      throw error;
+    }
+  }
+  
+  /**
+   * Disconnect from the Redis server
+   * @returns {Promise<void>} Promise resolving when disconnected
+   */
+  async disconnect() {
+    if (this.state === CONNECTION_STATES.DISCONNECTED) {
+      return;
+    }
+    
+    print('Disconnecting from Redis');
+    
+    this.state = CONNECTION_STATES.DISCONNECTING;
+    
+    try {
+      // In a real implementation, this would close the connection
+      // For this example, we'll simulate it
+      await new Promise(resolve => setTimeout(resolve, 100));
+      
+      this.state = CONNECTION_STATES.DISCONNECTED;
+      print('Disconnected from Redis');
+    } catch (error) {
+      this.state = CONNECTION_STATES.ERROR;
+      print(`Redis disconnection error: ${error.message}`);
+      throw error;
+    }
+  }
+  
+  /**
+   * Execute a Redis command
+   * @param {string} command - Command name
+   * @param {...*} args - Command arguments
+   * @returns {Promise<*>} Command result
+   */
+  async exec(command, ...args) {
+    if (this.state !== CONNECTION_STATES.CONNECTED) {
+      await this.connect();
+    }
+    
+    print(`Executing Redis command: ${command} ${args.join(' ')}`);
+    
+    try {
+      // In a real implementation, this would execute the command on the Redis server
+      // For this example, we'll simulate it
+      await new Promise(resolve => setTimeout(resolve, 50));
+      
+      // Simulate command execution
+      return this._simulateCommand(command.toLowerCase(), args);
+    } catch (error) {
+      print(`Redis command error: ${error.message}`);
+      throw error;
+    }
+  }
+  
+  /**
+   * Set a key-value pair
+   * @param {string} key - Key
+   * @param {string} value - Value
+   * @param {Object} options - Options
+   * @returns {Promise<string>} Result
+   */
+  async set(key, value, options = {}) {
+    const args = [key, value];
+    
+    if (options.ex) {
+      args.push('EX', options.ex);
+    } else if (options.px) {
+      args.push('PX', options.px);
+    }
+    
+    if (options.nx) {
+      args.push('NX');
+    } else if (options.xx) {
+      args.push('XX');
+    }
+    
+    return this.exec('SET', ...args);
+  }
+  
+  /**
+   * Get a value by key
+   * @param {string} key - Key
+   * @returns {Promise<string|null>} Value
+   */
+  async get(key) {
+    return this.exec('GET', key);
+  }
+  
+  /**
+   * Delete one or more keys
+   * @param {...string} keys - Keys to delete
+   * @returns {Promise<number>} Number of keys deleted
+   */
+  async del(...keys) {
+    return this.exec('DEL', ...keys);
+  }
+  
+  /**
+   * Check if a key exists
+   * @param {...string} keys - Keys to check
+   * @returns {Promise<number>} Number of keys that exist
+   */
+  async exists(...keys) {
+    return this.exec('EXISTS', ...keys);
+  }
+  
+  /**
+   * Set a key's time to live in seconds
+   * @param {string} key - Key
+   * @param {number} seconds - Seconds
+   * @returns {Promise<number>} 1 if successful, 0 if key doesn't exist
+   */
+  async expire(key, seconds) {
+    return this.exec('EXPIRE', key, seconds);
+  }
+  
+  /**
+   * Get the time to live for a key in seconds
+   * @param {string} key - Key
+   * @returns {Promise<number>} TTL in seconds, -1 if no TTL, -2 if key doesn't exist
+   */
+  async ttl(key) {
+    return this.exec('TTL', key);
+  }
+  
+  /**
+   * Increment a key's value
+   * @param {string} key - Key
+   * @param {number} increment - Increment amount
+   * @returns {Promise<number>} New value
+   */
+  async incr(key, increment = 1) {
+    if (increment === 1) {
+      return this.exec('INCR', key);
+    } else {
+      return this.exec('INCRBY', key, increment);
+    }
+  }
+  
+  /**
+   * Decrement a key's value
+   * @param {string} key - Key
+   * @param {number} decrement - Decrement amount
+   * @returns {Promise<number>} New value
+   */
+  async decr(key, decrement = 1) {
+    if (decrement === 1) {
+      return this.exec('DECR', key);
+    } else {
+      return this.exec('DECRBY', key, decrement);
+    }
+  }
+  
+  /**
+   * Append a value to a key
+   * @param {string} key - Key
+   * @param {string} value - Value to append
+   * @returns {Promise<number>} Length of the new string
+   */
+  async append(key, value) {
+    return this.exec('APPEND', key, value);
+  }
+  
+  /**
+   * Get a substring of a key's value
+   * @param {string} key - Key
+   * @param {number} start - Start index
+   * @param {number} end - End index
+   * @returns {Promise<string>} Substring
+   */
+  async getRange(key, start, end) {
+    return this.exec('GETRANGE', key, start, end);
+  }
+  
+  /**
+   * Set the value of a key and return its old value
+   * @param {string} key - Key
+   * @param {string} value - New value
+   * @returns {Promise<string|null>} Old value
+   */
+  async getSet(key, value) {
+    return this.exec('GETSET', key, value);
+  }
+  
+  /**
+   * Get the length of a key's value
+   * @param {string} key - Key
+   * @returns {Promise<number>} Length
+   */
+  async strlen(key) {
+    return this.exec('STRLEN', key);
+  }
+  
+  /**
+   * Set multiple key-value pairs
+   * @param {Object} keyValues - Key-value pairs
+   * @returns {Promise<string>} Result
+   */
+  async mset(keyValues) {
+    const args = [];
+    
+    for (const [key, value] of Object.entries(keyValues)) {
+      args.push(key, value);
+    }
+    
+    return this.exec('MSET', ...args);
+  }
+  
+  /**
+   * Get multiple values by keys
+   * @param {...string} keys - Keys
+   * @returns {Promise<Array<string|null>>} Values
+   */
+  async mget(...keys) {
+    return this.exec('MGET', ...keys);
+  }
+  
+  /**
+   * Add one or more members to a set
+   * @param {string} key - Set key
+   * @param {...string} members - Members to add
+   * @returns {Promise<number>} Number of members added
+   */
+  async sadd(key, ...members) {
+    return this.exec('SADD', key, ...members);
+  }
+  
+  /**
+   * Remove one or more members from a set
+   * @param {string} key - Set key
+   * @param {...string} members - Members to remove
+   * @returns {Promise<number>} Number of members removed
+   */
+  async srem(key, ...members) {
+    return this.exec('SREM', key, ...members);
+  }
+  
+  /**
+   * Get all members of a set
+   * @param {string} key - Set key
+   * @returns {Promise<string[]>} Set members
+   */
+  async smembers(key) {
+    return this.exec('SMEMBERS', key);
+  }
+  
+  /**
+   * Check if a value is a member of a set
+   * @param {string} key - Set key
+   * @param {string} member - Member to check
+   * @returns {Promise<number>} 1 if member exists, 0 otherwise
+   */
+  async sismember(key, member) {
+    return this.exec('SISMEMBER', key, member);
+  }
+  
+  /**
+   * Get the number of members in a set
+   * @param {string} key - Set key
+   * @returns {Promise<number>} Set size
+   */
+  async scard(key) {
+    return this.exec('SCARD', key);
+  }
+  
+  /**
+   * Add one or more members to a sorted set, or update their scores
+   * @param {string} key - Sorted set key
+   * @param {Object} scoreMembers - Score-member pairs
+   * @returns {Promise<number>} Number of members added
+   */
+  async zadd(key, scoreMembers) {
+    const args = [key];
+    
+    for (const [member, score] of Object.entries(scoreMembers)) {
+      args.push(score, member);
+    }
+    
+    return this.exec('ZADD', ...args);
+  }
+  
+  /**
+   * Remove one or more members from a sorted set
+   * @param {string} key - Sorted set key
+   * @param {...string} members - Members to remove
+   * @returns {Promise<number>} Number of members removed
+   */
+  async zrem(key, ...members) {
+    return this.exec('ZREM', key, ...members);
+  }
+  
+  /**
+   * Get a range of members from a sorted set by index
+   * @param {string} key - Sorted set key
+   * @param {number} start - Start index
+   * @param {number} stop - Stop index
+   * @param {Object} options - Options
+   * @returns {Promise<string[]>} Members
+   */
+  async zrange(key, start, stop, options = {}) {
+    const args = [key, start, stop];
+    
+    if (options.withScores) {
+      args.push('WITHSCORES');
+    }
+    
+    return this.exec('ZRANGE', ...args);
+  }
+  
+  /**
+   * Get a range of members from a sorted set by score
+   * @param {string} key - Sorted set key
+   * @param {number} min - Minimum score
+   * @param {number} max - Maximum score
+   * @param {Object} options - Options
+   * @returns {Promise<string[]>} Members
+   */
+  async zrangebyscore(key, min, max, options = {}) {
+    const args = [key, min, max];
+    
+    if (options.withScores) {
+      args.push('WITHSCORES');
+    }
+    
+    if (options.limit) {
+      args.push('LIMIT', options.limit.offset, options.limit.count);
+    }
+    
+    return this.exec('ZRANGEBYSCORE', ...args);
+  }
+  
+  /**
+   * Get a member's score in a sorted set
+   * @param {string} key - Sorted set key
+   * @param {string} member - Member
+   * @returns {Promise<number|null>} Score
+   */
+  async zscore(key, member) {
+    return this.exec('ZSCORE', key, member);
+  }
+  
+  /**
+   * Get the number of members in a sorted set
+   * @param {string} key - Sorted set key
+   * @returns {Promise<number>} Sorted set size
+   */
+  async zcard(key) {
+    return this.exec('ZCARD', key);
+  }
+  
+  /**
+   * Set field-value pairs in a hash
+   * @param {string} key - Hash key
+   * @param {Object} fieldValues - Field-value pairs
+   * @returns {Promise<number>} Number of fields added
+   */
+  async hset(key, fieldValues) {
+    const args = [key];
+    
+    for (const [field, value] of Object.entries(fieldValues)) {
+      args.push(field, value);
+    }
+    
+    return this.exec('HSET', ...args);
+  }
+  
+  /**
+   * Get a field's value from a hash
+   * @param {string} key - Hash key
+   * @param {string} field - Field
+   * @returns {Promise<string|null>} Value
+   */
+  async hget(key, field) {
+    return this.exec('HGET', key, field);
+  }
+  
+  /**
+   * Delete one or more fields from a hash
+   * @param {string} key - Hash key
+   * @param {...string} fields - Fields to delete
+   * @returns {Promise<number>} Number of fields deleted
+   */
+  async hdel(key, ...fields) {
+    return this.exec('HDEL', key, ...fields);
+  }
+  
+  /**
+   * Check if a field exists in a hash
+   * @param {string} key - Hash key
+   * @param {string} field - Field to check
+   * @returns {Promise<number>} 1 if field exists, 0 otherwise
+   */
+  async hexists(key, field) {
+    return this.exec('HEXISTS', key, field);
+  }
+  
+  /**
+   * Get all fields and values from a hash
+   * @param {string} key - Hash key
+   * @returns {Promise<Object>} Field-value pairs
+   */
+  async hgetall(key) {
+    const result = await this.exec('HGETALL', key);
+    
+    // Convert array to object
+    const obj = {};
+    for (let i = 0; i < result.length; i += 2) {
+      obj[result[i]] = result[i + 1];
+    }
+    
+    return obj;
+  }
+  
+  /**
+   * Get all fields from a hash
+   * @param {string} key - Hash key
+   * @returns {Promise<string[]>} Fields
+   */
+  async hkeys(key) {
+    return this.exec('HKEYS', key);
+  }
+  
+  /**
+   * Get all values from a hash
+   * @param {string} key - Hash key
+   * @returns {Promise<string[]>} Values
+   */
+  async hvals(key) {
+    return this.exec('HVALS', key);
+  }
+  
+  /**
+   * Get the number of fields in a hash
+   * @param {string} key - Hash key
+   * @returns {Promise<number>} Hash size
+   */
+  async hlen(key) {
+    return this.exec('HLEN', key);
+  }
+  
+  /**
+   * Push one or more values to the end of a list
+   * @param {string} key - List key
+   * @param {...string} values - Values to push
+   * @returns {Promise<number>} List length after push
+   */
+  async rpush(key, ...values) {
+    return this.exec('RPUSH', key, ...values);
+  }
+  
+  /**
+   * Push one or more values to the beginning of a list
+   * @param {string} key - List key
+   * @param {...string} values - Values to push
+   * @returns {Promise<number>} List length after push
+   */
+  async lpush(key, ...values) {
+    return this.exec('LPUSH', key, ...values);
+  }
+  
+  /**
+   * Remove and get the last element of a list
+   * @param {string} key - List key
+   * @returns {Promise<string|null>} Popped value
+   */
+  async rpop(key) {
+    return this.exec('RPOP', key);
+  }
+  
+  /**
+   * Remove and get the first element of a list
+   * @param {string} key - List key
+   * @returns {Promise<string|null>} Popped value
+   */
+  async lpop(key) {
+    return this.exec('LPOP', key);
+  }
+  
+  /**
+   * Get a range of elements from a list
+   * @param {string} key - List key
+   * @param {number} start - Start index
+   * @param {number} stop - Stop index
+   * @returns {Promise<string[]>} Elements
+   */
+  async lrange(key, start, stop) {
+    return this.exec('LRANGE', key, start, stop);
+  }
+  
+  /**
+   * Trim a list to a range of elements
+   * @param {string} key - List key
+   * @param {number} start - Start index
+   * @param {number} stop - Stop index
+   * @returns {Promise<string>} Result
+   */
+  async ltrim(key, start, stop) {
+    return this.exec('LTRIM', key, start, stop);
+  }
+  
+  /**
+   * Get an element from a list by index
+   * @param {string} key - List key
+   * @param {number} index - Index
+   * @returns {Promise<string|null>} Element
+   */
+  async lindex(key, index) {
+    return this.exec('LINDEX', key, index);
+  }
+  
+  /**
+   * Set an element in a list by index
+   * @param {string} key - List key
+   * @param {number} index - Index
+   * @param {string} value - Value
+   * @returns {Promise<string>} Result
+   */
+  async lset(key, index, value) {
+    return this.exec('LSET', key, index, value);
+  }
+  
+  /**
+   * Get the length of a list
+   * @param {string} key - List key
+   * @returns {Promise<number>} List length
+   */
+  async llen(key) {
+    return this.exec('LLEN', key);
+  }
+  
+  /**
+   * Subscribe to one or more channels
+   * @param {...string} channels - Channels to subscribe to
+   * @returns {Promise<void>} Promise resolving when subscribed
+   */
+  async subscribe(...channels) {
+    print(`Subscribing to channels: ${channels.join(', ')}`);
+    
+    // In a real implementation, this would subscribe to Redis channels
+    // For this example, we'll simulate it
+    for (const channel of channels) {
+      if (!this.subscribers[channel]) {
+        this.subscribers[channel] = [];
+      }
+    }
+  }
+  
+  /**
+   * Unsubscribe from one or more channels
+   * @param {...string} channels - Channels to unsubscribe from
+   * @returns {Promise<void>} Promise resolving when unsubscribed
+   */
+  async unsubscribe(...channels) {
+    print(`Unsubscribing from channels: ${channels.join(', ')}`);
+    
+    // In a real implementation, this would unsubscribe from Redis channels
+    // For this example, we'll simulate it
+    for (const channel of channels) {
+      delete this.subscribers[channel];
+    }
+  }
+  
+  /**
+   * Add a message handler for a channel
+   * @param {string} channel - Channel
+   * @param {Function} handler - Message handler
+   */
+  onMessage(channel, handler) {
+    if (!this.subscribers[channel]) {
+      this.subscribers[channel] = [];
+    }
+    
+    this.subscribers[channel].push(handler);
+  }
+  
+  /**
+   * Publish a message to a channel
+   * @param {string} channel - Channel
+   * @param {string} message - Message
+   * @returns {Promise<number>} Number of clients that received the message
+   */
+  async publish(channel, message) {
+    print(`Publishing message to channel ${channel}: ${message}`);
+    
+    // In a real implementation, this would publish to a Redis channel
+    // For this example, we'll simulate it
+    const handlers = this.subscribers[channel] || [];
+    
+    for (const handler of handlers) {
+      try {
+        handler(message, channel);
+      } catch (error) {
+        print(`Error in message handler: ${error.message}`);
+      }
+    }
+    
+    return handlers.length;
+  }
+  
+  /**
+   * Start a transaction
+   * @returns {Transaction} Transaction object
+   */
+  multi() {
+    return new Transaction(this);
+  }
+  
+  /**
+   * Simulate a Redis command
+   * @private
+   */
+  _simulateCommand(command, args) {
+    // This is a simplified simulation of Redis commands
+    // In a real implementation, this would be replaced with actual Redis communication
+    
+    switch (command) {
+      case 'set':
+        return 'OK';
+      
+      case 'get':
+        return `value_of_${args[0]}`;
+      
+      case 'del':
+        return args.length;
+      
+      case 'exists':
+        return args.length;
+      
+      case 'expire':
+        return 1;
+      
+      case 'ttl':
+        return 3600;
+      
+      case 'incr':
+      case 'incrby':
+        return 1;
+      
+      case 'decr':
+      case 'decrby':
+        return 0;
+      
+      case 'append':
+        return 10;
+      
+      case 'getrange':
+        return `substring_of_${args[0]}`;
+      
+      case 'getset':
+        return `old_value_of_${args[0]}`;
+      
+      case 'strlen':
+        return 10;
+      
+      case 'mset':
+        return 'OK';
+      
+      case 'mget':
+        return args.map(key => `value_of_${key}`);
+      
+      case 'sadd':
+        return args.length - 1;
+      
+      case 'srem':
+        return args.length - 1;
+      
+      case 'smembers':
+        return ['member1', 'member2', 'member3'];
+      
+      case 'sismember':
+        return 1;
+      
+      case 'scard':
+        return 3;
+      
+      case 'zadd':
+        return (args.length - 1) / 2;
+      
+      case 'zrem':
+        return args.length - 1;
+      
+      case 'zrange':
+      case 'zrangebyscore':
+        return ['member1', 'member2', 'member3'];
+      
+      case 'zscore':
+        return 1.5;
+      
+      case 'zcard':
+        return 3;
+      
+      case 'hset':
+        return (args.length - 1) / 2;
+      
+      case 'hget':
+        return `value_of_${args[0]}_${args[1]}`;
+      
+      case 'hdel':
+        return args.length - 1;
+      
+      case 'hexists':
+        return 1;
+      
+      case 'hgetall':
+        return ['field1', 'value1', 'field2', 'value2', 'field3', 'value3'];
+      
+      case 'hkeys':
+        return ['field1', 'field2', 'field3'];
+      
+      case 'hvals':
+        return ['value1', 'value2', 'value3'];
+      
+      case 'hlen':
+        return 3;
+      
+      case 'rpush':
+      case 'lpush':
+        return args.length - 1;
+      
+      case 'rpop':
+      case 'lpop':
+        return `value_from_${args[0]}`;
+      
+      case 'lrange':
+        return ['item1', 'item2', 'item3'];
+      
+      case 'ltrim':
+        return 'OK';
+      
+      case 'lindex':
+        return `item_at_${args[1]}_in_${args[0]}`;
+      
+      case 'lset':
+        return 'OK';
+      
+      case 'llen':
+        return 3;
+      
+      default:
+        throw new Error(`Unsupported command: ${command}`);
+    }
+  }
+}
+
+/**
+ * Transaction class for Redis transactions
+ */
+export class Transaction {
+  /**
+   * Create a new transaction
+   * @param {RedisClient} client - Redis client
+   */
+  constructor(client) {
+    this.client = client;
+    this.commands = [];
+    
+    print('Starting Redis transaction');
+  }
+  
+  /**
+   * Add a command to the transaction
+   * @param {string} command - Command name
+   * @param {...*} args - Command arguments
+   * @returns {Transaction} This transaction
+   */
+  exec(command, ...args) {
+    this.commands.push({ command, args });
+    return this;
+  }
+  
+  /**
+   * Execute the transaction
+   * @returns {Promise<Array>} Command results
+   */
+  async execute() {
+    print(`Executing transaction with ${this.commands.length} commands`);
+    
+    try {
+      // In a real implementation, this would execute the transaction on the Redis server
+      // For this example, we'll simulate it
+      await new Promise(resolve => setTimeout(resolve, 100));
+      
+      const results = [];
+      
+      for (const { command, args } of this.commands) {
+        const result = await this.client.exec(command, ...args);
+        results.push(result);
+      }
+      
+      return results;
+    } catch (error) {
+      print(`Transaction error: ${error.message}`);
+      throw error;
+    }
+  }
+  
+  // Add convenience methods for common commands
+  
+  set(key, value, options) {
+    return this.exec('SET', key, value, ...this._parseSetOptions(options));
+  }
+  
+  get(key) {
+    return this.exec('GET', key);
+  }
+  
+  del(...keys) {
+    return this.exec('DEL', ...keys);
+  }
+  
+  exists(...keys) {
+    return this.exec('EXISTS', ...keys);
+  }
+  
+  expire(key, seconds) {
+    return this.exec('EXPIRE', key, seconds);
+  }
+  
+  ttl(key) {
+    return this.exec('TTL', key);
+  }
+  
+  incr(key, increment = 1) {
+    if (increment === 1) {
+      return this.exec('INCR', key);
+    } else {
+      return this.exec('INCRBY', key, increment);
+    }
+  }
+  
+  decr(key, decrement = 1) {
+    if (decrement === 1) {
+      return this.exec('DECR', key);
+    } else {
+      return this.exec('DECRBY', key, decrement);
+    }
+  }
+  
+  /**
+   * Parse SET command options
+   * @private
+   */
+  _parseSetOptions(options = {}) {
+    const args = [];
+    
+    if (options.ex) {
+      args.push('EX', options.ex);
+    } else if (options.px) {
+      args.push('PX', options.px);
+    }
+    
+    if (options.nx) {
+      args.push('NX');
+    } else if (options.xx) {
+      args.push('XX');
+    }
+    
+    return args;
+  }
+}
+
+/**
+ * Create a Redis client
+ * @param {Object} options - Connection options
+ * @returns {RedisClient} Redis client
+ */
+export fn createClient(options = {}) {
+  return new RedisClient(options);
+}
+
+// Export constants
+export { DATA_TYPES, CONNECTION_STATES };
+
+// Create a namespace for the package
+const redis = {
+  createClient,
+  RedisClient,
+  Transaction,
+  DATA_TYPES,
+  CONNECTION_STATES
+};
+
+// Default export
+export default redis;

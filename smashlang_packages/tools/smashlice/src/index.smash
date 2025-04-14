@@ -1,0 +1,886 @@
+/**
+ * SmashLang SmashLice Package
+ * 
+ * A comprehensive code slicing and analysis tool for SmashLang applications.
+ * Provides functionality for analyzing code dependencies, extracting code slices,
+ * and generating visualizations of code structure.
+ */
+
+// Slice types
+const SLICE_TYPES = {
+  FORWARD: 'forward',
+  BACKWARD: 'backward',
+  BIDIRECTIONAL: 'bidirectional'
+};
+
+// Node types
+const NODE_TYPES = {
+  FUNCTION: 'function',
+  VARIABLE: 'variable',
+  CLASS: 'class',
+  METHOD: 'method',
+  PROPERTY: 'property',
+  IMPORT: 'import',
+  EXPORT: 'export',
+  STATEMENT: 'statement',
+  EXPRESSION: 'expression'
+};
+
+// Edge types
+const EDGE_TYPES = {
+  CALLS: 'calls',
+  DEFINES: 'defines',
+  USES: 'uses',
+  CONTAINS: 'contains',
+  IMPORTS: 'imports',
+  EXPORTS: 'exports',
+  EXTENDS: 'extends',
+  IMPLEMENTS: 'implements',
+  DEPENDS_ON: 'depends_on'
+};
+
+/**
+ * CodeNode class representing a node in the code graph
+ */
+export class CodeNode {
+  /**
+   * Create a new CodeNode
+   * @param {Object} options - Node options
+   */
+  constructor(options = {}) {
+    this.id = options.id || `node_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
+    this.type = options.type || NODE_TYPES.STATEMENT;
+    this.name = options.name || '';
+    this.file = options.file || '';
+    this.location = options.location || { line: 0, column: 0 };
+    this.code = options.code || '';
+    this.metadata = options.metadata || {};
+    this.outgoingEdges = [];
+    this.incomingEdges = [];
+  }
+  
+  /**
+   * Add an outgoing edge from this node to another node
+   * @param {CodeNode} target - Target node
+   * @param {string} type - Edge type
+   * @param {Object} metadata - Edge metadata
+   * @returns {CodeEdge} The created edge
+   */
+  addEdgeTo(target, type = EDGE_TYPES.DEPENDS_ON, metadata = {}) {
+    const edge = new CodeEdge({
+      source: this,
+      target,
+      type,
+      metadata
+    });
+    
+    this.outgoingEdges.push(edge);
+    target.incomingEdges.push(edge);
+    
+    return edge;
+  }
+  
+  /**
+   * Get all outgoing edges of a specific type
+   * @param {string} type - Edge type
+   * @returns {CodeEdge[]} Outgoing edges of the specified type
+   */
+  getOutgoingEdges(type = null) {
+    if (type === null) {
+      return this.outgoingEdges;
+    }
+    
+    return this.outgoingEdges.filter(edge => edge.type === type);
+  }
+  
+  /**
+   * Get all incoming edges of a specific type
+   * @param {string} type - Edge type
+   * @returns {CodeEdge[]} Incoming edges of the specified type
+   */
+  getIncomingEdges(type = null) {
+    if (type === null) {
+      return this.incomingEdges;
+    }
+    
+    return this.incomingEdges.filter(edge => edge.type === type);
+  }
+  
+  /**
+   * Get all nodes that this node depends on
+   * @returns {CodeNode[]} Nodes that this node depends on
+   */
+  getDependencies() {
+    return this.outgoingEdges.map(edge => edge.target);
+  }
+  
+  /**
+   * Get all nodes that depend on this node
+   * @returns {CodeNode[]} Nodes that depend on this node
+   */
+  getDependents() {
+    return this.incomingEdges.map(edge => edge.source);
+  }
+  
+  /**
+   * Check if this node depends on another node
+   * @param {CodeNode} node - Node to check
+   * @returns {boolean} True if this node depends on the specified node
+   */
+  dependsOn(node) {
+    return this.outgoingEdges.some(edge => edge.target === node);
+  }
+  
+  /**
+   * Check if another node depends on this node
+   * @param {CodeNode} node - Node to check
+   * @returns {boolean} True if the specified node depends on this node
+   */
+  isDependedOnBy(node) {
+    return this.incomingEdges.some(edge => edge.source === node);
+  }
+  
+  /**
+   * Convert the node to a plain object
+   * @returns {Object} Plain object representation of the node
+   */
+  toObject() {
+    return {
+      id: this.id,
+      type: this.type,
+      name: this.name,
+      file: this.file,
+      location: this.location,
+      code: this.code,
+      metadata: this.metadata
+    };
+  }
+}
+
+/**
+ * CodeEdge class representing an edge in the code graph
+ */
+export class CodeEdge {
+  /**
+   * Create a new CodeEdge
+   * @param {Object} options - Edge options
+   */
+  constructor(options = {}) {
+    this.id = options.id || `edge_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
+    this.source = options.source;
+    this.target = options.target;
+    this.type = options.type || EDGE_TYPES.DEPENDS_ON;
+    this.metadata = options.metadata || {};
+  }
+  
+  /**
+   * Convert the edge to a plain object
+   * @returns {Object} Plain object representation of the edge
+   */
+  toObject() {
+    return {
+      id: this.id,
+      source: this.source.id,
+      target: this.target.id,
+      type: this.type,
+      metadata: this.metadata
+    };
+  }
+}
+
+/**
+ * CodeGraph class representing a graph of code nodes and edges
+ */
+export class CodeGraph {
+  /**
+   * Create a new CodeGraph
+   * @param {Object} options - Graph options
+   */
+  constructor(options = {}) {
+    this.nodes = new Map();
+    this.edges = [];
+    this.metadata = options.metadata || {};
+  }
+  
+  /**
+   * Add a node to the graph
+   * @param {CodeNode} node - Node to add
+   * @returns {CodeGraph} This graph
+   */
+  addNode(node) {
+    this.nodes.set(node.id, node);
+    return this;
+  }
+  
+  /**
+   * Create and add a node to the graph
+   * @param {Object} options - Node options
+   * @returns {CodeNode} The created node
+   */
+  createNode(options = {}) {
+    const node = new CodeNode(options);
+    this.addNode(node);
+    return node;
+  }
+  
+  /**
+   * Get a node by ID
+   * @param {string} id - Node ID
+   * @returns {CodeNode|null} The node with the specified ID, or null if not found
+   */
+  getNode(id) {
+    return this.nodes.get(id) || null;
+  }
+  
+  /**
+   * Remove a node from the graph
+   * @param {string|CodeNode} node - Node or node ID to remove
+   * @returns {boolean} True if the node was removed, false otherwise
+   */
+  removeNode(node) {
+    const nodeId = typeof node === 'string' ? node : node.id;
+    const nodeObj = this.nodes.get(nodeId);
+    
+    if (!nodeObj) {
+      return false;
+    }
+    
+    // Remove all edges connected to this node
+    for (const edge of [...nodeObj.incomingEdges, ...nodeObj.outgoingEdges]) {
+      this.removeEdge(edge);
+    }
+    
+    return this.nodes.delete(nodeId);
+  }
+  
+  /**
+   * Add an edge to the graph
+   * @param {CodeEdge} edge - Edge to add
+   * @returns {CodeGraph} This graph
+   */
+  addEdge(edge) {
+    this.edges.push(edge);
+    return this;
+  }
+  
+  /**
+   * Create and add an edge to the graph
+   * @param {CodeNode} source - Source node
+   * @param {CodeNode} target - Target node
+   * @param {string} type - Edge type
+   * @param {Object} metadata - Edge metadata
+   * @returns {CodeEdge} The created edge
+   */
+  createEdge(source, target, type = EDGE_TYPES.DEPENDS_ON, metadata = {}) {
+    const edge = source.addEdgeTo(target, type, metadata);
+    this.edges.push(edge);
+    return edge;
+  }
+  
+  /**
+   * Remove an edge from the graph
+   * @param {string|CodeEdge} edge - Edge or edge ID to remove
+   * @returns {boolean} True if the edge was removed, false otherwise
+   */
+  removeEdge(edge) {
+    const edgeId = typeof edge === 'string' ? edge : edge.id;
+    const edgeIndex = this.edges.findIndex(e => e.id === edgeId);
+    
+    if (edgeIndex === -1) {
+      return false;
+    }
+    
+    const edgeObj = this.edges[edgeIndex];
+    
+    // Remove the edge from the source and target nodes
+    const sourceIndex = edgeObj.source.outgoingEdges.findIndex(e => e.id === edgeId);
+    if (sourceIndex !== -1) {
+      edgeObj.source.outgoingEdges.splice(sourceIndex, 1);
+    }
+    
+    const targetIndex = edgeObj.target.incomingEdges.findIndex(e => e.id === edgeId);
+    if (targetIndex !== -1) {
+      edgeObj.target.incomingEdges.splice(targetIndex, 1);
+    }
+    
+    // Remove the edge from the graph
+    this.edges.splice(edgeIndex, 1);
+    
+    return true;
+  }
+  
+  /**
+   * Get all nodes of a specific type
+   * @param {string} type - Node type
+   * @returns {CodeNode[]} Nodes of the specified type
+   */
+  getNodesByType(type) {
+    return Array.from(this.nodes.values()).filter(node => node.type === type);
+  }
+  
+  /**
+   * Get all edges of a specific type
+   * @param {string} type - Edge type
+   * @returns {CodeEdge[]} Edges of the specified type
+   */
+  getEdgesByType(type) {
+    return this.edges.filter(edge => edge.type === type);
+  }
+  
+  /**
+   * Get all nodes in a specific file
+   * @param {string} file - File path
+   * @returns {CodeNode[]} Nodes in the specified file
+   */
+  getNodesByFile(file) {
+    return Array.from(this.nodes.values()).filter(node => node.file === file);
+  }
+  
+  /**
+   * Get all files in the graph
+   * @returns {string[]} Files in the graph
+   */
+  getFiles() {
+    const files = new Set();
+    
+    for (const node of this.nodes.values()) {
+      if (node.file) {
+        files.add(node.file);
+      }
+    }
+    
+    return Array.from(files);
+  }
+  
+  /**
+   * Compute a slice of the graph starting from a node
+   * @param {string|CodeNode} startNode - Starting node or node ID
+   * @param {string} sliceType - Slice type
+   * @param {Object} options - Slice options
+   * @returns {CodeGraph} A new graph containing the slice
+   */
+  computeSlice(startNode, sliceType = SLICE_TYPES.FORWARD, options = {}) {
+    const nodeId = typeof startNode === 'string' ? startNode : startNode.id;
+    const node = this.nodes.get(nodeId);
+    
+    if (!node) {
+      throw new Error(`Node not found: ${nodeId}`);
+    }
+    
+    print(`Computing ${sliceType} slice from node ${node.name || node.id}`);
+    
+    const slice = new CodeGraph({ metadata: { sliceType, startNode: nodeId, options } });
+    const visited = new Set();
+    
+    // Helper function to add a node and its dependencies to the slice
+    const addNodeToSlice = (currentNode, direction) => {
+      if (visited.has(currentNode.id)) {
+        return;
+      }
+      
+      visited.add(currentNode.id);
+      slice.addNode(currentNode);
+      
+      if (direction === 'forward' || direction === 'both') {
+        // Add outgoing edges and their targets
+        for (const edge of currentNode.outgoingEdges) {
+          slice.addEdge(edge);
+          addNodeToSlice(edge.target, direction);
+        }
+      }
+      
+      if (direction === 'backward' || direction === 'both') {
+        // Add incoming edges and their sources
+        for (const edge of currentNode.incomingEdges) {
+          slice.addEdge(edge);
+          addNodeToSlice(edge.source, direction);
+        }
+      }
+    };
+    
+    // Compute the slice based on the slice type
+    switch (sliceType) {
+      case SLICE_TYPES.FORWARD:
+        addNodeToSlice(node, 'forward');
+        break;
+      
+      case SLICE_TYPES.BACKWARD:
+        addNodeToSlice(node, 'backward');
+        break;
+      
+      case SLICE_TYPES.BIDIRECTIONAL:
+        addNodeToSlice(node, 'both');
+        break;
+      
+      default:
+        throw new Error(`Invalid slice type: ${sliceType}`);
+    }
+    
+    return slice;
+  }
+  
+  /**
+   * Find all paths between two nodes
+   * @param {string|CodeNode} startNode - Starting node or node ID
+   * @param {string|CodeNode} endNode - Ending node or node ID
+   * @param {Object} options - Path options
+   * @returns {Array<CodeNode[]>} All paths between the two nodes
+   */
+  findPaths(startNode, endNode, options = {}) {
+    const startId = typeof startNode === 'string' ? startNode : startNode.id;
+    const endId = typeof endNode === 'string' ? endNode : endNode.id;
+    const start = this.nodes.get(startId);
+    const end = this.nodes.get(endId);
+    
+    if (!start) {
+      throw new Error(`Start node not found: ${startId}`);
+    }
+    
+    if (!end) {
+      throw new Error(`End node not found: ${endId}`);
+    }
+    
+    print(`Finding paths from ${start.name || start.id} to ${end.name || end.id}`);
+    
+    const maxDepth = options.maxDepth || Infinity;
+    const paths = [];
+    const visited = new Set();
+    
+    // Helper function to find paths using DFS
+    const findPathsDFS = (currentNode, currentPath, depth) => {
+      if (depth > maxDepth) {
+        return;
+      }
+      
+      if (currentNode === end) {
+        paths.push([...currentPath, currentNode]);
+        return;
+      }
+      
+      if (visited.has(currentNode.id)) {
+        return;
+      }
+      
+      visited.add(currentNode.id);
+      currentPath.push(currentNode);
+      
+      for (const edge of currentNode.outgoingEdges) {
+        findPathsDFS(edge.target, currentPath, depth + 1);
+      }
+      
+      visited.delete(currentNode.id);
+      currentPath.pop();
+    };
+    
+    findPathsDFS(start, [], 0);
+    
+    return paths;
+  }
+  
+  /**
+   * Find strongly connected components in the graph
+   * @returns {Array<CodeNode[]>} Strongly connected components
+   */
+  findStronglyConnectedComponents() {
+    print('Finding strongly connected components');
+    
+    const nodes = Array.from(this.nodes.values());
+    const visited = new Set();
+    const stack = [];
+    const components = [];
+    const nodeIndex = new Map();
+    const lowLink = new Map();
+    const onStack = new Set();
+    let index = 0;
+    
+    // Helper function for Tarjan's algorithm
+    const strongConnect = (node) => {
+      nodeIndex.set(node.id, index);
+      lowLink.set(node.id, index);
+      index++;
+      stack.push(node);
+      onStack.add(node.id);
+      
+      for (const edge of node.outgoingEdges) {
+        const successor = edge.target;
+        
+        if (!nodeIndex.has(successor.id)) {
+          strongConnect(successor);
+          lowLink.set(node.id, Math.min(lowLink.get(node.id), lowLink.get(successor.id)));
+        } else if (onStack.has(successor.id)) {
+          lowLink.set(node.id, Math.min(lowLink.get(node.id), nodeIndex.get(successor.id)));
+        }
+      }
+      
+      if (lowLink.get(node.id) === nodeIndex.get(node.id)) {
+        const component = [];
+        let w;
+        
+        do {
+          w = stack.pop();
+          onStack.delete(w.id);
+          component.push(w);
+        } while (w !== node);
+        
+        components.push(component);
+      }
+    };
+    
+    // Find strongly connected components
+    for (const node of nodes) {
+      if (!nodeIndex.has(node.id)) {
+        strongConnect(node);
+      }
+    }
+    
+    return components;
+  }
+  
+  /**
+   * Find cycles in the graph
+   * @returns {Array<CodeNode[]>} Cycles in the graph
+   */
+  findCycles() {
+    print('Finding cycles in the graph');
+    
+    const cycles = [];
+    const nodes = Array.from(this.nodes.values());
+    
+    for (const node of nodes) {
+      const visited = new Set();
+      const path = [];
+      
+      const findCyclesDFS = (currentNode, startNode, depth) => {
+        if (depth > 0 && currentNode === startNode) {
+          cycles.push([...path]);
+          return;
+        }
+        
+        if (visited.has(currentNode.id)) {
+          return;
+        }
+        
+        visited.add(currentNode.id);
+        path.push(currentNode);
+        
+        for (const edge of currentNode.outgoingEdges) {
+          findCyclesDFS(edge.target, startNode, depth + 1);
+        }
+        
+        visited.delete(currentNode.id);
+        path.pop();
+      };
+      
+      findCyclesDFS(node, node, 0);
+    }
+    
+    return cycles;
+  }
+  
+  /**
+   * Compute the transitive closure of the graph
+   * @returns {CodeGraph} A new graph representing the transitive closure
+   */
+  computeTransitiveClosure() {
+    print('Computing transitive closure');
+    
+    const closure = new CodeGraph();
+    
+    // Add all nodes to the closure
+    for (const node of this.nodes.values()) {
+      closure.addNode(node);
+    }
+    
+    // Add all existing edges to the closure
+    for (const edge of this.edges) {
+      closure.addEdge(edge);
+    }
+    
+    // Compute the transitive closure using the Floyd-Warshall algorithm
+    const nodes = Array.from(this.nodes.values());
+    
+    for (const k of nodes) {
+      for (const i of nodes) {
+        if (i === k) continue;
+        
+        for (const j of nodes) {
+          if (j === k || j === i) continue;
+          
+          if (i.dependsOn(k) && k.dependsOn(j) && !i.dependsOn(j)) {
+            closure.createEdge(i, j, EDGE_TYPES.DEPENDS_ON, { transitive: true });
+          }
+        }
+      }
+    }
+    
+    return closure;
+  }
+  
+  /**
+   * Export the graph to a DOT format for visualization
+   * @param {Object} options - Export options
+   * @returns {string} DOT representation of the graph
+   */
+  toDOT(options = {}) {
+    print('Exporting graph to DOT format');
+    
+    const nodeLabels = options.nodeLabels || ((node) => node.name || node.id);
+    const nodeColors = options.nodeColors || ((node) => {
+      switch (node.type) {
+        case NODE_TYPES.FUNCTION: return 'blue';
+        case NODE_TYPES.VARIABLE: return 'green';
+        case NODE_TYPES.CLASS: return 'red';
+        case NODE_TYPES.METHOD: return 'purple';
+        case NODE_TYPES.PROPERTY: return 'orange';
+        case NODE_TYPES.IMPORT: return 'brown';
+        case NODE_TYPES.EXPORT: return 'pink';
+        default: return 'black';
+      }
+    });
+    
+    const edgeLabels = options.edgeLabels || ((edge) => edge.type);
+    const edgeColors = options.edgeColors || ((edge) => {
+      switch (edge.type) {
+        case EDGE_TYPES.CALLS: return 'blue';
+        case EDGE_TYPES.DEFINES: return 'green';
+        case EDGE_TYPES.USES: return 'red';
+        case EDGE_TYPES.CONTAINS: return 'purple';
+        case EDGE_TYPES.IMPORTS: return 'brown';
+        case EDGE_TYPES.EXPORTS: return 'pink';
+        default: return 'black';
+      }
+    });
+    
+    let dot = 'digraph CodeGraph {\n';
+    
+    // Add nodes
+    for (const node of this.nodes.values()) {
+      const label = nodeLabels(node);
+      const color = nodeColors(node);
+      dot += `  "${node.id}" [label="${label}", color="${color}"];\n`;
+    }
+    
+    // Add edges
+    for (const edge of this.edges) {
+      const label = edgeLabels(edge);
+      const color = edgeColors(edge);
+      dot += `  "${edge.source.id}" -> "${edge.target.id}" [label="${label}", color="${color}"];\n`;
+    }
+    
+    dot += '}\n';
+    
+    return dot;
+  }
+  
+  /**
+   * Export the graph to a JSON format
+   * @returns {Object} JSON representation of the graph
+   */
+  toJSON() {
+    return {
+      nodes: Array.from(this.nodes.values()).map(node => node.toObject()),
+      edges: this.edges.map(edge => edge.toObject()),
+      metadata: this.metadata
+    };
+  }
+  
+  /**
+   * Import a graph from a JSON format
+   * @param {Object} json - JSON representation of the graph
+   * @returns {CodeGraph} A new graph
+   */
+  static fromJSON(json) {
+    const graph = new CodeGraph({ metadata: json.metadata });
+    const nodeMap = new Map();
+    
+    // Create nodes
+    for (const nodeData of json.nodes) {
+      const node = new CodeNode(nodeData);
+      graph.addNode(node);
+      nodeMap.set(nodeData.id, node);
+    }
+    
+    // Create edges
+    for (const edgeData of json.edges) {
+      const source = nodeMap.get(edgeData.source);
+      const target = nodeMap.get(edgeData.target);
+      
+      if (source && target) {
+        const edge = new CodeEdge({
+          id: edgeData.id,
+          source,
+          target,
+          type: edgeData.type,
+          metadata: edgeData.metadata
+        });
+        
+        source.outgoingEdges.push(edge);
+        target.incomingEdges.push(edge);
+        graph.edges.push(edge);
+      }
+    }
+    
+    return graph;
+  }
+}
+
+/**
+ * CodeAnalyzer class for analyzing code and building a code graph
+ */
+export class CodeAnalyzer {
+  /**
+   * Create a new CodeAnalyzer
+   * @param {Object} options - Analyzer options
+   */
+  constructor(options = {}) {
+    this.options = options;
+    this.graph = new CodeGraph();
+  }
+  
+  /**
+   * Analyze a file and add its nodes and edges to the graph
+   * @param {string} file - File path
+   * @param {string} code - File content
+   * @returns {CodeGraph} The updated graph
+   */
+  analyzeFile(file, code) {
+    print(`Analyzing file: ${file}`);
+    
+    // In a real implementation, this would parse the code and build a graph
+    // For this example, we'll simulate it
+    
+    // Create a function node
+    const mainFunction = this.graph.createNode({
+      type: NODE_TYPES.FUNCTION,
+      name: 'main',
+      file,
+      location: { line: 1, column: 0 },
+      code: 'fn main() { ... }'
+    });
+    
+    // Create some variable nodes
+    const var1 = this.graph.createNode({
+      type: NODE_TYPES.VARIABLE,
+      name: 'var1',
+      file,
+      location: { line: 2, column: 2 },
+      code: 'let var1 = 10;'
+    });
+    
+    const var2 = this.graph.createNode({
+      type: NODE_TYPES.VARIABLE,
+      name: 'var2',
+      file,
+      location: { line: 3, column: 2 },
+      code: 'let var2 = 20;'
+    });
+    
+    // Create a function call node
+    const functionCall = this.graph.createNode({
+      type: NODE_TYPES.EXPRESSION,
+      name: 'calculateSum',
+      file,
+      location: { line: 4, column: 2 },
+      code: 'calculateSum(var1, var2)'
+    });
+    
+    // Create a helper function node
+    const helperFunction = this.graph.createNode({
+      type: NODE_TYPES.FUNCTION,
+      name: 'calculateSum',
+      file,
+      location: { line: 7, column: 0 },
+      code: 'fn calculateSum(a, b) { return a + b; }'
+    });
+    
+    // Create edges
+    this.graph.createEdge(mainFunction, var1, EDGE_TYPES.DEFINES);
+    this.graph.createEdge(mainFunction, var2, EDGE_TYPES.DEFINES);
+    this.graph.createEdge(mainFunction, functionCall, EDGE_TYPES.CONTAINS);
+    this.graph.createEdge(functionCall, helperFunction, EDGE_TYPES.CALLS);
+    this.graph.createEdge(functionCall, var1, EDGE_TYPES.USES);
+    this.graph.createEdge(functionCall, var2, EDGE_TYPES.USES);
+    
+    return this.graph;
+  }
+  
+  /**
+   * Analyze multiple files and build a complete graph
+   * @param {Object} files - Map of file paths to file contents
+   * @returns {CodeGraph} The complete graph
+   */
+  analyzeFiles(files) {
+    print(`Analyzing ${Object.keys(files).length} files`);
+    
+    for (const [file, code] of Object.entries(files)) {
+      this.analyzeFile(file, code);
+    }
+    
+    return this.graph;
+  }
+  
+  /**
+   * Get the graph
+   * @returns {CodeGraph} The code graph
+   */
+  getGraph() {
+    return this.graph;
+  }
+}
+
+/**
+ * Create a code analyzer
+ * @param {Object} options - Analyzer options
+ * @returns {CodeAnalyzer} Code analyzer
+ */
+export fn createAnalyzer(options = {}) {
+  return new CodeAnalyzer(options);
+}
+
+/**
+ * Create a code graph
+ * @param {Object} options - Graph options
+ * @returns {CodeGraph} Code graph
+ */
+export fn createGraph(options = {}) {
+  return new CodeGraph(options);
+}
+
+/**
+ * Create a code node
+ * @param {Object} options - Node options
+ * @returns {CodeNode} Code node
+ */
+export fn createNode(options = {}) {
+  return new CodeNode(options);
+}
+
+/**
+ * Create a code edge
+ * @param {Object} options - Edge options
+ * @returns {CodeEdge} Code edge
+ */
+export fn createEdge(options = {}) {
+  return new CodeEdge(options);
+}
+
+// Export constants
+export { SLICE_TYPES, NODE_TYPES, EDGE_TYPES };
+
+// Create a namespace for the package
+const smashlice = {
+  createAnalyzer,
+  createGraph,
+  createNode,
+  createEdge,
+  CodeAnalyzer,
+  CodeGraph,
+  CodeNode,
+  CodeEdge,
+  SLICE_TYPES,
+  NODE_TYPES,
+  EDGE_TYPES
+};
+
+// Default export
+export default smashlice;

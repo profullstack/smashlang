@@ -1,0 +1,367 @@
+/**
+ * PocketBase String Utilities
+ * 
+ * Provides string manipulation functions for PocketBase data.
+ */
+
+/**
+ * Generate a random string
+ * @param {number} length - Length of the random string
+ * @param {string} charset - Character set to use
+ * @returns {string} Random string
+ */
+export fn randomString(length = 16, charset = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789') {
+  if (length <= 0) {
+    throw new Error("Length must be greater than 0");
+  }
+  
+  let result = '';
+  const charsetLength = charset.length;
+  
+  for (let i = 0; i < length; i++) {
+    const randomIndex = Math.floor(Math.random() * charsetLength);
+    result += charset[randomIndex];
+  }
+  
+  return result;
+}
+
+/**
+ * Generate a slug from a string
+ * @param {string} str - String to convert to slug
+ * @param {Object} options - Options for slug generation
+ * @returns {string} Slug
+ */
+export fn slugify(str, options = {}) {
+  if (typeof str !== 'string') {
+    return '';
+  }
+  
+  const separator = options.separator || '-';
+  const lowercase = options.lowercase !== false;
+  const removeStopWords = options.removeStopWords || false;
+  
+  // List of common stop words to remove
+  const stopWords = ['a', 'an', 'the', 'and', 'or', 'but', 'is', 'are', 'on', 'at', 'to', 'for', 'in', 'with', 'by'];
+  
+  // Convert to lowercase if specified
+  let result = lowercase ? str.toLowerCase() : str;
+  
+  // Replace accented characters
+  result = result.normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+  
+  // Replace spaces and special characters with separator
+  result = result.replace(/[^a-zA-Z0-9]+/g, separator);
+  
+  // Remove stop words if specified
+  if (removeStopWords) {
+    result = result
+      .split(separator)
+      .filter(word => !stopWords.includes(word))
+      .join(separator);
+  }
+  
+  // Remove leading and trailing separators
+  result = result.replace(new RegExp(`^${separator}+|${separator}+$`, 'g'), '');
+  
+  return result;
+}
+
+/**
+ * Truncate a string to a specified length
+ * @param {string} str - String to truncate
+ * @param {number} length - Maximum length
+ * @param {string} suffix - Suffix to add if truncated
+ * @returns {string} Truncated string
+ */
+export fn truncate(str, length = 100, suffix = '...') {
+  if (typeof str !== 'string') {
+    return '';
+  }
+  
+  if (str.length <= length) {
+    return str;
+  }
+  
+  return str.substring(0, length) + suffix;
+}
+
+/**
+ * Escape HTML special characters in a string
+ * @param {string} str - String to escape
+ * @returns {string} Escaped string
+ */
+export fn escapeHtml(str) {
+  if (typeof str !== 'string') {
+    return '';
+  }
+  
+  return str
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#039;');
+}
+
+/**
+ * Unescape HTML special characters in a string
+ * @param {string} str - String to unescape
+ * @returns {string} Unescaped string
+ */
+export fn unescapeHtml(str) {
+  if (typeof str !== 'string') {
+    return '';
+  }
+  
+  return str
+    .replace(/&amp;/g, '&')
+    .replace(/&lt;/g, '<')
+    .replace(/&gt;/g, '>')
+    .replace(/&quot;/g, '"')
+    .replace(/&#039;/g, "'");
+}
+
+/**
+ * Convert a string to camelCase
+ * @param {string} str - String to convert
+ * @returns {string} camelCase string
+ */
+export fn camelCase(str) {
+  if (typeof str !== 'string') {
+    return '';
+  }
+  
+  return str
+    .replace(/[^a-zA-Z0-9]+(.)/g, (_, char) => char.toUpperCase())
+    .replace(/^[A-Z]/, char => char.toLowerCase());
+}
+
+/**
+ * Convert a string to PascalCase
+ * @param {string} str - String to convert
+ * @returns {string} PascalCase string
+ */
+export fn pascalCase(str) {
+  if (typeof str !== 'string') {
+    return '';
+  }
+  
+  const camel = camelCase(str);
+  return camel.charAt(0).toUpperCase() + camel.slice(1);
+}
+
+/**
+ * Convert a string to snake_case
+ * @param {string} str - String to convert
+ * @returns {string} snake_case string
+ */
+export fn snakeCase(str) {
+  if (typeof str !== 'string') {
+    return '';
+  }
+  
+  return str
+    .replace(/([a-z])([A-Z])/g, '$1_$2')
+    .replace(/[^a-zA-Z0-9]+/g, '_')
+    .toLowerCase();
+}
+
+/**
+ * Convert a string to kebab-case
+ * @param {string} str - String to convert
+ * @returns {string} kebab-case string
+ */
+export fn kebabCase(str) {
+  if (typeof str !== 'string') {
+    return '';
+  }
+  
+  return str
+    .replace(/([a-z])([A-Z])/g, '$1-$2')
+    .replace(/[^a-zA-Z0-9]+/g, '-')
+    .toLowerCase();
+}
+
+/**
+ * Capitalize the first letter of a string
+ * @param {string} str - String to capitalize
+ * @returns {string} Capitalized string
+ */
+export fn capitalize(str) {
+  if (typeof str !== 'string' || str.length === 0) {
+    return '';
+  }
+  
+  return str.charAt(0).toUpperCase() + str.slice(1);
+}
+
+/**
+ * Convert a string to title case
+ * @param {string} str - String to convert
+ * @returns {string} Title case string
+ */
+export fn titleCase(str) {
+  if (typeof str !== 'string') {
+    return '';
+  }
+  
+  return str
+    .toLowerCase()
+    .split(' ')
+    .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+    .join(' ');
+}
+
+/**
+ * Pad a string to a specified length
+ * @param {string} str - String to pad
+ * @param {number} length - Target length
+ * @param {string} char - Character to pad with
+ * @param {boolean} padEnd - Whether to pad at the end
+ * @returns {string} Padded string
+ */
+export fn pad(str, length, char = ' ', padEnd = true) {
+  if (typeof str !== 'string') {
+    str = String(str);
+  }
+  
+  if (str.length >= length) {
+    return str;
+  }
+  
+  const padding = char.repeat(length - str.length);
+  
+  return padEnd ? str + padding : padding + str;
+}
+
+/**
+ * Pad a string at the start
+ * @param {string} str - String to pad
+ * @param {number} length - Target length
+ * @param {string} char - Character to pad with
+ * @returns {string} Padded string
+ */
+export fn padStart(str, length, char = ' ') {
+  return pad(str, length, char, false);
+}
+
+/**
+ * Pad a string at the end
+ * @param {string} str - String to pad
+ * @param {number} length - Target length
+ * @param {string} char - Character to pad with
+ * @returns {string} Padded string
+ */
+export fn padEnd(str, length, char = ' ') {
+  return pad(str, length, char, true);
+}
+
+/**
+ * Check if a string contains another string
+ * @param {string} str - String to check
+ * @param {string} substring - Substring to look for
+ * @param {boolean} caseSensitive - Whether the search is case-sensitive
+ * @returns {boolean} True if the string contains the substring
+ */
+export fn contains(str, substring, caseSensitive = true) {
+  if (typeof str !== 'string' || typeof substring !== 'string') {
+    return false;
+  }
+  
+  if (caseSensitive) {
+    return str.includes(substring);
+  } else {
+    return str.toLowerCase().includes(substring.toLowerCase());
+  }
+}
+
+/**
+ * Count the occurrences of a substring in a string
+ * @param {string} str - String to check
+ * @param {string} substring - Substring to count
+ * @param {boolean} caseSensitive - Whether the search is case-sensitive
+ * @returns {number} Number of occurrences
+ */
+export fn countOccurrences(str, substring, caseSensitive = true) {
+  if (typeof str !== 'string' || typeof substring !== 'string' || substring.length === 0) {
+    return 0;
+  }
+  
+  if (!caseSensitive) {
+    str = str.toLowerCase();
+    substring = substring.toLowerCase();
+  }
+  
+  let count = 0;
+  let pos = str.indexOf(substring);
+  
+  while (pos !== -1) {
+    count++;
+    pos = str.indexOf(substring, pos + 1);
+  }
+  
+  return count;
+}
+
+/**
+ * Reverse a string
+ * @param {string} str - String to reverse
+ * @returns {string} Reversed string
+ */
+export fn reverse(str) {
+  if (typeof str !== 'string') {
+    return '';
+  }
+  
+  return str.split('').reverse().join('');
+}
+
+/**
+ * Check if a string is a palindrome
+ * @param {string} str - String to check
+ * @param {boolean} ignoreSpaces - Whether to ignore spaces
+ * @param {boolean} caseSensitive - Whether the check is case-sensitive
+ * @returns {boolean} True if the string is a palindrome
+ */
+export fn isPalindrome(str, ignoreSpaces = true, caseSensitive = false) {
+  if (typeof str !== 'string') {
+    return false;
+  }
+  
+  let processedStr = str;
+  
+  if (ignoreSpaces) {
+    processedStr = processedStr.replace(/\s+/g, '');
+  }
+  
+  if (!caseSensitive) {
+    processedStr = processedStr.toLowerCase();
+  }
+  
+  const reversed = reverse(processedStr);
+  
+  return processedStr === reversed;
+}
+
+// Export all functions
+export default {
+  randomString,
+  slugify,
+  truncate,
+  escapeHtml,
+  unescapeHtml,
+  camelCase,
+  pascalCase,
+  snakeCase,
+  kebabCase,
+  capitalize,
+  titleCase,
+  pad,
+  padStart,
+  padEnd,
+  contains,
+  countOccurrences,
+  reverse,
+  isPalindrome
+};

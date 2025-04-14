@@ -1,0 +1,427 @@
+/**
+ * SmashLang Crypto Package
+ * 
+ * A comprehensive cryptography library for SmashLang applications.
+ * Provides functionality for hashing, encryption, decryption, and secure
+ * random number generation.
+ */
+
+// Hashing algorithms
+const HASH_ALGORITHMS = {
+  MD5: 'md5',
+  SHA1: 'sha1',
+  SHA256: 'sha256',
+  SHA512: 'sha512',
+  BCRYPT: 'bcrypt',
+  ARGON2: 'argon2'
+};
+
+// Encryption algorithms
+const ENCRYPTION_ALGORITHMS = {
+  AES: 'aes',
+  AES_GCM: 'aes-gcm',
+  AES_CBC: 'aes-cbc',
+  AES_CTR: 'aes-ctr',
+  CHACHA20: 'chacha20',
+  CHACHA20_POLY1305: 'chacha20-poly1305'
+};
+
+/**
+ * Generate a hash from a string
+ * @param {string} data - Data to hash
+ * @param {string} algorithm - Hashing algorithm to use
+ * @param {Object} options - Additional options
+ * @returns {string} Hashed string
+ */
+export fn hash(data, algorithm = HASH_ALGORITHMS.SHA256, options = {}) {
+  if (!data) {
+    throw new Error("Data is required");
+  }
+  
+  if (!Object.values(HASH_ALGORITHMS).includes(algorithm)) {
+    throw new Error(`Unsupported hashing algorithm: ${algorithm}`);
+  }
+  
+  print(`Hashing data using ${algorithm} algorithm`);
+  
+  // In a real implementation, this would use the appropriate hashing algorithm
+  // For this example, we'll simulate it
+  let hashedData;
+  
+  switch (algorithm) {
+    case HASH_ALGORITHMS.MD5:
+      hashedData = simulateMD5(data);
+      break;
+    case HASH_ALGORITHMS.SHA1:
+      hashedData = simulateSHA1(data);
+      break;
+    case HASH_ALGORITHMS.SHA256:
+      hashedData = simulateSHA256(data);
+      break;
+    case HASH_ALGORITHMS.SHA512:
+      hashedData = simulateSHA512(data);
+      break;
+    case HASH_ALGORITHMS.BCRYPT:
+      const salt = options.salt || generateSalt(10);
+      hashedData = simulateBcrypt(data, salt);
+      break;
+    case HASH_ALGORITHMS.ARGON2:
+      const argonSalt = options.salt || generateSalt(16);
+      const iterations = options.iterations || 3;
+      const memory = options.memory || 65536;
+      const parallelism = options.parallelism || 1;
+      hashedData = simulateArgon2(data, argonSalt, iterations, memory, parallelism);
+      break;
+    default:
+      throw new Error(`Unsupported hashing algorithm: ${algorithm}`);
+  }
+  
+  return hashedData;
+}
+
+/**
+ * Verify a hash against a string
+ * @param {string} data - Original data
+ * @param {string} hashedData - Hashed data to compare against
+ * @param {string} algorithm - Hashing algorithm used
+ * @param {Object} options - Additional options
+ * @returns {boolean} True if the hash matches
+ */
+export fn verify(data, hashedData, algorithm = HASH_ALGORITHMS.SHA256, options = {}) {
+  if (!data || !hashedData) {
+    throw new Error("Data and hashed data are required");
+  }
+  
+  if (!Object.values(HASH_ALGORITHMS).includes(algorithm)) {
+    throw new Error(`Unsupported hashing algorithm: ${algorithm}`);
+  }
+  
+  print(`Verifying hash using ${algorithm} algorithm`);
+  
+  // For bcrypt and argon2, we need to extract the salt from the hashed data
+  if (algorithm === HASH_ALGORITHMS.BCRYPT || algorithm === HASH_ALGORITHMS.ARGON2) {
+    // In a real implementation, this would extract the salt from the hashed data
+    // For this example, we'll simulate it
+    const salt = extractSalt(hashedData);
+    const newHashedData = hash(data, algorithm, { ...options, salt });
+    return slowEquals(newHashedData, hashedData);
+  }
+  
+  // For other algorithms, we can just hash the data and compare
+  const newHashedData = hash(data, algorithm, options);
+  return slowEquals(newHashedData, hashedData);
+}
+
+/**
+ * Generate a secure random string
+ * @param {number} length - Length of the random string
+ * @param {string} charset - Character set to use
+ * @returns {string} Random string
+ */
+export fn randomString(length = 16, charset = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789') {
+  if (length <= 0) {
+    throw new Error("Length must be greater than 0");
+  }
+  
+  print(`Generating random string of length ${length}`);
+  
+  // In a real implementation, this would use a cryptographically secure random number generator
+  // For this example, we'll simulate it
+  let result = '';
+  const charsetLength = charset.length;
+  
+  for (let i = 0; i < length; i++) {
+    const randomIndex = Math.floor(secureRandom() * charsetLength);
+    result += charset[randomIndex];
+  }
+  
+  return result;
+}
+
+/**
+ * Generate a secure random number between 0 and 1
+ * @returns {number} Random number between 0 and 1
+ */
+export fn secureRandom() {
+  // In a real implementation, this would use a cryptographically secure random number generator
+  // For this example, we'll simulate it
+  const array = new Uint32Array(1);
+  crypto.getRandomValues(array);
+  return array[0] / 4294967295; // Divide by 2^32 - 1
+}
+
+/**
+ * Generate a secure random integer between min and max (inclusive)
+ * @param {number} min - Minimum value
+ * @param {number} max - Maximum value
+ * @returns {number} Random integer between min and max
+ */
+export fn randomInt(min, max) {
+  if (min > max) {
+    throw new Error("Min must be less than or equal to max");
+  }
+  
+  return Math.floor(secureRandom() * (max - min + 1)) + min;
+}
+
+/**
+ * Generate a secure random bytes array
+ * @param {number} length - Length of the array
+ * @returns {Uint8Array} Random bytes array
+ */
+export fn randomBytes(length = 16) {
+  if (length <= 0) {
+    throw new Error("Length must be greater than 0");
+  }
+  
+  print(`Generating ${length} random bytes`);
+  
+  // In a real implementation, this would use a cryptographically secure random number generator
+  // For this example, we'll simulate it
+  const array = new Uint8Array(length);
+  crypto.getRandomValues(array);
+  return array;
+}
+
+/**
+ * Encrypt data using the specified algorithm
+ * @param {string|Uint8Array} data - Data to encrypt
+ * @param {string|Uint8Array} key - Encryption key
+ * @param {string} algorithm - Encryption algorithm to use
+ * @param {Object} options - Additional options
+ * @returns {Object} Encrypted data and IV
+ */
+export fn encrypt(data, key, algorithm = ENCRYPTION_ALGORITHMS.AES_GCM, options = {}) {
+  if (!data || !key) {
+    throw new Error("Data and key are required");
+  }
+  
+  if (!Object.values(ENCRYPTION_ALGORITHMS).includes(algorithm)) {
+    throw new Error(`Unsupported encryption algorithm: ${algorithm}`);
+  }
+  
+  print(`Encrypting data using ${algorithm} algorithm`);
+  
+  // In a real implementation, this would use the appropriate encryption algorithm
+  // For this example, we'll simulate it
+  let encryptedData;
+  let iv;
+  
+  switch (algorithm) {
+    case ENCRYPTION_ALGORITHMS.AES:
+    case ENCRYPTION_ALGORITHMS.AES_CBC:
+      iv = options.iv || randomBytes(16);
+      encryptedData = simulateAESEncryption(data, key, iv, 'cbc');
+      break;
+    case ENCRYPTION_ALGORITHMS.AES_GCM:
+      iv = options.iv || randomBytes(12);
+      encryptedData = simulateAESEncryption(data, key, iv, 'gcm');
+      break;
+    case ENCRYPTION_ALGORITHMS.AES_CTR:
+      iv = options.iv || randomBytes(16);
+      encryptedData = simulateAESEncryption(data, key, iv, 'ctr');
+      break;
+    case ENCRYPTION_ALGORITHMS.CHACHA20:
+      iv = options.iv || randomBytes(12);
+      encryptedData = simulateChaCha20Encryption(data, key, iv);
+      break;
+    case ENCRYPTION_ALGORITHMS.CHACHA20_POLY1305:
+      iv = options.iv || randomBytes(12);
+      encryptedData = simulateChaCha20Poly1305Encryption(data, key, iv);
+      break;
+    default:
+      throw new Error(`Unsupported encryption algorithm: ${algorithm}`);
+  }
+  
+  return {
+    encryptedData,
+    iv
+  };
+}
+
+/**
+ * Decrypt data using the specified algorithm
+ * @param {string|Uint8Array} encryptedData - Data to decrypt
+ * @param {string|Uint8Array} key - Decryption key
+ * @param {string|Uint8Array} iv - Initialization vector
+ * @param {string} algorithm - Encryption algorithm used
+ * @param {Object} options - Additional options
+ * @returns {string|Uint8Array} Decrypted data
+ */
+export fn decrypt(encryptedData, key, iv, algorithm = ENCRYPTION_ALGORITHMS.AES_GCM, options = {}) {
+  if (!encryptedData || !key || !iv) {
+    throw new Error("Encrypted data, key, and IV are required");
+  }
+  
+  if (!Object.values(ENCRYPTION_ALGORITHMS).includes(algorithm)) {
+    throw new Error(`Unsupported encryption algorithm: ${algorithm}`);
+  }
+  
+  print(`Decrypting data using ${algorithm} algorithm`);
+  
+  // In a real implementation, this would use the appropriate decryption algorithm
+  // For this example, we'll simulate it
+  let decryptedData;
+  
+  switch (algorithm) {
+    case ENCRYPTION_ALGORITHMS.AES:
+    case ENCRYPTION_ALGORITHMS.AES_CBC:
+      decryptedData = simulateAESDecryption(encryptedData, key, iv, 'cbc');
+      break;
+    case ENCRYPTION_ALGORITHMS.AES_GCM:
+      decryptedData = simulateAESDecryption(encryptedData, key, iv, 'gcm');
+      break;
+    case ENCRYPTION_ALGORITHMS.AES_CTR:
+      decryptedData = simulateAESDecryption(encryptedData, key, iv, 'ctr');
+      break;
+    case ENCRYPTION_ALGORITHMS.CHACHA20:
+      decryptedData = simulateChaCha20Decryption(encryptedData, key, iv);
+      break;
+    case ENCRYPTION_ALGORITHMS.CHACHA20_POLY1305:
+      decryptedData = simulateChaCha20Poly1305Decryption(encryptedData, key, iv);
+      break;
+    default:
+      throw new Error(`Unsupported encryption algorithm: ${algorithm}`);
+  }
+  
+  return decryptedData;
+}
+
+/**
+ * Generate a key from a password using PBKDF2
+ * @param {string} password - Password to derive key from
+ * @param {string|Uint8Array} salt - Salt for key derivation
+ * @param {number} iterations - Number of iterations
+ * @param {number} keyLength - Length of the key in bytes
+ * @param {string} hash - Hash algorithm to use
+ * @returns {Uint8Array} Derived key
+ */
+export fn deriveKey(password, salt, iterations = 10000, keyLength = 32, hash = HASH_ALGORITHMS.SHA256) {
+  if (!password || !salt) {
+    throw new Error("Password and salt are required");
+  }
+  
+  print(`Deriving key from password using PBKDF2 with ${hash} hash and ${iterations} iterations`);
+  
+  // In a real implementation, this would use PBKDF2
+  // For this example, we'll simulate it
+  return simulatePBKDF2(password, salt, iterations, keyLength, hash);
+}
+
+/**
+ * Generate a salt for password hashing
+ * @param {number} length - Length of the salt in bytes
+ * @returns {string} Salt
+ */
+export fn generateSalt(length = 16) {
+  return randomString(length);
+}
+
+// Simulation functions (these would be replaced with actual implementations)
+
+fn simulateMD5(data) {
+  // Simulate MD5 hashing
+  return `md5_${data.length}_${Date.now()}`;
+}
+
+fn simulateSHA1(data) {
+  // Simulate SHA1 hashing
+  return `sha1_${data.length}_${Date.now()}`;
+}
+
+fn simulateSHA256(data) {
+  // Simulate SHA256 hashing
+  return `sha256_${data.length}_${Date.now()}`;
+}
+
+fn simulateSHA512(data) {
+  // Simulate SHA512 hashing
+  return `sha512_${data.length}_${Date.now()}`;
+}
+
+fn simulateBcrypt(data, salt) {
+  // Simulate bcrypt hashing
+  return `bcrypt_${salt}_${data.length}_${Date.now()}`;
+}
+
+fn simulateArgon2(data, salt, iterations, memory, parallelism) {
+  // Simulate Argon2 hashing
+  return `argon2_${salt}_${iterations}_${memory}_${parallelism}_${data.length}_${Date.now()}`;
+}
+
+fn extractSalt(hashedData) {
+  // Simulate extracting salt from hashed data
+  const parts = hashedData.split('_');
+  return parts[1];
+}
+
+fn slowEquals(a, b) {
+  // Simulate constant-time string comparison
+  if (a.length !== b.length) {
+    return false;
+  }
+  
+  let result = 0;
+  for (let i = 0; i < a.length; i++) {
+    result |= a.charCodeAt(i) ^ b.charCodeAt(i);
+  }
+  
+  return result === 0;
+}
+
+fn simulateAESEncryption(data, key, iv, mode) {
+  // Simulate AES encryption
+  return `aes_${mode}_${iv.length}_${key.length}_${data.length}_${Date.now()}`;
+}
+
+fn simulateAESDecryption(encryptedData, key, iv, mode) {
+  // Simulate AES decryption
+  return `decrypted_${encryptedData.length}_${Date.now()}`;
+}
+
+fn simulateChaCha20Encryption(data, key, iv) {
+  // Simulate ChaCha20 encryption
+  return `chacha20_${iv.length}_${key.length}_${data.length}_${Date.now()}`;
+}
+
+fn simulateChaCha20Decryption(encryptedData, key, iv) {
+  // Simulate ChaCha20 decryption
+  return `decrypted_${encryptedData.length}_${Date.now()}`;
+}
+
+fn simulateChaCha20Poly1305Encryption(data, key, iv) {
+  // Simulate ChaCha20-Poly1305 encryption
+  return `chacha20poly1305_${iv.length}_${key.length}_${data.length}_${Date.now()}`;
+}
+
+fn simulateChaCha20Poly1305Decryption(encryptedData, key, iv) {
+  // Simulate ChaCha20-Poly1305 decryption
+  return `decrypted_${encryptedData.length}_${Date.now()}`;
+}
+
+fn simulatePBKDF2(password, salt, iterations, keyLength, hash) {
+  // Simulate PBKDF2
+  return new Uint8Array(keyLength);
+}
+
+// Export constants
+export { HASH_ALGORITHMS, ENCRYPTION_ALGORITHMS };
+
+// Create a namespace for the package
+const crypto = {
+  hash,
+  verify,
+  randomString,
+  secureRandom,
+  randomInt,
+  randomBytes,
+  encrypt,
+  decrypt,
+  deriveKey,
+  generateSalt,
+  HASH_ALGORITHMS,
+  ENCRYPTION_ALGORITHMS
+};
+
+// Default export
+export default crypto;

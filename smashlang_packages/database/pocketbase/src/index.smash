@@ -6,6 +6,11 @@
  * realtime subscriptions, and admin API.
  */
 
+// Import utility modules
+import stringUtils from './utils/string.smash';
+import mathUtils from './utils/math.smash';
+import validatorUtils from './utils/validator.smash';
+
 // Event types for realtime subscriptions
 const EVENT_TYPES = {
   CREATE: 'create',
@@ -157,7 +162,7 @@ export class RealtimeSubscription {
   
   /**
    * Unsubscribe from collection changes
-   * @param {Function} callback - Callback function (optional, if not provided all callbacks are removed)
+   * @param {Function} callback - Callback function (optional)
    */
   unsubscribe(callback) {
     if (callback) {
@@ -198,7 +203,7 @@ export class RealtimeSubscription {
         const eventType = eventTypes[Math.floor(Math.random() * eventTypes.length)];
         
         const record = new Record({
-          id: `record_${Math.floor(Math.random() * 1000)}`,
+          id: `record_${mathUtils.randomInt(1, 1000)}`,
           created: new Date().toISOString(),
           updated: new Date().toISOString(),
           title: `Sample ${eventType} event`,
@@ -259,6 +264,12 @@ export class Admin {
       throw new Error('Authentication required for admin operations');
     }
     
+    // Validate collection name
+    const nameValidation = validatorUtils.validateCollectionName(data.name);
+    if (!nameValidation.isValid) {
+      throw new Error(`Invalid collection name: ${nameValidation.errors.join(', ')}`);
+    }
+    
     print(`Creating collection: ${data.name}`);
     
     // In a real implementation, this would make an API request
@@ -266,7 +277,7 @@ export class Admin {
     await new Promise(resolve => setTimeout(resolve, 500));
     
     return new Record({
-      id: `col_${Math.floor(Math.random() * 1000)}`,
+      id: `col_${mathUtils.randomInt(1, 1000)}`,
       created: new Date().toISOString(),
       updated: new Date().toISOString(),
       name: data.name,
@@ -284,6 +295,14 @@ export class Admin {
   async updateCollection(collectionId, data) {
     if (!this.client.authStore.isValid()) {
       throw new Error('Authentication required for admin operations');
+    }
+    
+    // Validate collection name if provided
+    if (data.name) {
+      const nameValidation = validatorUtils.validateCollectionName(data.name);
+      if (!nameValidation.isValid) {
+        throw new Error(`Invalid collection name: ${nameValidation.errors.join(', ')}`);
+      }
     }
     
     print(`Updating collection: ${collectionId}`);
@@ -332,6 +351,12 @@ export class Admin {
       throw new Error('Authentication required for admin operations');
     }
     
+    // Validate field name
+    const nameValidation = validatorUtils.validateFieldName(data.name);
+    if (!nameValidation.isValid) {
+      throw new Error(`Invalid field name: ${nameValidation.errors.join(', ')}`);
+    }
+    
     print(`Creating field in collection ${collectionId}: ${data.name}`);
     
     // In a real implementation, this would make an API request
@@ -339,7 +364,7 @@ export class Admin {
     await new Promise(resolve => setTimeout(resolve, 500));
     
     return new Record({
-      id: `field_${Math.floor(Math.random() * 1000)}`,
+      id: `field_${mathUtils.randomInt(1, 1000)}`,
       created: new Date().toISOString(),
       updated: new Date().toISOString(),
       name: data.name,
@@ -359,6 +384,14 @@ export class Admin {
   async updateField(collectionId, fieldId, data) {
     if (!this.client.authStore.isValid()) {
       throw new Error('Authentication required for admin operations');
+    }
+    
+    // Validate field name if provided
+    if (data.name) {
+      const nameValidation = validatorUtils.validateFieldName(data.name);
+      if (!nameValidation.isValid) {
+        throw new Error(`Invalid field name: ${nameValidation.errors.join(', ')}`);
+      }
     }
     
     print(`Updating field ${fieldId} in collection ${collectionId}`);
@@ -452,6 +485,27 @@ export class Admin {
       throw new Error('Authentication required for admin operations');
     }
     
+    // Validate email
+    if (!validatorUtils.isValidEmail(data.email)) {
+      throw new Error('Invalid email address');
+    }
+    
+    // Validate username if provided
+    if (data.username) {
+      const usernameValidation = validatorUtils.validateUsername(data.username);
+      if (!usernameValidation.isValid) {
+        throw new Error(`Invalid username: ${usernameValidation.errors.join(', ')}`);
+      }
+    }
+    
+    // Validate password if provided
+    if (data.password) {
+      const passwordValidation = validatorUtils.validatePassword(data.password);
+      if (!passwordValidation.isValid) {
+        throw new Error(`Invalid password: ${passwordValidation.errors.join(', ')}`);
+      }
+    }
+    
     print(`Creating user: ${data.email}`);
     
     // In a real implementation, this would make an API request
@@ -459,7 +513,7 @@ export class Admin {
     await new Promise(resolve => setTimeout(resolve, 500));
     
     return new Record({
-      id: `user_${Math.floor(Math.random() * 1000)}`,
+      id: `user_${mathUtils.randomInt(1, 1000)}`,
       created: new Date().toISOString(),
       updated: new Date().toISOString(),
       email: data.email,
@@ -479,6 +533,27 @@ export class Admin {
   async updateUser(userId, data) {
     if (!this.client.authStore.isValid()) {
       throw new Error('Authentication required for admin operations');
+    }
+    
+    // Validate email if provided
+    if (data.email && !validatorUtils.isValidEmail(data.email)) {
+      throw new Error('Invalid email address');
+    }
+    
+    // Validate username if provided
+    if (data.username) {
+      const usernameValidation = validatorUtils.validateUsername(data.username);
+      if (!usernameValidation.isValid) {
+        throw new Error(`Invalid username: ${usernameValidation.errors.join(', ')}`);
+      }
+    }
+    
+    // Validate password if provided
+    if (data.password) {
+      const passwordValidation = validatorUtils.validatePassword(data.password);
+      if (!passwordValidation.isValid) {
+        throw new Error(`Invalid password: ${passwordValidation.errors.join(', ')}`);
+      }
     }
     
     print(`Updating user: ${userId}`);
@@ -537,6 +612,11 @@ export class Client {
    * @returns {Promise<Object>} Promise resolving to auth data
    */
   async authWithPassword(collection, email, password) {
+    // Validate email
+    if (!validatorUtils.isValidEmail(email)) {
+      throw new Error('Invalid email address');
+    }
+    
     print(`Authenticating ${email} in collection ${collection}`);
     
     // In a real implementation, this would make an API request
@@ -545,9 +625,9 @@ export class Client {
     
     // Simulate successful authentication
     const authData = {
-      token: `token_${Math.random().toString(36).substring(2)}`,
+      token: `token_${stringUtils.randomString(32)}`,
       model: {
-        id: `user_${Math.floor(Math.random() * 1000)}`,
+        id: `user_${mathUtils.randomInt(1, 1000)}`,
         created: new Date().toISOString(),
         updated: new Date().toISOString(),
         email: email,
@@ -582,13 +662,13 @@ export class Client {
     
     // Simulate successful authentication
     const authData = {
-      token: `token_${Math.random().toString(36).substring(2)}`,
+      token: `token_${stringUtils.randomString(32)}`,
       model: {
-        id: `user_${Math.floor(Math.random() * 1000)}`,
+        id: `user_${mathUtils.randomInt(1, 1000)}`,
         created: new Date().toISOString(),
         updated: new Date().toISOString(),
-        email: `user_${Math.floor(Math.random() * 1000)}@example.com`,
-        username: `oauth_user_${Math.floor(Math.random() * 1000)}`,
+        email: `user_${mathUtils.randomInt(1, 1000)}@example.com`,
+        username: `oauth_user_${mathUtils.randomInt(1, 1000)}`,
         verified: true
       }
     };
@@ -618,7 +698,7 @@ export class Client {
     await new Promise(resolve => setTimeout(resolve, 500));
     
     // Simulate successful token refresh
-    const newToken = `token_${Math.random().toString(36).substring(2)}`;
+    const newToken = `token_${stringUtils.randomString(32)}`;
     
     // Update the token
     this.authStore.save(newToken, this.authStore.model);
@@ -650,7 +730,7 @@ export class Client {
     await new Promise(resolve => setTimeout(resolve, 500));
     
     return new Record({
-      id: `col_${Math.floor(Math.random() * 1000)}`,
+      id: `col_${mathUtils.randomInt(1, 1000)}`,
       created: new Date().toISOString(),
       updated: new Date().toISOString(),
       name: collectionIdOrName,
@@ -771,7 +851,7 @@ export class Client {
     await new Promise(resolve => setTimeout(resolve, 500));
     
     return new Record({
-      id: `rec_${Math.floor(Math.random() * 1000)}`,
+      id: `rec_${mathUtils.randomInt(1, 1000)}`,
       created: new Date().toISOString(),
       updated: new Date().toISOString(),
       ...data
@@ -873,72 +953,3 @@ export class Client {
    */
   subscribe(collection, callback) {
     if (!collection) {
-      throw new Error('Collection is required');
-    }
-    
-    // Get or create subscription
-    let subscription = this.subscriptions.get(collection);
-    if (!subscription) {
-      subscription = new RealtimeSubscription(this, collection);
-      this.subscriptions.set(collection, subscription);
-    }
-    
-    // Subscribe
-    subscription.subscribe(callback);
-  }
-  
-  /**
-   * Unsubscribe from collection changes
-   * @param {string} collection - Collection name
-   * @param {Function} callback - Callback function (optional)
-   */
-  unsubscribe(collection, callback) {
-    if (!collection) {
-      throw new Error('Collection is required');
-    }
-    
-    // Get subscription
-    const subscription = this.subscriptions.get(collection);
-    if (!subscription) {
-      return;
-    }
-    
-    // Unsubscribe
-    subscription.unsubscribe(callback);
-    
-    // Remove subscription if no callbacks remain
-    if (subscription.callbacks.length === 0) {
-      this.subscriptions.delete(collection);
-    }
-  }
-}
-
-/**
- * Create a PocketBase client
- * @param {string} url - PocketBase server URL
- * @returns {Client} PocketBase client
- */
-export fn createClient(url) {
-  if (!url) {
-    throw new Error('URL is required');
-  }
-  
-  return new Client(url);
-}
-
-// Export classes and functions
-export { EVENT_TYPES };
-
-// Create a namespace for the package
-const pocketbase = {
-  createClient,
-  Client,
-  Record,
-  AuthStore,
-  RealtimeSubscription,
-  Admin,
-  EVENT_TYPES
-};
-
-// Default export
-export default pocketbase;

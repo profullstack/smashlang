@@ -1,0 +1,486 @@
+/**
+ * SmashLang WebSocket Package
+ * 
+ * A comprehensive WebSocket client and server implementation for SmashLang applications.
+ * Provides functionality for creating WebSocket servers and clients with support for
+ * various protocols and message formats.
+ */
+
+// WebSocket connection states
+const STATES = {
+  CONNECTING: 0,
+  OPEN: 1,
+  CLOSING: 2,
+  CLOSED: 3
+};
+
+// WebSocket close codes
+const CLOSE_CODES = {
+  NORMAL: 1000,
+  GOING_AWAY: 1001,
+  PROTOCOL_ERROR: 1002,
+  UNSUPPORTED_DATA: 1003,
+  RESERVED: 1004,
+  NO_STATUS: 1005,
+  ABNORMAL: 1006,
+  INVALID_FRAME_PAYLOAD_DATA: 1007,
+  POLICY_VIOLATION: 1008,
+  MESSAGE_TOO_BIG: 1009,
+  MISSING_EXTENSION: 1010,
+  INTERNAL_ERROR: 1011,
+  SERVICE_RESTART: 1012,
+  TRY_AGAIN_LATER: 1013,
+  BAD_GATEWAY: 1014,
+  TLS_HANDSHAKE: 1015
+};
+
+/**
+ * WebSocket client class
+ */
+export class WebSocketClient {
+  /**
+   * Create a new WebSocket client
+   * @param {string} url - WebSocket server URL
+   * @param {string|string[]} protocols - WebSocket protocols
+   * @param {Object} options - Additional options
+   */
+  constructor(url, protocols = [], options = {}) {
+    this.url = url;
+    this.protocols = Array.isArray(protocols) ? protocols : [protocols];
+    this.options = options;
+    this.socket = null;
+    this.state = STATES.CLOSED;
+    this.eventListeners = {
+      open: [],
+      message: [],
+      close: [],
+      error: []
+    };
+    
+    print(`Creating WebSocket client for ${url}`);
+  }
+  
+  /**
+   * Connect to the WebSocket server
+   * @returns {Promise<WebSocketClient>} Promise resolving to this client
+   */
+  connect() {
+    return new Promise((resolve, reject) => {
+      if (this.state === STATES.OPEN) {
+        resolve(this);
+        return;
+      }
+      
+      print(`Connecting to ${this.url}`);
+      
+      try {
+        this.state = STATES.CONNECTING;
+        
+        // In a real implementation, this would create a WebSocket connection
+        // For this example, we'll simulate it
+        setTimeout(() => {
+          this.state = STATES.OPEN;
+          this._triggerEvent('open', { target: this });
+          resolve(this);
+        }, 100);
+      } catch (error) {
+        this.state = STATES.CLOSED;
+        this._triggerEvent('error', { target: this, error });
+        reject(error);
+      }
+    });
+  }
+  
+  /**
+   * Send a message to the WebSocket server
+   * @param {string|ArrayBuffer|Blob|Object} data - Message data
+   * @returns {Promise<void>} Promise resolving when the message is sent
+   */
+  send(data) {
+    return new Promise((resolve, reject) => {
+      if (this.state !== STATES.OPEN) {
+        reject(new Error('WebSocket is not open'));
+        return;
+      }
+      
+      // Convert objects to JSON strings
+      if (typeof data === 'object' && !(data instanceof ArrayBuffer) && !(data instanceof Blob)) {
+        data = JSON.stringify(data);
+      }
+      
+      print(`Sending message: ${typeof data === 'string' ? data.substring(0, 50) : '[binary data]'}`);
+      
+      // In a real implementation, this would send the message
+      // For this example, we'll simulate it
+      setTimeout(() => {
+        resolve();
+      }, 50);
+    });
+  }
+  
+  /**
+   * Close the WebSocket connection
+   * @param {number} code - Close code
+   * @param {string} reason - Close reason
+   * @returns {Promise<void>} Promise resolving when the connection is closed
+   */
+  close(code = CLOSE_CODES.NORMAL, reason = '') {
+    return new Promise((resolve) => {
+      if (this.state === STATES.CLOSED) {
+        resolve();
+        return;
+      }
+      
+      print(`Closing connection with code ${code}: ${reason}`);
+      
+      this.state = STATES.CLOSING;
+      
+      // In a real implementation, this would close the WebSocket connection
+      // For this example, we'll simulate it
+      setTimeout(() => {
+        this.state = STATES.CLOSED;
+        this._triggerEvent('close', { target: this, code, reason, wasClean: code === CLOSE_CODES.NORMAL });
+        resolve();
+      }, 100);
+    });
+  }
+  
+  /**
+   * Add an event listener
+   * @param {string} event - Event name
+   * @param {Function} callback - Event callback
+   */
+  on(event, callback) {
+    if (typeof callback !== 'function') {
+      throw new Error('Callback must be a function');
+    }
+    
+    if (!this.eventListeners[event]) {
+      this.eventListeners[event] = [];
+    }
+    
+    this.eventListeners[event].push(callback);
+  }
+  
+  /**
+   * Remove an event listener
+   * @param {string} event - Event name
+   * @param {Function} callback - Event callback
+   */
+  off(event, callback) {
+    if (!this.eventListeners[event]) {
+      return;
+    }
+    
+    this.eventListeners[event] = this.eventListeners[event].filter(cb => cb !== callback);
+  }
+  
+  /**
+   * Trigger an event
+   * @private
+   */
+  _triggerEvent(event, data) {
+    if (!this.eventListeners[event]) {
+      return;
+    }
+    
+    for (const callback of this.eventListeners[event]) {
+      try {
+        callback(data);
+      } catch (error) {
+        print(`Error in ${event} event handler:`, error);
+      }
+    }
+  }
+  
+  /**
+   * Get the current state
+   * @returns {number} Current state
+   */
+  getState() {
+    return this.state;
+  }
+  
+  /**
+   * Check if the connection is open
+   * @returns {boolean} True if the connection is open
+   */
+  isOpen() {
+    return this.state === STATES.OPEN;
+  }
+  
+  /**
+   * Get the WebSocket URL
+   * @returns {string} WebSocket URL
+   */
+  getUrl() {
+    return this.url;
+  }
+  
+  /**
+   * Get the WebSocket protocols
+   * @returns {string[]} WebSocket protocols
+   */
+  getProtocols() {
+    return this.protocols;
+  }
+}
+
+/**
+ * WebSocket server class
+ */
+export class WebSocketServer {
+  /**
+   * Create a new WebSocket server
+   * @param {Object} options - Server options
+   */
+  constructor(options = {}) {
+    this.options = {
+      port: 8080,
+      host: 'localhost',
+      path: '/',
+      ...options
+    };
+    this.clients = new Set();
+    this.server = null;
+    this.isRunning = false;
+    this.eventListeners = {
+      connection: [],
+      close: [],
+      error: []
+    };
+    
+    print(`Creating WebSocket server on ${this.options.host}:${this.options.port}${this.options.path}`);
+  }
+  
+  /**
+   * Start the WebSocket server
+   * @returns {Promise<WebSocketServer>} Promise resolving to this server
+   */
+  start() {
+    return new Promise((resolve, reject) => {
+      if (this.isRunning) {
+        resolve(this);
+        return;
+      }
+      
+      print(`Starting WebSocket server on ${this.options.host}:${this.options.port}${this.options.path}`);
+      
+      try {
+        // In a real implementation, this would start a WebSocket server
+        // For this example, we'll simulate it
+        setTimeout(() => {
+          this.isRunning = true;
+          resolve(this);
+        }, 100);
+      } catch (error) {
+        this._triggerEvent('error', { server: this, error });
+        reject(error);
+      }
+    });
+  }
+  
+  /**
+   * Stop the WebSocket server
+   * @returns {Promise<void>} Promise resolving when the server is stopped
+   */
+  stop() {
+    return new Promise((resolve) => {
+      if (!this.isRunning) {
+        resolve();
+        return;
+      }
+      
+      print(`Stopping WebSocket server`);
+      
+      // Close all client connections
+      for (const client of this.clients) {
+        client.close(CLOSE_CODES.GOING_AWAY, 'Server shutting down');
+      }
+      
+      // In a real implementation, this would stop the WebSocket server
+      // For this example, we'll simulate it
+      setTimeout(() => {
+        this.isRunning = false;
+        this.clients.clear();
+        this._triggerEvent('close', { server: this });
+        resolve();
+      }, 100);
+    });
+  }
+  
+  /**
+   * Broadcast a message to all connected clients
+   * @param {string|ArrayBuffer|Blob|Object} data - Message data
+   * @param {Function} filter - Optional filter function to select clients
+   * @returns {Promise<void>} Promise resolving when the message is sent to all clients
+   */
+  broadcast(data, filter = null) {
+    // Convert objects to JSON strings
+    if (typeof data === 'object' && !(data instanceof ArrayBuffer) && !(data instanceof Blob)) {
+      data = JSON.stringify(data);
+    }
+    
+    print(`Broadcasting message to ${filter ? 'some' : 'all'} clients: ${typeof data === 'string' ? data.substring(0, 50) : '[binary data]'}`);
+    
+    const promises = [];
+    
+    for (const client of this.clients) {
+      if (!filter || filter(client)) {
+        promises.push(client.send(data));
+      }
+    }
+    
+    return Promise.all(promises).then(() => {});
+  }
+  
+  /**
+   * Add an event listener
+   * @param {string} event - Event name
+   * @param {Function} callback - Event callback
+   */
+  on(event, callback) {
+    if (typeof callback !== 'function') {
+      throw new Error('Callback must be a function');
+    }
+    
+    if (!this.eventListeners[event]) {
+      this.eventListeners[event] = [];
+    }
+    
+    this.eventListeners[event].push(callback);
+  }
+  
+  /**
+   * Remove an event listener
+   * @param {string} event - Event name
+   * @param {Function} callback - Event callback
+   */
+  off(event, callback) {
+    if (!this.eventListeners[event]) {
+      return;
+    }
+    
+    this.eventListeners[event] = this.eventListeners[event].filter(cb => cb !== callback);
+  }
+  
+  /**
+   * Trigger an event
+   * @private
+   */
+  _triggerEvent(event, data) {
+    if (!this.eventListeners[event]) {
+      return;
+    }
+    
+    for (const callback of this.eventListeners[event]) {
+      try {
+        callback(data);
+      } catch (error) {
+        print(`Error in ${event} event handler:`, error);
+      }
+    }
+  }
+  
+  /**
+   * Get all connected clients
+   * @returns {Set<WebSocketClient>} Set of connected clients
+   */
+  getClients() {
+    return this.clients;
+  }
+  
+  /**
+   * Get the number of connected clients
+   * @returns {number} Number of connected clients
+   */
+  getClientCount() {
+    return this.clients.size;
+  }
+  
+  /**
+   * Check if the server is running
+   * @returns {boolean} True if the server is running
+   */
+  isStarted() {
+    return this.isRunning;
+  }
+  
+  /**
+   * Get the server options
+   * @returns {Object} Server options
+   */
+  getOptions() {
+    return this.options;
+  }
+}
+
+/**
+ * Create a WebSocket client
+ * @param {string} url - WebSocket server URL
+ * @param {string|string[]} protocols - WebSocket protocols
+ * @param {Object} options - Additional options
+ * @returns {WebSocketClient} WebSocket client
+ */
+export fn createClient(url, protocols = [], options = {}) {
+  return new WebSocketClient(url, protocols, options);
+}
+
+/**
+ * Create a WebSocket server
+ * @param {Object} options - Server options
+ * @returns {WebSocketServer} WebSocket server
+ */
+export fn createServer(options = {}) {
+  return new WebSocketServer(options);
+}
+
+/**
+ * Check if a URL is a valid WebSocket URL
+ * @param {string} url - URL to check
+ * @returns {boolean} True if the URL is a valid WebSocket URL
+ */
+export fn isValidUrl(url) {
+  if (typeof url !== 'string') {
+    return false;
+  }
+  
+  return url.startsWith('ws://') || url.startsWith('wss://');
+}
+
+/**
+ * Convert a HTTP URL to a WebSocket URL
+ * @param {string} url - HTTP URL
+ * @returns {string} WebSocket URL
+ */
+export fn httpToWsUrl(url) {
+  if (typeof url !== 'string') {
+    throw new Error('URL must be a string');
+  }
+  
+  if (url.startsWith('http://')) {
+    return url.replace('http://', 'ws://');
+  } else if (url.startsWith('https://')) {
+    return url.replace('https://', 'wss://');
+  }
+  
+  return url;
+}
+
+// Export constants
+export { STATES, CLOSE_CODES };
+
+// Create a namespace for the package
+const websocket = {
+  createClient,
+  createServer,
+  isValidUrl,
+  httpToWsUrl,
+  WebSocketClient,
+  WebSocketServer,
+  STATES,
+  CLOSE_CODES
+};
+
+// Default export
+export default websocket;

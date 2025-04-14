@@ -1,0 +1,341 @@
+/**
+ * PocketBase Validator Utilities
+ * 
+ * Provides validation functions for PocketBase data.
+ */
+
+/**
+ * Validate an email address
+ * @param {string} email - Email address to validate
+ * @returns {boolean} True if the email is valid
+ */
+export fn isValidEmail(email) {
+  if (typeof email !== 'string') {
+    return false;
+  }
+  
+  // Simple email validation regex
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  return emailRegex.test(email);
+}
+
+/**
+ * Validate a password
+ * @param {string} password - Password to validate
+ * @param {Object} options - Validation options
+ * @returns {Object} Validation result with isValid and errors properties
+ */
+export fn validatePassword(password, options = {}) {
+  const result = {
+    isValid: true,
+    errors: []
+  };
+  
+  const minLength = options.minLength || 8;
+  const requireUppercase = options.requireUppercase !== false;
+  const requireLowercase = options.requireLowercase !== false;
+  const requireNumbers = options.requireNumbers !== false;
+  const requireSpecialChars = options.requireSpecialChars !== false;
+  
+  if (typeof password !== 'string') {
+    result.isValid = false;
+    result.errors.push('Password must be a string');
+    return result;
+  }
+  
+  if (password.length < minLength) {
+    result.isValid = false;
+    result.errors.push(`Password must be at least ${minLength} characters long`);
+  }
+  
+  if (requireUppercase && !/[A-Z]/.test(password)) {
+    result.isValid = false;
+    result.errors.push('Password must contain at least one uppercase letter');
+  }
+  
+  if (requireLowercase && !/[a-z]/.test(password)) {
+    result.isValid = false;
+    result.errors.push('Password must contain at least one lowercase letter');
+  }
+  
+  if (requireNumbers && !/[0-9]/.test(password)) {
+    result.isValid = false;
+    result.errors.push('Password must contain at least one number');
+  }
+  
+  if (requireSpecialChars && !/[^A-Za-z0-9]/.test(password)) {
+    result.isValid = false;
+    result.errors.push('Password must contain at least one special character');
+  }
+  
+  return result;
+}
+
+/**
+ * Validate a username
+ * @param {string} username - Username to validate
+ * @param {Object} options - Validation options
+ * @returns {Object} Validation result with isValid and errors properties
+ */
+export fn validateUsername(username, options = {}) {
+  const result = {
+    isValid: true,
+    errors: []
+  };
+  
+  const minLength = options.minLength || 3;
+  const maxLength = options.maxLength || 50;
+  const allowedChars = options.allowedChars || /^[a-zA-Z0-9_.-]+$/;
+  
+  if (typeof username !== 'string') {
+    result.isValid = false;
+    result.errors.push('Username must be a string');
+    return result;
+  }
+  
+  if (username.length < minLength) {
+    result.isValid = false;
+    result.errors.push(`Username must be at least ${minLength} characters long`);
+  }
+  
+  if (username.length > maxLength) {
+    result.isValid = false;
+    result.errors.push(`Username must be at most ${maxLength} characters long`);
+  }
+  
+  if (!allowedChars.test(username)) {
+    result.isValid = false;
+    result.errors.push('Username contains invalid characters');
+  }
+  
+  return result;
+}
+
+/**
+ * Validate a collection name
+ * @param {string} name - Collection name to validate
+ * @returns {Object} Validation result with isValid and errors properties
+ */
+export fn validateCollectionName(name) {
+  const result = {
+    isValid: true,
+    errors: []
+  };
+  
+  if (typeof name !== 'string') {
+    result.isValid = false;
+    result.errors.push('Collection name must be a string');
+    return result;
+  }
+  
+  if (name.length < 2) {
+    result.isValid = false;
+    result.errors.push('Collection name must be at least 2 characters long');
+  }
+  
+  if (name.length > 50) {
+    result.isValid = false;
+    result.errors.push('Collection name must be at most 50 characters long');
+  }
+  
+  if (!/^[a-zA-Z][a-zA-Z0-9_]*$/.test(name)) {
+    result.isValid = false;
+    result.errors.push('Collection name must start with a letter and contain only letters, numbers, and underscores');
+  }
+  
+  // Check for reserved names
+  const reservedNames = ['users', 'auth', 'settings', 'system', 'admin', 'api', 'files', '_'];
+  if (reservedNames.includes(name.toLowerCase())) {
+    result.isValid = false;
+    result.errors.push(`Collection name cannot be a reserved name: ${reservedNames.join(', ')}`);
+  }
+  
+  return result;
+}
+
+/**
+ * Validate a field name
+ * @param {string} name - Field name to validate
+ * @returns {Object} Validation result with isValid and errors properties
+ */
+export fn validateFieldName(name) {
+  const result = {
+    isValid: true,
+    errors: []
+  };
+  
+  if (typeof name !== 'string') {
+    result.isValid = false;
+    result.errors.push('Field name must be a string');
+    return result;
+  }
+  
+  if (name.length < 1) {
+    result.isValid = false;
+    result.errors.push('Field name must be at least 1 character long');
+  }
+  
+  if (name.length > 50) {
+    result.isValid = false;
+    result.errors.push('Field name must be at most 50 characters long');
+  }
+  
+  if (!/^[a-zA-Z][a-zA-Z0-9_]*$/.test(name)) {
+    result.isValid = false;
+    result.errors.push('Field name must start with a letter and contain only letters, numbers, and underscores');
+  }
+  
+  // Check for reserved names
+  const reservedNames = ['id', 'created', 'updated', 'collectionId', 'collectionName', 'expand'];
+  if (reservedNames.includes(name.toLowerCase())) {
+    result.isValid = false;
+    result.errors.push(`Field name cannot be a reserved name: ${reservedNames.join(', ')}`);
+  }
+  
+  return result;
+}
+
+/**
+ * Validate a record
+ * @param {Object} record - Record to validate
+ * @param {Object} schema - Schema to validate against
+ * @returns {Object} Validation result with isValid and errors properties
+ */
+export fn validateRecord(record, schema) {
+  const result = {
+    isValid: true,
+    errors: {}
+  };
+  
+  if (!record || typeof record !== 'object') {
+    result.isValid = false;
+    result.errors._base = ['Record must be an object'];
+    return result;
+  }
+  
+  if (!schema || typeof schema !== 'object' || !Array.isArray(schema)) {
+    result.isValid = false;
+    result.errors._base = ['Schema must be an array'];
+    return result;
+  }
+  
+  for (const field of schema) {
+    const fieldName = field.name;
+    const fieldValue = record[fieldName];
+    
+    // Check required fields
+    if (field.required && (fieldValue === undefined || fieldValue === null || fieldValue === '')) {
+      result.isValid = false;
+      result.errors[fieldName] = [`Field '${fieldName}' is required`];
+      continue;
+    }
+    
+    // Skip validation for optional fields that are not provided
+    if (fieldValue === undefined || fieldValue === null) {
+      continue;
+    }
+    
+    // Validate field based on type
+    const fieldErrors = [];
+    
+    switch (field.type) {
+      case 'text':
+        if (typeof fieldValue !== 'string') {
+          fieldErrors.push(`Field '${fieldName}' must be a string`);
+        } else if (field.minLength && fieldValue.length < field.minLength) {
+          fieldErrors.push(`Field '${fieldName}' must be at least ${field.minLength} characters long`);
+        } else if (field.maxLength && fieldValue.length > field.maxLength) {
+          fieldErrors.push(`Field '${fieldName}' must be at most ${field.maxLength} characters long`);
+        } else if (field.pattern && !new RegExp(field.pattern).test(fieldValue)) {
+          fieldErrors.push(`Field '${fieldName}' must match pattern: ${field.pattern}`);
+        }
+        break;
+      
+      case 'number':
+        if (typeof fieldValue !== 'number') {
+          fieldErrors.push(`Field '${fieldName}' must be a number`);
+        } else if (field.min !== undefined && fieldValue < field.min) {
+          fieldErrors.push(`Field '${fieldName}' must be at least ${field.min}`);
+        } else if (field.max !== undefined && fieldValue > field.max) {
+          fieldErrors.push(`Field '${fieldName}' must be at most ${field.max}`);
+        }
+        break;
+      
+      case 'boolean':
+        if (typeof fieldValue !== 'boolean') {
+          fieldErrors.push(`Field '${fieldName}' must be a boolean`);
+        }
+        break;
+      
+      case 'email':
+        if (!isValidEmail(fieldValue)) {
+          fieldErrors.push(`Field '${fieldName}' must be a valid email address`);
+        }
+        break;
+      
+      case 'url':
+        try {
+          new URL(fieldValue);
+        } catch (error) {
+          fieldErrors.push(`Field '${fieldName}' must be a valid URL`);
+        }
+        break;
+      
+      case 'date':
+        if (isNaN(Date.parse(fieldValue))) {
+          fieldErrors.push(`Field '${fieldName}' must be a valid date`);
+        }
+        break;
+      
+      case 'select':
+        if (!field.options || !Array.isArray(field.options)) {
+          fieldErrors.push(`Field '${fieldName}' has invalid options`);
+        } else if (!field.options.includes(fieldValue)) {
+          fieldErrors.push(`Field '${fieldName}' must be one of: ${field.options.join(', ')}`);
+        }
+        break;
+      
+      case 'json':
+        if (typeof fieldValue === 'string') {
+          try {
+            JSON.parse(fieldValue);
+          } catch (error) {
+            fieldErrors.push(`Field '${fieldName}' must be valid JSON`);
+          }
+        } else if (typeof fieldValue !== 'object') {
+          fieldErrors.push(`Field '${fieldName}' must be a valid JSON object`);
+        }
+        break;
+      
+      case 'file':
+        // File validation would typically be handled by the server
+        break;
+      
+      case 'relation':
+        if (typeof fieldValue !== 'string' && !Array.isArray(fieldValue)) {
+          fieldErrors.push(`Field '${fieldName}' must be a string ID or an array of string IDs`);
+        }
+        break;
+      
+      default:
+        fieldErrors.push(`Unknown field type: ${field.type}`);
+    }
+    
+    if (fieldErrors.length > 0) {
+      result.isValid = false;
+      result.errors[fieldName] = fieldErrors;
+    }
+  }
+  
+  return result;
+}
+
+// Export all functions
+export default {
+  isValidEmail,
+  validatePassword,
+  validateUsername,
+  validateCollectionName,
+  validateFieldName,
+  validateRecord
+};

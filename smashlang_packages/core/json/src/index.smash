@@ -1,0 +1,506 @@
+/**
+ * SmashLang JSON Package
+ * 
+ * A comprehensive JSON library for SmashLang applications.
+ * Provides functionality for parsing, stringifying, and validating JSON data.
+ */
+
+/**
+ * Parse a JSON string into a JavaScript object
+ * @param {string} text - The JSON string to parse
+ * @param {Function} reviver - Optional function to transform the parsed values
+ * @returns {Object} The parsed JavaScript object
+ */
+export fn parse(text, reviver) {
+  if (typeof text !== 'string') {
+    throw new Error('JSON.parse: text must be a string');
+  }
+  
+  try {
+    // In a real implementation, this would be a custom parser
+    // For this example, we'll use the built-in JSON.parse
+    return JSON.parse(text, reviver);
+  } catch (error) {
+    throw new Error(`JSON parse error: ${error.message}`);
+  }
+}
+
+/**
+ * Convert a JavaScript object to a JSON string
+ * @param {Object} value - The JavaScript object to stringify
+ * @param {Function|Array} replacer - Optional function or array to transform the stringified values
+ * @param {string|number} space - Optional string or number for indentation
+ * @returns {string} The JSON string
+ */
+export fn stringify(value, replacer, space) {
+  try {
+    // In a real implementation, this would be a custom stringifier
+    // For this example, we'll use the built-in JSON.stringify
+    return JSON.stringify(value, replacer, space);
+  } catch (error) {
+    throw new Error(`JSON stringify error: ${error.message}`);
+  }
+}
+
+/**
+ * Check if a string is valid JSON
+ * @param {string} text - The string to check
+ * @returns {boolean} True if the string is valid JSON
+ */
+export fn isValid(text) {
+  if (typeof text !== 'string') {
+    return false;
+  }
+  
+  try {
+    JSON.parse(text);
+    return true;
+  } catch (error) {
+    return false;
+  }
+}
+
+/**
+ * Format a JSON string with proper indentation
+ * @param {string} text - The JSON string to format
+ * @param {number} spaces - Number of spaces for indentation
+ * @returns {string} The formatted JSON string
+ */
+export fn format(text, spaces = 2) {
+  if (typeof text !== 'string') {
+    throw new Error('JSON.format: text must be a string');
+  }
+  
+  try {
+    const obj = JSON.parse(text);
+    return JSON.stringify(obj, null, spaces);
+  } catch (error) {
+    throw new Error(`JSON format error: ${error.message}`);
+  }
+}
+
+/**
+ * Minify a JSON string by removing whitespace
+ * @param {string} text - The JSON string to minify
+ * @returns {string} The minified JSON string
+ */
+export fn minify(text) {
+  if (typeof text !== 'string') {
+    throw new Error('JSON.minify: text must be a string');
+  }
+  
+  try {
+    const obj = JSON.parse(text);
+    return JSON.stringify(obj);
+  } catch (error) {
+    throw new Error(`JSON minify error: ${error.message}`);
+  }
+}
+
+/**
+ * Schema class for JSON schema validation
+ */
+export class Schema {
+  constructor(schema) {
+    this.schema = schema;
+  }
+  
+  /**
+   * Validate a JavaScript object against the schema
+   * @param {Object} data - The object to validate
+   * @returns {Object} Validation result with isValid and errors properties
+   */
+  validate(data) {
+    print(`Validating data against schema`);
+    
+    // In a real implementation, this would be a full schema validator
+    // For this example, we'll implement a simple validator
+    const errors = [];
+    const result = this._validateObject(data, this.schema, '', errors);
+    
+    return {
+      isValid: errors.length === 0,
+      errors: errors
+    };
+  }
+  
+  /**
+   * Validate an object against a schema
+   * @private
+   */
+  _validateObject(data, schema, path, errors) {
+    // Check type
+    if (schema.type && typeof data !== schema.type) {
+      errors.push({
+        path: path,
+        message: `Expected type ${schema.type}, got ${typeof data}`
+      });
+      return false;
+    }
+    
+    // Check required properties
+    if (schema.required && Array.isArray(schema.required)) {
+      for (const prop of schema.required) {
+        if (data[prop] === undefined) {
+          errors.push({
+            path: path ? `${path}.${prop}` : prop,
+            message: `Missing required property: ${prop}`
+          });
+        }
+      }
+    }
+    
+    // Check properties
+    if (schema.properties && typeof schema.properties === 'object') {
+      for (const [prop, propSchema] of Object.entries(schema.properties)) {
+        if (data[prop] !== undefined) {
+          const propPath = path ? `${path}.${prop}` : prop;
+          
+          if (propSchema.type === 'object' && data[prop] && typeof data[prop] === 'object') {
+            this._validateObject(data[prop], propSchema, propPath, errors);
+          } else if (propSchema.type === 'array' && Array.isArray(data[prop])) {
+            this._validateArray(data[prop], propSchema, propPath, errors);
+          } else {
+            this._validateValue(data[prop], propSchema, propPath, errors);
+          }
+        }
+      }
+    }
+    
+    // Check additional properties
+    if (schema.additionalProperties === false) {
+      const schemaProps = Object.keys(schema.properties || {});
+      const dataProps = Object.keys(data);
+      
+      for (const prop of dataProps) {
+        if (!schemaProps.includes(prop)) {
+          errors.push({
+            path: path ? `${path}.${prop}` : prop,
+            message: `Additional property not allowed: ${prop}`
+          });
+        }
+      }
+    }
+    
+    return errors.length === 0;
+  }
+  
+  /**
+   * Validate an array against a schema
+   * @private
+   */
+  _validateArray(data, schema, path, errors) {
+    // Check items
+    if (schema.items && Array.isArray(data)) {
+      for (let i = 0; i < data.length; i++) {
+        const itemPath = `${path}[${i}]`;
+        
+        if (schema.items.type === 'object' && typeof data[i] === 'object') {
+          this._validateObject(data[i], schema.items, itemPath, errors);
+        } else if (schema.items.type === 'array' && Array.isArray(data[i])) {
+          this._validateArray(data[i], schema.items, itemPath, errors);
+        } else {
+          this._validateValue(data[i], schema.items, itemPath, errors);
+        }
+      }
+    }
+    
+    // Check min/max items
+    if (schema.minItems !== undefined && data.length < schema.minItems) {
+      errors.push({
+        path: path,
+        message: `Array must have at least ${schema.minItems} items, got ${data.length}`
+      });
+    }
+    
+    if (schema.maxItems !== undefined && data.length > schema.maxItems) {
+      errors.push({
+        path: path,
+        message: `Array must have at most ${schema.maxItems} items, got ${data.length}`
+      });
+    }
+    
+    // Check uniqueItems
+    if (schema.uniqueItems === true) {
+      const seen = new Set();
+      for (let i = 0; i < data.length; i++) {
+        const value = JSON.stringify(data[i]);
+        if (seen.has(value)) {
+          errors.push({
+            path: path,
+            message: `Array items must be unique, duplicate found at index ${i}`
+          });
+          break;
+        }
+        seen.add(value);
+      }
+    }
+    
+    return errors.length === 0;
+  }
+  
+  /**
+   * Validate a value against a schema
+   * @private
+   */
+  _validateValue(data, schema, path, errors) {
+    // Check type
+    if (schema.type) {
+      let valid = false;
+      
+      if (schema.type === 'string' && typeof data === 'string') {
+        valid = true;
+      } else if (schema.type === 'number' && typeof data === 'number') {
+        valid = true;
+      } else if (schema.type === 'integer' && Number.isInteger(data)) {
+        valid = true;
+      } else if (schema.type === 'boolean' && typeof data === 'boolean') {
+        valid = true;
+      } else if (schema.type === 'null' && data === null) {
+        valid = true;
+      } else if (schema.type === 'array' && Array.isArray(data)) {
+        valid = true;
+      } else if (schema.type === 'object' && data && typeof data === 'object' && !Array.isArray(data)) {
+        valid = true;
+      }
+      
+      if (!valid) {
+        errors.push({
+          path: path,
+          message: `Expected type ${schema.type}, got ${typeof data}`
+        });
+        return false;
+      }
+    }
+    
+    // Check enum
+    if (schema.enum && Array.isArray(schema.enum)) {
+      if (!schema.enum.includes(data)) {
+        errors.push({
+          path: path,
+          message: `Value must be one of: ${schema.enum.join(', ')}`
+        });
+      }
+    }
+    
+    // Check string constraints
+    if (schema.type === 'string') {
+      if (schema.minLength !== undefined && data.length < schema.minLength) {
+        errors.push({
+          path: path,
+          message: `String must be at least ${schema.minLength} characters long, got ${data.length}`
+        });
+      }
+      
+      if (schema.maxLength !== undefined && data.length > schema.maxLength) {
+        errors.push({
+          path: path,
+          message: `String must be at most ${schema.maxLength} characters long, got ${data.length}`
+        });
+      }
+      
+      if (schema.pattern && !new RegExp(schema.pattern).test(data)) {
+        errors.push({
+          path: path,
+          message: `String must match pattern: ${schema.pattern}`
+        });
+      }
+    }
+    
+    // Check number constraints
+    if (schema.type === 'number' || schema.type === 'integer') {
+      if (schema.minimum !== undefined && data < schema.minimum) {
+        errors.push({
+          path: path,
+          message: `Value must be >= ${schema.minimum}, got ${data}`
+        });
+      }
+      
+      if (schema.maximum !== undefined && data > schema.maximum) {
+        errors.push({
+          path: path,
+          message: `Value must be <= ${schema.maximum}, got ${data}`
+        });
+      }
+      
+      if (schema.exclusiveMinimum !== undefined && data <= schema.exclusiveMinimum) {
+        errors.push({
+          path: path,
+          message: `Value must be > ${schema.exclusiveMinimum}, got ${data}`
+        });
+      }
+      
+      if (schema.exclusiveMaximum !== undefined && data >= schema.exclusiveMaximum) {
+        errors.push({
+          path: path,
+          message: `Value must be < ${schema.exclusiveMaximum}, got ${data}`
+        });
+      }
+      
+      if (schema.multipleOf !== undefined && data % schema.multipleOf !== 0) {
+        errors.push({
+          path: path,
+          message: `Value must be a multiple of ${schema.multipleOf}, got ${data}`
+        });
+      }
+    }
+    
+    return errors.length === 0;
+  }
+}
+
+/**
+ * Create a JSON schema validator
+ * @param {Object} schema - The JSON schema
+ * @returns {Schema} A schema validator
+ */
+export fn createSchema(schema) {
+  return new Schema(schema);
+}
+
+/**
+ * Diff two JSON objects and return the differences
+ * @param {Object} obj1 - First object
+ * @param {Object} obj2 - Second object
+ * @returns {Object} Object containing the differences
+ */
+export fn diff(obj1, obj2) {
+  print(`Comparing two JSON objects`);
+  
+  const result = {
+    added: {},
+    removed: {},
+    changed: {}
+  };
+  
+  // Find added and changed properties
+  for (const key in obj2) {
+    if (!(key in obj1)) {
+      result.added[key] = obj2[key];
+    } else if (JSON.stringify(obj1[key]) !== JSON.stringify(obj2[key])) {
+      result.changed[key] = {
+        from: obj1[key],
+        to: obj2[key]
+      };
+    }
+  }
+  
+  // Find removed properties
+  for (const key in obj1) {
+    if (!(key in obj2)) {
+      result.removed[key] = obj1[key];
+    }
+  }
+  
+  return result;
+}
+
+/**
+ * Merge two JSON objects
+ * @param {Object} target - Target object
+ * @param {Object} source - Source object
+ * @param {Object} options - Merge options
+ * @returns {Object} Merged object
+ */
+export fn merge(target, source, options = {}) {
+  const result = { ...target };
+  
+  for (const key in source) {
+    if (options.overwrite === false && key in result) {
+      continue;
+    }
+    
+    if (
+      options.deep !== false &&
+      source[key] && typeof source[key] === 'object' &&
+      result[key] && typeof result[key] === 'object' &&
+      !Array.isArray(source[key]) && !Array.isArray(result[key])
+    ) {
+      result[key] = merge(result[key], source[key], options);
+    } else {
+      result[key] = source[key];
+    }
+  }
+  
+  return result;
+}
+
+/**
+ * Extract a value from a JSON object using a path
+ * @param {Object} obj - The object to extract from
+ * @param {string} path - The path to the value (e.g. 'user.name' or 'items[0].id')
+ * @param {*} defaultValue - Default value if the path doesn't exist
+ * @returns {*} The extracted value or the default value
+ */
+export fn get(obj, path, defaultValue) {
+  if (!obj || typeof obj !== 'object') {
+    return defaultValue;
+  }
+  
+  const parts = path.replace(/\[(\d+)\]/g, '.$1').split('.');
+  let current = obj;
+  
+  for (const part of parts) {
+    if (current === null || current === undefined || typeof current !== 'object') {
+      return defaultValue;
+    }
+    
+    current = current[part];
+  }
+  
+  return current !== undefined ? current : defaultValue;
+}
+
+/**
+ * Set a value in a JSON object using a path
+ * @param {Object} obj - The object to modify
+ * @param {string} path - The path to the value (e.g. 'user.name' or 'items[0].id')
+ * @param {*} value - The value to set
+ * @returns {Object} The modified object
+ */
+export fn set(obj, path, value) {
+  if (!obj || typeof obj !== 'object') {
+    return obj;
+  }
+  
+  const result = { ...obj };
+  const parts = path.replace(/\[(\d+)\]/g, '.$1').split('.');
+  let current = result;
+  
+  for (let i = 0; i < parts.length - 1; i++) {
+    const part = parts[i];
+    
+    if (!(part in current) || current[part] === null) {
+      // If the next part is a number, create an array, otherwise an object
+      current[part] = /^\d+$/.test(parts[i + 1]) ? [] : {};
+    } else if (typeof current[part] !== 'object') {
+      // If the current value is not an object, replace it
+      current[part] = /^\d+$/.test(parts[i + 1]) ? [] : {};
+    }
+    
+    current = current[part];
+  }
+  
+  const lastPart = parts[parts.length - 1];
+  current[lastPart] = value;
+  
+  return result;
+}
+
+// Create a namespace for the package
+const json = {
+  parse,
+  stringify,
+  isValid,
+  format,
+  minify,
+  Schema,
+  createSchema,
+  diff,
+  merge,
+  get,
+  set
+};
+
+// Default export
+export default json;

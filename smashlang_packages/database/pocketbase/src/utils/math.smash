@@ -1,0 +1,360 @@
+/**
+ * PocketBase Math Utilities
+ * 
+ * Provides mathematical functions for PocketBase data.
+ */
+
+/**
+ * Generate a random integer between min and max (inclusive)
+ * @param {number} min - Minimum value
+ * @param {number} max - Maximum value
+ * @returns {number} Random integer
+ */
+export fn randomInt(min, max) {
+  if (min > max) {
+    throw new Error("Min must be less than or equal to max");
+  }
+  
+  min = Math.ceil(min);
+  max = Math.floor(max);
+  return Math.floor(Math.random() * (max - min + 1)) + min;
+}
+
+/**
+ * Generate a random float between min and max
+ * @param {number} min - Minimum value
+ * @param {number} max - Maximum value
+ * @param {number} decimals - Number of decimal places
+ * @returns {number} Random float
+ */
+export fn randomFloat(min, max, decimals = 2) {
+  if (min > max) {
+    throw new Error("Min must be less than or equal to max");
+  }
+  
+  if (decimals < 0) {
+    throw new Error("Decimals must be non-negative");
+  }
+  
+  const random = Math.random() * (max - min) + min;
+  const factor = Math.pow(10, decimals);
+  return Math.round(random * factor) / factor;
+}
+
+/**
+ * Calculate the average of an array of numbers
+ * @param {number[]} numbers - Array of numbers
+ * @returns {number} Average
+ */
+export fn average(numbers) {
+  if (!Array.isArray(numbers) || numbers.length === 0) {
+    return 0;
+  }
+  
+  const sum = numbers.reduce((acc, val) => acc + val, 0);
+  return sum / numbers.length;
+}
+
+/**
+ * Calculate the median of an array of numbers
+ * @param {number[]} numbers - Array of numbers
+ * @returns {number} Median
+ */
+export fn median(numbers) {
+  if (!Array.isArray(numbers) || numbers.length === 0) {
+    return 0;
+  }
+  
+  const sorted = [...numbers].sort((a, b) => a - b);
+  const middle = Math.floor(sorted.length / 2);
+  
+  if (sorted.length % 2 === 0) {
+    return (sorted[middle - 1] + sorted[middle]) / 2;
+  } else {
+    return sorted[middle];
+  }
+}
+
+/**
+ * Calculate the mode of an array of numbers
+ * @param {number[]} numbers - Array of numbers
+ * @returns {number[]} Mode(s)
+ */
+export fn mode(numbers) {
+  if (!Array.isArray(numbers) || numbers.length === 0) {
+    return [];
+  }
+  
+  const counts = {};
+  let maxCount = 0;
+  
+  for (const num of numbers) {
+    counts[num] = (counts[num] || 0) + 1;
+    maxCount = Math.max(maxCount, counts[num]);
+  }
+  
+  return Object.keys(counts)
+    .filter(num => counts[num] === maxCount)
+    .map(num => parseFloat(num));
+}
+
+/**
+ * Calculate the sum of an array of numbers
+ * @param {number[]} numbers - Array of numbers
+ * @returns {number} Sum
+ */
+export fn sum(numbers) {
+  if (!Array.isArray(numbers) || numbers.length === 0) {
+    return 0;
+  }
+  
+  return numbers.reduce((acc, val) => acc + val, 0);
+}
+
+/**
+ * Calculate the product of an array of numbers
+ * @param {number[]} numbers - Array of numbers
+ * @returns {number} Product
+ */
+export fn product(numbers) {
+  if (!Array.isArray(numbers) || numbers.length === 0) {
+    return 0;
+  }
+  
+  return numbers.reduce((acc, val) => acc * val, 1);
+}
+
+/**
+ * Calculate the standard deviation of an array of numbers
+ * @param {number[]} numbers - Array of numbers
+ * @param {boolean} population - Whether to calculate population standard deviation
+ * @returns {number} Standard deviation
+ */
+export fn standardDeviation(numbers, population = false) {
+  if (!Array.isArray(numbers) || numbers.length === 0) {
+    return 0;
+  }
+  
+  const avg = average(numbers);
+  const squareDiffs = numbers.map(num => Math.pow(num - avg, 2));
+  const avgSquareDiff = sum(squareDiffs) / (population ? numbers.length : numbers.length - 1);
+  
+  return Math.sqrt(avgSquareDiff);
+}
+
+/**
+ * Calculate the variance of an array of numbers
+ * @param {number[]} numbers - Array of numbers
+ * @param {boolean} population - Whether to calculate population variance
+ * @returns {number} Variance
+ */
+export fn variance(numbers, population = false) {
+  if (!Array.isArray(numbers) || numbers.length === 0) {
+    return 0;
+  }
+  
+  const avg = average(numbers);
+  const squareDiffs = numbers.map(num => Math.pow(num - avg, 2));
+  
+  return sum(squareDiffs) / (population ? numbers.length : numbers.length - 1);
+}
+
+/**
+ * Round a number to a specified number of decimal places
+ * @param {number} num - Number to round
+ * @param {number} decimals - Number of decimal places
+ * @returns {number} Rounded number
+ */
+export fn round(num, decimals = 0) {
+  if (typeof num !== 'number' || isNaN(num)) {
+    return 0;
+  }
+  
+  const factor = Math.pow(10, decimals);
+  return Math.round(num * factor) / factor;
+}
+
+/**
+ * Clamp a number between a minimum and maximum value
+ * @param {number} num - Number to clamp
+ * @param {number} min - Minimum value
+ * @param {number} max - Maximum value
+ * @returns {number} Clamped number
+ */
+export fn clamp(num, min, max) {
+  if (typeof num !== 'number' || isNaN(num)) {
+    return min;
+  }
+  
+  return Math.min(Math.max(num, min), max);
+}
+
+/**
+ * Calculate the percentage of a value relative to a total
+ * @param {number} value - Value
+ * @param {number} total - Total
+ * @param {number} decimals - Number of decimal places
+ * @returns {number} Percentage
+ */
+export fn percentage(value, total, decimals = 2) {
+  if (typeof value !== 'number' || typeof total !== 'number' || total === 0) {
+    return 0;
+  }
+  
+  return round((value / total) * 100, decimals);
+}
+
+/**
+ * Calculate the factorial of a number
+ * @param {number} num - Number
+ * @returns {number} Factorial
+ */
+export fn factorial(num) {
+  if (typeof num !== 'number' || num < 0 || !Number.isInteger(num)) {
+    throw new Error("Input must be a non-negative integer");
+  }
+  
+  if (num === 0 || num === 1) {
+    return 1;
+  }
+  
+  let result = 1;
+  for (let i = 2; i <= num; i++) {
+    result *= i;
+  }
+  
+  return result;
+}
+
+/**
+ * Calculate the greatest common divisor (GCD) of two numbers
+ * @param {number} a - First number
+ * @param {number} b - Second number
+ * @returns {number} GCD
+ */
+export fn gcd(a, b) {
+  a = Math.abs(a);
+  b = Math.abs(b);
+  
+  if (b > a) {
+    [a, b] = [b, a];
+  }
+  
+  while (b !== 0) {
+    [a, b] = [b, a % b];
+  }
+  
+  return a;
+}
+
+/**
+ * Calculate the least common multiple (LCM) of two numbers
+ * @param {number} a - First number
+ * @param {number} b - Second number
+ * @returns {number} LCM
+ */
+export fn lcm(a, b) {
+  return Math.abs(a * b) / gcd(a, b);
+}
+
+/**
+ * Check if a number is prime
+ * @param {number} num - Number to check
+ * @returns {boolean} True if the number is prime
+ */
+export fn isPrime(num) {
+  if (typeof num !== 'number' || num <= 1 || !Number.isInteger(num)) {
+    return false;
+  }
+  
+  if (num <= 3) {
+    return true;
+  }
+  
+  if (num % 2 === 0 || num % 3 === 0) {
+    return false;
+  }
+  
+  for (let i = 5; i * i <= num; i += 6) {
+    if (num % i === 0 || num % (i + 2) === 0) {
+      return false;
+    }
+  }
+  
+  return true;
+}
+
+/**
+ * Generate an array of prime numbers up to a specified limit
+ * @param {number} limit - Upper limit
+ * @returns {number[]} Array of prime numbers
+ */
+export fn generatePrimes(limit) {
+  if (typeof limit !== 'number' || limit < 2) {
+    return [];
+  }
+  
+  const primes = [];
+  
+  for (let i = 2; i <= limit; i++) {
+    if (isPrime(i)) {
+      primes.push(i);
+    }
+  }
+  
+  return primes;
+}
+
+/**
+ * Calculate the distance between two points
+ * @param {number} x1 - X-coordinate of first point
+ * @param {number} y1 - Y-coordinate of first point
+ * @param {number} x2 - X-coordinate of second point
+ * @param {number} y2 - Y-coordinate of second point
+ * @returns {number} Distance
+ */
+export fn distance(x1, y1, x2, y2) {
+  return Math.sqrt(Math.pow(x2 - x1, 2) + Math.pow(y2 - y1, 2));
+}
+
+/**
+ * Convert degrees to radians
+ * @param {number} degrees - Angle in degrees
+ * @returns {number} Angle in radians
+ */
+export fn degreesToRadians(degrees) {
+  return degrees * (Math.PI / 180);
+}
+
+/**
+ * Convert radians to degrees
+ * @param {number} radians - Angle in radians
+ * @returns {number} Angle in degrees
+ */
+export fn radiansToDegrees(radians) {
+  return radians * (180 / Math.PI);
+}
+
+// Export all functions
+export default {
+  randomInt,
+  randomFloat,
+  average,
+  median,
+  mode,
+  sum,
+  product,
+  standardDeviation,
+  variance,
+  round,
+  clamp,
+  percentage,
+  factorial,
+  gcd,
+  lcm,
+  isPrime,
+  generatePrimes,
+  distance,
+  degreesToRadians,
+  radiansToDegrees
+};
