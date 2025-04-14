@@ -4,6 +4,10 @@ let user = {
     age: 33,
 };
 
+for (let i of x) {
+	print(i);
+}
+
 let message = "Hello, SmashLang!";
 let year = 2025;
 let pi = 3.14;

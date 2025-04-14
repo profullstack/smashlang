@@ -1,6 +1,7 @@
 use crate::parser::AstNode;
 use std::process::{Command, Stdio};
 use std::io::Write;
+use rand; // Added for unique variable names
 
 // Helper function to parse a regex pattern string into pattern and flags
 fn parse_regex_pattern(regex: &str) -> (&str, &str) {
@@ -106,8 +107,8 @@ impl<'a> Module<'a> {
         // Add all necessary includes
         code.push_str("#include <stdio.h>\n");
         code.push_str("#include <stdlib.h>\n");
-        code.push_str("#include <string.h>\n");
         code.push_str("#include <stdbool.h>\n");
+        code.push_str("#include <string.h>\n");
         code.push_str("#include <ctype.h>\n");
         code.push_str("#include <dlfcn.h>\n");
         code.push_str("#include \"simple_regex.h\"\n");  // Include our simple regex implementation
@@ -146,7 +147,7 @@ impl<'a> Module<'a> {
                             if i > 0 {
                                 modified_function.push_str(", ");
                             }
-                            modified_function.push_str(&format!("char* {}", param));
+                            modified_function.push_str(&format!("char* {param}"));
                         }
                         modified_function.push_str(") {\n");
                         
@@ -216,12 +217,12 @@ impl<'a> Module<'a> {
                 }
             },
             AstNode::LetDecl { name, value } => {
-                code.push_str(&format!("{indent}char* {name} = "));
+                code.push_str(&format!("{indent}SmashValue* {name} = "));
                 code.push_str(&self.generate_c_code_for_expr(value, indent_level));
                 code.push_str(";\n");
             },
             AstNode::ConstDecl { name, value } => {
-                code.push_str(&format!("{indent}const char* {name} = "));
+                code.push_str(&format!("{indent}SmashValue* {name} = "));
                 code.push_str(&self.generate_c_code_for_expr(value, indent_level));
                 code.push_str(";\n");
             },
@@ -328,6 +329,27 @@ impl<'a> Module<'a> {
                 // Close function
                 code.push_str(&format!("{}}}\n\n", indent));
             },
+            AstNode::ForOf { var_name, iterable, body } => {
+                let iterable_code = self.generate_c_code_for_expr(iterable, indent_level); // Get C code for the iterable
+                let loop_id = rand::random::<u32>(); // Unique ID for loop variables
+                let index_var = format!("i_{}", loop_id);
+                let length_var = format!("len_{}", loop_id);
+                let iterable_var = format!("iter_{}", loop_id);
+
+                code.push_str(&format!("{indent}// Start ForOf loop for variable '{var_name}'\n"));
+                // Assume iterable_code evaluates to a SmashValue* for the array
+                code.push_str(&format!("{indent}SmashValue* {iterable_var} = {};\n", iterable_code));
+                code.push_str(&format!("{indent}int {length_var} = smash_array_length({iterable_var});\n"));
+                code.push_str(&format!("{indent}for (int {index_var} = 0; {index_var} < {length_var}; {index_var}++) {{\n"));
+                // Declare the loop variable within the loop scope - assuming smash_array_get returns SmashValue*
+                code.push_str(&format!("{}    SmashValue* {} = smash_array_get({iterable_var}, {index_var}); // Assign current element\n", indent, var_name));
+
+                // Generate code for the loop body
+                code.push_str(&self.generate_c_code_for_node(body, indent_level + 1));
+
+                code.push_str(&format!("{indent}}}\n")); // End for loop
+                code.push_str(&format!("{indent}// End ForOf loop for variable '{var_name}'\n"));
+            },
             _ => {
                 code.push_str(&format!("{indent}// Unimplemented AST node type\n"));
             }
@@ -341,12 +363,12 @@ impl<'a> Module<'a> {
         match expr {
             AstNode::Number(n) => {
                 // Convert number to string
-                format!("(char*)\"{}\"" , n)
+                format!("(char*)\"{}\"", n)
             },
             AstNode::String(s) => {
                 // Escape quotes in the string
                 let escaped = s.replace("\"", "\\\"");
-                format!("\"{}\"" , escaped)
+                format!("\"{}\"", escaped)
             },
             AstNode::Boolean(b) => {
                 if *b {
@@ -372,7 +394,7 @@ impl<'a> Module<'a> {
                     "!=" => format!("(strcmp({}, {}) != 0 ? \"true\" : \"false\")", left_code, right_code),
                     "&&" => format!("(strcmp({}, \"true\") == 0 && strcmp({}, \"true\") == 0 ? \"true\" : \"false\")", left_code, right_code),
                     "||" => format!("(strcmp({}, \"true\") == 0 || strcmp({}, \"true\") == 0 ? \"true\" : \"false\")", left_code, right_code),
-                    _ => format!("/* Unsupported operator: {} */ \"{} {} {}\"" , op, left_code, op, right_code)
+                    _ => format!("/* Unsupported operator: {} */ \"{} {} {}\"", op, left_code, op, right_code)
                 }
             },
             AstNode::UnaryOp { op, expr } => {
@@ -654,8 +676,38 @@ impl<'a> Module<'a> {
                 // Create a regex object using the runtime implementation
                 format!("smash_regex_create(\"{}\", \"{}\")", pattern_str, flags)
             },
+            AstNode::ArrayLiteral(elements) => {
+                let array_var = format!("smash_arr_{}", rand::random::<u32>());
+                let mut setup_code = String::new();
+
+                // Declare the SmashValue* for the array
+                setup_code.push_str(&format!(
+                    "SmashValue* {} = smash_value_create_array({});\n",
+                    array_var,
+                    elements.len() // Initial capacity hint
+                ));
+
+                // Generate code for each element and push it
+                for element_node in elements {
+                    let element_code = self.generate_c_code_for_expr(element_node, indent_level);
+                    setup_code.push_str(&format!(
+                        "smash_array_push({}, {});\n",
+                        array_var, 
+                        element_code
+                    ));
+                }
+                
+                format!("{}{}", setup_code, array_var)
+            },
+            AstNode::ObjectLiteral(_properties) => {
+                // TODO: Implement Object Literal generation
+                let object_var = format!("smash_obj_{}", rand::random::<u32>());
+                let code = format!("SmashValue* {} = smash_value_create_null(); // Placeholder for object\n", object_var);
+                code
+            },
             _ => {
-                format!("\"Unsupported expression type\"" )
+                // Handle other potential expression types or return an error/placeholder
+                format!("/* Unhandled expression type */ \"Error\"")
             }
         }
     }

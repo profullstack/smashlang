@@ -4,6 +4,199 @@
 #include <ctype.h>
 #include "runtime.h"
 
+// --- Value Creation Implementations ---
+
+SmashValue* smash_value_create_null() {
+    SmashValue* value = (SmashValue*)malloc(sizeof(SmashValue));
+    value->type = SMASH_TYPE_NULL;
+    return value;
+}
+
+SmashValue* smash_value_create_boolean(bool val) {
+    SmashValue* value = (SmashValue*)malloc(sizeof(SmashValue));
+    value->type = SMASH_TYPE_BOOLEAN;
+    value->data.boolean = val;
+    return value;
+}
+
+SmashValue* smash_value_create_number(double num) {
+    SmashValue* value = (SmashValue*)malloc(sizeof(SmashValue));
+    value->type = SMASH_TYPE_NUMBER;
+    value->data.number = num;
+    return value;
+}
+
+// Creates a heap-allocated copy of the input string
+SmashValue* smash_value_create_string(const char* str) {
+    SmashValue* value = (SmashValue*)malloc(sizeof(SmashValue));
+    value->type = SMASH_TYPE_STRING;
+    value->data.string = str ? strdup(str) : strdup(""); // Handle NULL input
+    return value;
+}
+
+SmashValue* smash_value_create_array(int initial_capacity) {
+    SmashValue* value = (SmashValue*)malloc(sizeof(SmashValue));
+    value->type = SMASH_TYPE_ARRAY;
+    
+    SmashArray* array = (SmashArray*)malloc(sizeof(SmashArray));
+    array->size = 0;
+    array->capacity = initial_capacity > 0 ? initial_capacity : 4; // Default capacity
+    array->elements = (SmashValue**)malloc(array->capacity * sizeof(SmashValue*));
+    
+    value->data.array = array;
+    return value;
+}
+
+// --- Value Freeing Implementation ---
+
+void smash_value_free(SmashValue* value) {
+    if (!value) return;
+
+    switch (value->type) {
+        case SMASH_TYPE_STRING:
+            free(value->data.string);
+            break;
+        case SMASH_TYPE_ARRAY: {
+            SmashArray* array = value->data.array;
+            // Free all elements within the array recursively
+            for (int i = 0; i < array->size; i++) {
+                smash_value_free(array->elements[i]);
+            }
+            free(array->elements);
+            free(array);
+            break;
+        }
+        case SMASH_TYPE_OBJECT: 
+            // TODO: Implement object freeing
+            break;
+        case SMASH_TYPE_NULL:
+        case SMASH_TYPE_UNDEFINED:
+        case SMASH_TYPE_BOOLEAN:
+        case SMASH_TYPE_NUMBER:
+            // No nested data to free for these types
+            break;
+    }
+    free(value); // Free the SmashValue struct itself
+}
+
+// --- Array Function Implementations ---
+
+void smash_array_push(SmashValue* array_value, SmashValue* element_value) {
+    if (!array_value || array_value->type != SMASH_TYPE_ARRAY) {
+        // Handle error: Not an array
+        fprintf(stderr, "Error: smash_array_push called on non-array value.\n");
+        // Consider freeing element_value if ownership is transferred here?
+        return;
+    }
+
+    SmashArray* array = array_value->data.array;
+
+    // Resize if necessary
+    if (array->size >= array->capacity) {
+        array->capacity = array->capacity == 0 ? 4 : array->capacity * 2;
+        array->elements = (SmashValue**)realloc(array->elements, array->capacity * sizeof(SmashValue*));
+        if (!array->elements) {
+            fprintf(stderr, "Error: Failed to reallocate memory for array push.\n");
+            // Handle allocation failure (maybe exit?)
+            exit(EXIT_FAILURE);
+        }
+    }
+
+    array->elements[array->size++] = element_value; // Add the element
+}
+
+int smash_array_length(SmashValue* array_value) {
+    if (!array_value || array_value->type != SMASH_TYPE_ARRAY) {
+        // Handle error: Not an array
+        fprintf(stderr, "Error: smash_array_length called on non-array value.\n");
+        return 0; // Or some error code
+    }
+    return array_value->data.array->size;
+}
+
+SmashValue* smash_array_get(SmashValue* array_value, int index) {
+    if (!array_value || array_value->type != SMASH_TYPE_ARRAY) {
+        fprintf(stderr, "Error: smash_array_get called on non-array value.\n");
+        return smash_value_create_null(); // Return null on error
+    }
+
+    SmashArray* array = array_value->data.array;
+    if (index < 0 || index >= array->size) {
+        fprintf(stderr, "Error: Array index %d out of bounds (size %d).\n", index, array->size);
+        return smash_value_create_null(); // Return null for out-of-bounds
+    }
+
+    // Note: Returning direct pointer. Caller should not free this.
+    // Consider returning a copy if ownership rules are different.
+    return array->elements[index]; 
+}
+
+// --- General Helper Implementations ---
+
+// Basic implementation to convert SmashValue to a string for printing/debugging
+// Returns a new heap-allocated string.
+char* smash_value_to_string(SmashValue* value) {
+    if (!value) return strdup("undefined"); // Or "(null pointer)"
+
+    char buffer[256]; // Static buffer for simplicity, consider dynamic for large outputs
+
+    switch (value->type) {
+        case SMASH_TYPE_NULL:
+            return strdup("null");
+        case SMASH_TYPE_UNDEFINED:
+            return strdup("undefined");
+        case SMASH_TYPE_BOOLEAN:
+            return strdup(value->data.boolean ? "true" : "false");
+        case SMASH_TYPE_NUMBER:
+            snprintf(buffer, sizeof(buffer), "%g", value->data.number); // Use %g for clean float/int representation
+            return strdup(buffer);
+        case SMASH_TYPE_STRING:
+            // Return a copy, assuming the caller might modify/free it.
+            // Or, if used only for printing, could return value->data.string directly?
+            return strdup(value->data.string);
+        case SMASH_TYPE_ARRAY: {
+            SmashArray* array = value->data.array;
+            // Simple representation: [element1,element2,...]
+            // This could get very long! Needs careful memory management if dynamic.
+            char* result = strdup("[");
+            for (int i = 0; i < array->size; i++) {
+                char* elem_str = smash_value_to_string(array->elements[i]);
+                char* old_result = result;
+                // Allocate enough space: current result + element string + ", " + "]\0"
+                result = (char*)malloc(strlen(old_result) + strlen(elem_str) + 4);
+                strcpy(result, old_result);
+                strcat(result, elem_str);
+                if (i < array->size - 1) {
+                    strcat(result, ",");
+                }
+                free(old_result);
+                free(elem_str);
+            }
+            char* final_result = (char*)malloc(strlen(result) + 2);
+            strcpy(final_result, result);
+            strcat(final_result, "]");
+            free(result);
+            return final_result;
+         }
+        case SMASH_TYPE_OBJECT:
+            return strdup("[object Object]"); // Placeholder
+        default:
+            return strdup("[unknown type]");
+    }
+}
+
+// Implementation for the print function
+void print(SmashValue* value) {
+    char* str = smash_value_to_string(value);
+    if (str) {
+        printf("%s\n", str);
+        free(str); // Free the string returned by smash_value_to_string
+    } else {
+        printf("(error converting value to string)\n");
+    }
+    // Note: print does not take ownership or free the 'value' argument itself.
+}
+
 // Forward declarations for regex functions
 void smash_regex_free(SmashRegex* regex);
 SmashRegex* smash_regex_create(const char* pattern, const char* flags);
