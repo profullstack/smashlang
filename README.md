@@ -1,10 +1,19 @@
 # SmashLang: A JS-like Programming Language in Rust
 
 <p align="center">
-  <img src="assets/logo.png" alt="SmashLang Logo" width="200">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="assets/logo.dark.svg">
+    <img src="assets/logo.light.svg" alt="SmashLang logo" width="400" />
+  </picture>
 </p>
 
 SmashLang is a JavaScript-inspired programming language implemented in Rust that compiles to native binaries across all major platforms (desktop, mobile, server, WebAssembly, etc.). The language supports dynamic typing, native date/time, regular expressions, and control flow constructs like `if`, `for`, and `while`.
+
+
+[![GitHub](https://img.shields.io/github/license/profullstack/smashlang)](https://github.com/profullstack/smashlang/blob/master/LICENSE)
+[![GitHub commit activity](https://img.shields.io/github/commit-activity/m/profullstack/smashlang)](https://github.com/profullstack/smashlang/pulse)
+[![GitHub last commit](https://img.shields.io/github/last-commit/profullstack/smashlang)](https://github.com/profullstack/smashlang/commits/master)
+
 
 ## 🚀 Features
 
@@ -48,7 +57,7 @@ cargo install --path .
 ### Using the Install Script
 
 ```bash
-curl -sSL https://raw.githubusercontent.com/profullstack/smashlang/main/install.sh | bash
+curl -sSL https://raw.githubusercontent.com/profullstack/smashlang/refs/heads/master/install.sh | bash -s -- --master
 ```
 
 ## 🚀 Quick Start
