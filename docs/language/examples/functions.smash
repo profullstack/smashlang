@@ -1,7 +1,7 @@
 // SmashLang Functions Examples
 
 // Basic function declaration
-function greet(name) {
+fn greet(name) {
     return "Hello, " + name + "!";
 }
 
@@ -10,7 +10,7 @@ let greeting = greet("World");
 print(greeting);  // Output: Hello, World!
 
 // Function with default parameters
-function greetWithDefault(name = "Guest") {
+fn greetWithDefault(name = "Guest") {
     return "Hello, " + name + "!";
 }
 
@@ -18,14 +18,14 @@ print(greetWithDefault());  // Output: Hello, Guest!
 print(greetWithDefault("John"));  // Output: Hello, John!
 
 // Function with multiple parameters
-function add(a, b) {
+fn add(a, b) {
     return a + b;
 }
 
 print("Sum: " + add(5, 3));  // Output: Sum: 8
 
 // Function with rest parameters
-function sum(...numbers) {
+fn sum(...numbers) {
     let total = 0;
     for (let num of numbers) {
         total += num;
@@ -48,7 +48,7 @@ const square = (x) => {
 print("Square of 4: " + square(4));  // Output: Square of 4: 16
 
 // Higher-order functions
-function operate(a, b, operation) {
+fn operate(a, b, operation) {
     return operation(a, b);
 }
 
@@ -56,9 +56,9 @@ print("Addition: " + operate(5, 3, add));  // Output: Addition: 8
 print("Multiplication: " + operate(5, 3, multiply));  // Output: Multiplication: 15
 
 // Closures
-function createCounter() {
+fn createCounter() {
     let count = 0;
-    return function() {
+    return fn() {
         count += 1;
         return count;
     };
@@ -70,7 +70,7 @@ print(counter());  // Output: 2
 print(counter());  // Output: 3
 
 // Immediately Invoked Function Expression (IIFE)
-const result = (function() {
+const result = (fn() {
     let x = 10;
     let y = 20;
     return x + y;
@@ -78,7 +78,7 @@ const result = (function() {
 print("IIFE result: " + result);  // Output: IIFE result: 30
 
 // Recursive functions
-function factorial(n) {
+fn factorial(n) {
     if (n <= 1) {
         return 1;
     }
@@ -88,14 +88,14 @@ function factorial(n) {
 print("Factorial of 5: " + factorial(5));  // Output: Factorial of 5: 120
 
 // Async functions
-async function fetchData() {
+async fn fetchData() {
     // Simulate async operation
     await new Promise(resolve => setTimeout(resolve, 1000));
     return "Data fetched";
 }
 
 // Using async function
-async function processData() {
+async fn processData() {
     print("Fetching data...");
     const data = await fetchData();
     print(data);

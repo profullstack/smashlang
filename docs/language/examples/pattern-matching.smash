@@ -1,7 +1,7 @@
 // SmashLang Pattern Matching Examples
 
 // Basic pattern matching with match expression
-function describeValue(value) {
+fn describeValue(value) {
     match (value) {
         case 0:
             return "Zero";
@@ -19,7 +19,7 @@ print(describeValue(1));  // Output: One
 print(describeValue(5));  // Output: Other number
 
 // Pattern matching with types
-function typeOf(value) {
+fn typeOf(value) {
     match (value) {
         case is Number:
             return "Number";
@@ -46,7 +46,7 @@ print(typeOf({a: 1}));    // Output: Object
 print(typeOf(() => {}));  // Output: Function
 
 // Pattern matching with destructuring
-function processPoint(point) {
+fn processPoint(point) {
     match (point) {
         case {x: 0, y: 0}:
             return "Origin";
@@ -70,7 +70,7 @@ print(processPoint({x: 3, y: 3}));   // Output: On the diagonal at 3
 print(processPoint({x: 2, y: 4}));   // Output: Point at (2, 4)
 
 // Pattern matching with arrays
-function processArray(arr) {
+fn processArray(arr) {
     match (arr) {
         case []:
             return "Empty array";
@@ -91,7 +91,7 @@ print(processArray([1, 2]));       // Output: Two elements: 1 and 2
 print(processArray([1, 2, 3, 4])); // Output: First element: 1, rest: 2,3,4
 
 // Pattern matching with nested structures
-function processData(data) {
+fn processData(data) {
     match (data) {
         case {type: "user", data: {name, age}}:
             return "User: " + name + ", age: " + age;

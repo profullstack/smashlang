@@ -29,11 +29,11 @@ print("10^2: " + mathUtils.power(10, 2));  // Output: 10^2: 100
 
 // Creating a module
 // In file: logger.smash
-export function log(message) {
+export fn log(message) {
     print("[LOG] " + message);
 }
 
-export function error(message) {
+export fn error(message) {
     print("[ERROR] " + message);
 }
 
@@ -44,7 +44,7 @@ export const LOG_LEVELS = {
 };
 
 // Default export
-export default function(message) {
+export default fn(message) {
     print("[DEFAULT] " + message);
 }
 
@@ -58,7 +58,7 @@ defaultLogger("Default log message");  // Output: [DEFAULT] Default log message
 print("Log level: " + LOG_LEVELS.INFO);  // Output: Log level: info
 
 // Dynamic imports
-async function loadModule() {
+async fn loadModule() {
     const utils = await import("utils.smash");
     utils.doSomething();
 }
@@ -69,13 +69,13 @@ loadModule();
 // In file: database.smash
 let connection = null;
 
-export function connect(url) {
+export fn connect(url) {
     print("Connecting to database at " + url);
     connection = { url: url, status: "connected" };
     return connection;
 }
 
-export function query(sql) {
+export fn query(sql) {
     if (!connection) {
         throw "Not connected to database";
     }
@@ -83,7 +83,7 @@ export function query(sql) {
     return ["result1", "result2"];
 }
 
-export function disconnect() {
+export fn disconnect() {
     if (connection) {
         print("Disconnecting from database");
         connection = null;

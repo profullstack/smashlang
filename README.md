@@ -1,205 +1,150 @@
-# SmashLang: A JavaScript-like Programming Language in Rust
+# SmashLang: A JS-like Programming Language in Rust
 
-SmashLang is a dynamically-typed programming language with JavaScript-like syntax that compiles to native binaries across all major platforms (desktop, mobile, server, WebAssembly, etc.). The language supports dynamic typing, native date/time, regular expressions, and control flow constructs like `if`, `for`, and `while`.
+SmashLang is a JavaScript-inspired programming language implemented in Rust that compiles to native binaries across all major platforms (desktop, mobile, server, WebAssembly, etc.). The language supports dynamic typing, native date/time, regular expressions, and control flow constructs like `if`, `for`, and `while`.
 
-## Features
+## 🚀 Features
 
 - **JavaScript-like Syntax**: Familiar syntax for JavaScript developers
 - **Dynamic Typing**: Flexible type system with runtime type checking
-- **Native Date/Time**: Built-in support for date and time operations
-- **Regular Expressions**: First-class support for regular expressions
-- **Control Flow**: Full support for `if`, `for`, `while`, and other control flow constructs
-- **Functions and Closures**: Support for functions, closures, and arrow functions
-- **Error Handling**: Try/catch/finally blocks for error handling
-- **Async/Await**: Support for asynchronous programming
-- **Cross-Platform**: Compiles to native binaries for all major platforms
+- **Native Compilation**: Compiles to native binaries for all major platforms
+- **WebAssembly Support**: Compile to WebAssembly for web applications
+- **Cross-Platform**: Works on Linux, macOS, Windows, iOS, Android, and more
+- **Standard Library**: Built-in support for common operations
+- **Regular Expressions**: Native regex support
+- **Date/Time Handling**: Comprehensive date and time functionality
+- **Error Handling**: Try/catch/finally mechanism
+- **Modern Language Features**: Destructuring, pattern matching, async/await, and more
 
-## Installation
+## 🧰 Implementation
+
+SmashLang is built using modern Rust crates:
+
+- **Lexer**: Uses [logos](https://crates.io/crates/logos) for efficient tokenization
+- **Parser**: Uses [pest](https://crates.io/crates/pest) for parsing with PEG grammar
+- **Interpreter**: Custom interpreter with dynamic typing
+- **Compiler**: Native code generation using [cranelift](https://crates.io/crates/cranelift)
+- **Standard Library**: Implemented using Rust's ecosystem (chrono, regex, etc.)
+
+## 📦 Installation
 
 ### From Source
 
 ```bash
+# Clone the repository
 git clone https://github.com/yourusername/smashlang.git
 cd smashlang
+
+# Build the project
+cargo build --release
+
+# Install the binaries
 cargo install --path .
 ```
 
-### Using Cargo
+### Using the Install Script
 
 ```bash
-cargo install smashlang
+curl -sSL https://raw.githubusercontent.com/yourusername/smashlang/main/install.sh | bash
 ```
 
-## Usage
+## 🚀 Quick Start
 
-### REPL
+### Hello World
 
-Start the interactive REPL:
+Create a file named `hello.smash`:
+
+```javascript
+// hello.smash
+print("Hello, SmashLang!");
+```
+
+Run it:
 
 ```bash
-smash
+smash run hello.smash
 ```
 
-### Running Scripts
-
-Run a SmashLang script:
+### Compile to Native Binary
 
 ```bash
-smash run script.smash
+smashc hello.smash -o hello
+./hello
 ```
 
-### Compiling Scripts
-
-Compile a SmashLang script to a native binary:
+### Compile to WebAssembly
 
 ```bash
-smash compile script.smash
+smashc hello.smash --wasm -o hello.wasm
 ```
 
-## Language Examples
+## 📚 Documentation
 
-### Variables and Basic Types
+Comprehensive documentation is available in the `docs` directory:
 
-```javascript
-// Variables
-let x = 42;
-const PI = 3.14159;
+- [Getting Started Guide](docs/getting-started/README.md)
+- [Language Reference](docs/language/README.md)
+- [Standard Library](docs/std/README.md)
+- [WebAssembly Support](docs/wasm_support.md)
+- [OS Hooks](docs/std_os_hooks.md)
+- [Process Management](docs/std_process.md)
 
-// Types
-let num = 42;
-let float = 3.14;
-let str = "Hello, world!";
-let bool = true;
-let arr = [1, 2, 3, 4, 5];
-let obj = { name: "John", age: 30 };
-let regex = /[a-z]+/;
-let date = new Date();
+## 🧪 Examples
+
+SmashLang comes with a variety of examples to help you learn:
+
+### Language Features
+
+- [Control Flow](docs/language/examples/control-flow.smash)
+- [Error Handling](docs/language/examples/error-handling.smash)
+- [Functions](docs/language/examples/functions.smash)
+- [Modules](docs/language/examples/modules.smash)
+- [Pattern Matching](docs/language/examples/pattern-matching.smash)
+- [Syntax](docs/language/examples/syntax.smash)
+- [Types](docs/language/examples/types.smash)
+- [Destructuring](docs/language/examples/destructuring.smash)
+- [Object Enhancements](docs/language/examples/object-enhancements.smash)
+
+### OS Integration
+
+- [File System](docs/os_hooks/examples/file_system.smash)
+- [Process Management](docs/os_hooks/examples/process_management.smash)
+
+### WebAssembly
+
+- [Hello WASM](docs/wasm/examples/hello_wasm.smash)
+
+### Hardware Integration
+
+- [Input Tester](docs/hardware/examples/input_tester.smash)
+- [Keyboard Monitor](docs/hardware/examples/keyboard_monitor.smash)
+- [Mouse Tracker](docs/hardware/examples/mouse_tracker.smash)
+- [Touch Visualizer](docs/hardware/examples/touch_visualizer.smash)
+
+## 🧪 Testing
+
+Run all examples:
+
+```bash
+cd docs
+./test_all_examples.sh
 ```
 
-### Control Flow
+Run the test suite:
 
-```javascript
-// If statement
-if (x > 10) {
-    print("x is greater than 10");
-} else if (x > 5) {
-    print("x is greater than 5 but not greater than 10");
-} else {
-    print("x is not greater than 5");
-}
-
-// For loop
-for (let i = 0; i < 10; i++) {
-    print(i);
-}
-
-// While loop
-let i = 0;
-while (i < 10) {
-    print(i);
-    i++;
-}
-
-// For-in loop (objects)
-for (let key in obj) {
-    print(key, obj[key]);
-}
-
-// For-of loop (arrays)
-for (let value of arr) {
-    print(value);
-}
+```bash
+cargo test
 ```
 
-### Functions
-
-```javascript
-// Function declaration
-function add(a, b) {
-    return a + b;
-}
-
-// Arrow function
-const multiply = (a, b) => a * b;
-
-// Async function
-async function fetchData() {
-    const response = await fetch("https://api.example.com/data");
-    return response.json();
-}
-```
-
-### Error Handling
-
-```javascript
-try {
-    // Code that might throw an error
-    throw new Error("Something went wrong");
-} catch (error) {
-    // Handle the error
-    print("Error:", error);
-} finally {
-    // This will always execute
-    print("Cleanup");
-}
-```
-
-### Promises and Async/Await
-
-```javascript
-// Creating a promise
-const promise = new Promise((resolve, reject) => {
-    setTimeout(() => {
-        resolve("Success!");
-    }, 1000);
-});
-
-// Using then/catch
-promise
-    .then(result => {
-        print("Result:", result);
-    })
-    .catch(error => {
-        print("Error:", error);
-    });
-
-// Using async/await
-async function run() {
-    try {
-        const result = await promise;
-        print("Result:", result);
-    } catch (error) {
-        print("Error:", error);
-    }
-}
-
-run();
-```
-
-## Implementation Details
-
-SmashLang is implemented in Rust and uses the following crates:
-
-- **Lexer**: [`logos`](https://crates.io/crates/logos) for fast and efficient tokenization
-- **Parser**: [`pest`](https://crates.io/crates/pest) for parsing with a PEG grammar
-- **Interpreter**: Custom implementation with a dynamic type system
-- **Compiler**: [`cranelift`](https://crates.io/crates/cranelift) for JIT compilation
-- **WebAssembly**: [`wasmtime`](https://crates.io/crates/wasmtime) for WebAssembly support
-- **Standard Library**: Uses Rust's standard library and crates like [`chrono`](https://crates.io/crates/chrono) and [`regex`](https://crates.io/crates/regex)
-
-## Cross-Platform Support
-
-SmashLang supports the following platforms:
-
-- **Desktop**: Windows, macOS, Linux
-- **Mobile**: iOS, Android
-- **Web**: WebAssembly
-- **Server**: Any platform that supports Rust
-
-## Contributing
+## 🤝 Contributing
 
 Contributions are welcome! Please feel free to submit a Pull Request.
 
-## License
+1. Fork the repository
+2. Create your feature branch (`git checkout -b feature/amazing-feature`)
+3. Commit your changes (`git commit -m 'Add some amazing feature'`)
+4. Push to the branch (`git push origin feature/amazing-feature`)
+5. Open a Pull Request
 
-This project is licensed under the MIT License - see the LICENSE file for details.
+## 📄 License
+
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.

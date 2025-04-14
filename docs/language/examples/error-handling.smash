@@ -33,7 +33,7 @@ try {
 }
 
 // Custom error handling function
-function handleError(fn) {
+fn handleError(fn) {
     try {
         return fn();
     } catch (error) {
@@ -43,13 +43,13 @@ function handleError(fn) {
 }
 
 // Using the custom error handler
-let result = handleError(function() {
+let result = handleError(fn() {
     throw "Custom error";
 });
 print("Result: " + result);
 
 // Conditional error handling
-function divide(a, b) {
+fn divide(a, b) {
     if (b === 0) {
         throw "Division by zero";
     }

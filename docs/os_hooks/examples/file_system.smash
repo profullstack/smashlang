@@ -1,0 +1,121 @@
+// SmashLang OS Hooks - File System Example
+
+// Import the OS hooks module
+import "std_os_hooks.smash";
+
+// File operations
+fn fileSystemDemo() {
+    print("File System Operations Demo");
+    print("---------------------------");
+    
+    // Create a file
+    const filename = "test_file.txt";
+    const content = "Hello, SmashLang OS Hooks!";
+    
+    print("Creating file: " + filename);
+    if (os.fs.writeFile(filename, content)) {
+        print("File created successfully");
+    } else {
+        print("Failed to create file");
+        return;
+    }
+    
+    // Read the file
+    print("\nReading file: " + filename);
+    const readContent = os.fs.readFile(filename);
+    if (readContent) {
+        print("File content: " + readContent);
+    } else {
+        print("Failed to read file");
+    }
+    
+    // Get file info
+    print("\nGetting file info");
+    const fileInfo = os.fs.stat(filename);
+    if (fileInfo) {
+        print("File size: " + fileInfo.size + " bytes");
+        print("Created at: " + new Date(fileInfo.createdAt).toLocaleString());
+        print("Modified at: " + new Date(fileInfo.modifiedAt).toLocaleString());
+    } else {
+        print("Failed to get file info");
+    }
+    
+    // Append to the file
+    print("\nAppending to file");
+    const appendContent = "\nThis is appended content.";
+    if (os.fs.appendFile(filename, appendContent)) {
+        print("Content appended successfully");
+        
+        // Read the updated file
+        const updatedContent = os.fs.readFile(filename);
+        print("Updated content: " + updatedContent);
+    } else {
+        print("Failed to append to file");
+    }
+    
+    // Rename the file
+    print("\nRenaming file");
+    const newFilename = "renamed_file.txt";
+    if (os.fs.rename(filename, newFilename)) {
+        print("File renamed to: " + newFilename);
+    } else {
+        print("Failed to rename file");
+    }
+    
+    // Delete the file
+    print("\nDeleting file");
+    if (os.fs.unlink(newFilename)) {
+        print("File deleted successfully");
+    } else {
+        print("Failed to delete file");
+    }
+}
+
+// Directory operations
+fn directoryDemo() {
+    print("\nDirectory Operations Demo");
+    print("-------------------------");
+    
+    // Create a directory
+    const dirName = "test_dir";
+    print("Creating directory: " + dirName);
+    if (os.fs.mkdir(dirName)) {
+        print("Directory created successfully");
+    } else {
+        print("Failed to create directory");
+        return;
+    }
+    
+    // Create files in the directory
+    for (let i = 1; i <= 3; i++) {
+        const filename = dirName + "/file" + i + ".txt";
+        const content = "This is file " + i;
+        if (os.fs.writeFile(filename, content)) {
+            print("Created: " + filename);
+        }
+    }
+    
+    // List directory contents
+    print("\nListing directory contents");
+    const files = os.fs.readdir(dirName);
+    if (files && files.length > 0) {
+        print("Files in " + dirName + ":");
+        for (const file of files) {
+            print("- " + file);
+        }
+    } else {
+        print("Failed to read directory or directory is empty");
+    }
+    
+    // Remove directory and its contents
+    print("\nRemoving directory and its contents");
+    if (os.fs.rmdir(dirName, true)) {
+        print("Directory removed successfully");
+    } else {
+        print("Failed to remove directory");
+    }
+}
+
+// Run the demos
+fileSystemDemo();
+directoryDemo();

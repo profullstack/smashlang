@@ -1,0 +1,142 @@
+// SmashLang Process Management Example
+
+// Import the process management module
+import "std_process.smash";
+
+// Basic process information
+fn processInfoDemo() {
+    print("Process Information Demo");
+    print("------------------------");
+    
+    // Get current process ID
+    const pid = process.pid();
+    print("Current process ID: " + pid);
+    
+    // Get parent process ID
+    const ppid = process.ppid();
+    print("Parent process ID: " + ppid);
+    
+    // Get current working directory
+    const cwd = process.cwd();
+    print("Current working directory: " + cwd);
+    
+    // Get environment variables
+    print("\nEnvironment Variables:");
+    const env = process.env();
+    const keys = Object.keys(env).sort();
+    for (let i = 0; i < Math.min(5, keys.length); i++) {
+        const key = keys[i];
+        print(`${key}=${env[key]}`);
+    }
+    print(`... and ${keys.length - 5} more`);
+    
+    // Get specific environment variable
+    const path = process.getenv("PATH");
+    print("\nPATH environment variable:");
+    print(path);
+}
+
+// Execute external commands
+fn executeCommandDemo() {
+    print("\nExecute Command Demo");
+    print("-------------------");
+    
+    // Simple command execution
+    print("Running 'echo Hello, SmashLang!'");
+    const result = process.exec("echo Hello, SmashLang!");
+    print("Exit code: " + result.exitCode);
+    print("Output: " + result.stdout.trim());
+    
+    // Command with arguments
+    print("\nListing files in current directory");
+    const lsResult = process.exec("ls -la");
+    print("Exit code: " + lsResult.exitCode);
+    
+    // Show first few lines of output
+    const lines = lsResult.stdout.split("\n");
+    for (let i = 0; i < Math.min(5, lines.length); i++) {
+        print(lines[i]);
+    }
+    if (lines.length > 5) {
+        print(`... and ${lines.length - 5} more lines`);
+    }
+    
+    // Handle command errors
+    print("\nRunning non-existent command");
+    const errorResult = process.exec("nonexistentcommand");
+    print("Exit code: " + errorResult.exitCode);
+    print("Error: " + errorResult.stderr.trim());
+}
+
+// Spawn processes
+fn spawnProcessDemo() {
+    print("\nSpawn Process Demo");
+    print("-----------------");
+    
+    // Spawn a long-running process
+    print("Spawning a process that counts to 5");
+    
+    const child = process.spawn("bash", ["-c", "for i in {1..5}; do echo Count: $i; sleep 1; done"]);
+    
+    print("Child process spawned with PID: " + child.pid);
+    
+    // Set up event handlers
+    child.onStdout((data) => {
+        print("STDOUT: " + data.trim());
+    });
+    
+    child.onStderr((data) => {
+        print("STDERR: " + data.trim());
+    });
+    
+    child.onExit((code) => {
+        print("Child process exited with code: " + code);
+    });
+    
+    // Wait for the child process to complete
+    print("Waiting for child process to complete...");
+    child.wait();
+    print("Child process completed");
+}
+
+// Process signals
+fn signalHandlingDemo() {
+    print("\nSignal Handling Demo");
+    print("-------------------");
+    
+    // Register signal handlers
+    process.onSignal("SIGINT", () => {
+        print("Received SIGINT signal (Ctrl+C)");
+        print("Cleaning up resources...");
+        print("Exiting gracefully");
+        process.exit(0);
+    });
+    
+    process.onSignal("SIGTERM", () => {
+        print("Received SIGTERM signal");
+        print("Exiting gracefully");
+        process.exit(0);
+    });
+    
+    // Spawn a child process and send it a signal
+    print("Spawning a child process that sleeps for 10 seconds");
+    const child = process.spawn("sleep", ["10"]);
+    print("Child process spawned with PID: " + child.pid);
+    
+    // Wait a moment and then send a signal to the child
+    print("Sending SIGTERM to child process in 2 seconds...");
+    process.setTimeout(() => {
+        print("Sending SIGTERM to child process");
+        process.kill(child.pid, "SIGTERM");
+    }, 2000);
+    
+    // Wait for the child to exit
+    const exitCode = child.wait();
+    print("Child process exited with code: " + exitCode);
+}
+
+// Run the demos
+processInfoDemo();
+executeCommandDemo();
+spawnProcessDemo();
+signalHandlingDemo();

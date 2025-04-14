@@ -1,0 +1,156 @@
+// SmashLang WebAssembly Example
+
+// This example demonstrates how to compile SmashLang code to WebAssembly
+// and interact with JavaScript in a web browser.
+
+// Define a function that will be exported to JavaScript
+export fn add(a, b) {
+    return a + b;
+}
+
+// Define a function that uses a string
+export fn greet(name) {
+    return "Hello, " + name + " from SmashLang WebAssembly!";
+}
+
+// Define a function that works with arrays
+export fn sumArray(numbers) {
+    let total = 0;
+    for (let i = 0; i < numbers.length; i++) {
+        total += numbers[i];
+    }
+    return total;
+}
+
+// Define a function that returns an object
+export fn createPerson(name, age) {
+    return {
+        name: name,
+        age: age,
+        greet: fn() {
+            return "Hi, I'm " + this.name + " and I'm " + this.age + " years old.";
+        }
+    };
+}
+
+// Define a function that uses a callback from JavaScript
+export fn processWithCallback(data, callback) {
+    // Process the data
+    const result = data.toUpperCase();
+    
+    // Call the JavaScript callback with the result
+    callback(result);
+    
+    return "Callback processed";
+}
+
+// Define a function that uses JavaScript's console.log
+export fn logMessage(message) {
+    // This will call JavaScript's console.log
+    console.log("From SmashLang WASM:", message);
+    return true;
+}
+
+// Define an async function that returns a Promise
+export async fn fetchData(url) {
+    try {
+        // This will use JavaScript's fetch API
+        const response = await fetch(url);
+        const data = await response.json();
+        return data;
+    } catch (error) {
+        console.error("Error fetching data:", error);
+        return null;
+    }
+}
+
+// Main function that runs when the WASM module is loaded
+export fn main() {
+    console.log("SmashLang WebAssembly module loaded!");
+    return "WASM module initialized";
+}
+
+// The following is an example of how to use this WASM module in HTML/JavaScript:
+/*
+<!DOCTYPE html>
+<html>
+<head>
+    <title>SmashLang WebAssembly Demo</title>
+</head>
+<body>
+    <h1>SmashLang WebAssembly Demo</h1>
+    <div id="output"></div>
+    
+    <script>
+        // Function to add output to the page
+        function log(message) {
+            const output = document.getElementById('output');
+            output.innerHTML += `<p>${message}</p>`;
+        }
+        
+        // Load the WASM module
+        async function loadWasmModule() {
+            try {
+                // Load the WASM module
+                const wasmModule = await WebAssembly.instantiateStreaming(
+                    fetch('hello_wasm.wasm'),
+                    {
+                        env: {
+                            // Provide JavaScript functions to the WASM module
+                            consoleLog: (ptr, len) => {
+                                const message = wasmModule.exports.getStringFromMemory(ptr, len);
+                                console.log(message);
+                            }
+                        }
+                    }
+                );
+                
+                // Get the exports from the WASM module
+                const exports = wasmModule.instance.exports;
+                
+                // Call the main function
+                log(exports.main());
+                
+                // Test the add function
+                const sum = exports.add(5, 3);
+                log(`5 + 3 = ${sum}`);
+                
+                // Test the greet function
+                const greeting = exports.greet("WebAssembly");
+                log(greeting);
+                
+                // Test the sumArray function
+                const numbers = [1, 2, 3, 4, 5];
+                const total = exports.sumArray(numbers);
+                log(`Sum of [${numbers}] = ${total}`);
+                
+                // Test the createPerson function
+                const person = exports.createPerson("Alice", 30);
+                log(person.greet());
+                
+                // Test the processWithCallback function
+                exports.processWithCallback("hello, callback!", (result) => {
+                    log(`Callback received: ${result}`);
+                });
+                
+                // Test the logMessage function
+                exports.logMessage("This message should appear in the console");
+                
+                // Test the fetchData function
+                exports.fetchData("https://jsonplaceholder.typicode.com/todos/1")
+                    .then(data => {
+                        log(`Fetched data: ${JSON.stringify(data)}`);
+                    });
+                
+            } catch (error) {
+                console.error("Error loading WASM module:", error);
+                log(`Error: ${error.message}`);
+            }
+        }
+        
+        // Load the WASM module when the page loads
+        loadWasmModule();
+    </script>
+</body>
+</html>
+*/
