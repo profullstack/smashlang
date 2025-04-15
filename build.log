@@ -1,0 +1,699 @@
+   Compiling smashlang v0.1.0 (/home/ettinger/src/profullstack.com/smashlang)
+warning: unused import: `std::fmt`
+ --> src/parser.rs:3:5
+  |
+3 | use std::fmt;
+  |     ^^^^^^^^
+  |
+  = note: `#[warn(unused_imports)]` on by default
+
+warning: unused imports: `Environment` and `Function`
+ --> src/runtime/collections.rs:6:33
+  |
+6 | use crate::interpreter::{Value, Function, Environment};
+  |                                 ^^^^^^^^  ^^^^^^^^^^^
+
+warning: unused import: `Environment`
+ --> src/runtime/browser.rs:3:43
+  |
+3 | use crate::interpreter::{Value, Function, Environment};
+  |                                           ^^^^^^^^^^^
+
+error[E0308]: mismatched types
+   --> src/runtime/promise.rs:645:40
+    |
+645 |                 result_promise.resolve(promise);
+    |                                ------- ^^^^^^^ expected `Value`, found `&Value`
+    |                                |
+    |                                arguments to this method are incorrect
+    |
+note: method defined here
+   --> src/runtime/promise.rs:115:12
+    |
+115 |     pub fn resolve(&self, value: Value) {
+    |            ^^^^^^^        ------------
+help: consider using clone here
+    |
+645 |                 result_promise.resolve(promise.clone());
+    |                                               ++++++++
+
+error[E0599]: no function or associated item named `parse` found for struct `SmashParser` in the current scope
+  --> src/runtime/module.rs:67:28
+   |
+67 |         match SmashParser::parse(&self.source) {
+   |                            ^^^^^ function or associated item not found in `SmashParser`
+   |
+  ::: src/parser.rs:7:1
+   |
+7  | pub struct SmashParser;
+   | ---------------------- function or associated item `parse` not found for this struct
+   |
+   = help: items from traits can only be used if the trait is in scope
+help: trait `Parser` which provides `parse` is implemented but not in scope; perhaps you want to import it
+   |
+1  + use pest::Parser;
+   |
+
+error[E0599]: no variant or associated item named `Identifier` found for enum `interpreter::Value` in the current scope
+   --> src/runtime/operators.rs:169:24
+    |
+169 |                 Value::Identifier(name) => {
+    |                        ^^^^^^^^^^ variant or associated item not found in `Value`
+    |
+   ::: src/interpreter.rs:15:1
+    |
+15  | pub enum Value {
+    | -------------- variant or associated item `Identifier` not found for this enum
+
+error[E0599]: no variant or associated item named `Identifier` found for enum `interpreter::Value` in the current scope
+   --> src/runtime/operators.rs:177:40
+    |
+177 |                     if let Some(Value::Identifier(name)) = obj.get("name") {
+    |                                        ^^^^^^^^^^ variant or associated item not found in `Value`
+    |
+   ::: src/interpreter.rs:15:1
+    |
+15  | pub enum Value {
+    | -------------- variant or associated item `Identifier` not found for this enum
+
+error[E0599]: no variant or associated item named `Identifier` found for enum `interpreter::Value` in the current scope
+   --> src/runtime/operators.rs:235:24
+    |
+235 |                 Value::Identifier(name) => {
+    |                        ^^^^^^^^^^ variant or associated item not found in `Value`
+    |
+   ::: src/interpreter.rs:15:1
+    |
+15  | pub enum Value {
+    | -------------- variant or associated item `Identifier` not found for this enum
+
+error[E0599]: no variant or associated item named `Identifier` found for enum `interpreter::Value` in the current scope
+   --> src/runtime/operators.rs:243:40
+    |
+243 |                     if let Some(Value::Identifier(name)) = target_obj.get("name") {
+    |                                        ^^^^^^^^^^ variant or associated item not found in `Value`
+    |
+   ::: src/interpreter.rs:15:1
+    |
+15  | pub enum Value {
+    | -------------- variant or associated item `Identifier` not found for this enum
+
+error[E0599]: no variant or associated item named `Identifier` found for enum `interpreter::Value` in the current scope
+   --> src/runtime/operators.rs:251:55
+    |
+251 | ...                   if let Value::Identifier(n) = t {
+    |                                     ^^^^^^^^^^ variant or associated item not found in `Value`
+    |
+   ::: src/interpreter.rs:15:1
+    |
+15  | pub enum Value {
+    | -------------- variant or associated item `Identifier` not found for this enum
+
+error[E0599]: no variant or associated item named `Identifier` found for enum `interpreter::Value` in the current scope
+   --> src/runtime/operators.rs:254:64
+    |
+254 | ...                   if let Some(Value::Identifier(n)) = o.get("name") {
+    |                                          ^^^^^^^^^^ variant or associated item not found in `Value`
+    |
+   ::: src/interpreter.rs:15:1
+    |
+15  | pub enum Value {
+    | -------------- variant or associated item `Identifier` not found for this enum
+
+error[E0599]: no variant or associated item named `iterator` found for enum `Symbol` in the current scope
+   --> src/runtime/operators.rs:317:69
+    |
+317 |             if let Some(Value::Function(iter_fn)) = obj.get(Symbol::iterator.as_str()) {
+    |                                                                     ^^^^^^^^ variant or associated item not found in `Symbol`
+...
+365 | pub enum Symbol {
+    | --------------- variant or associated item `iterator` not found for this enum
+    |
+help: there is a variant with a similar name (notice the capitalization difference)
+    |
+317 -             if let Some(Value::Function(iter_fn)) = obj.get(Symbol::iterator.as_str()) {
+317 +             if let Some(Value::Function(iter_fn)) = obj.get(Symbol::Iterator.as_str()) {
+    |
+
+error[E0308]: mismatched types
+  --> src/runtime/collections.rs:65:23
+   |
+65 |         Ok(Value::Map(self.clone()))
+   |            ---------- ^^^^^^^^^^^^ expected `Rc<Map>`, found `Map`
+   |            |
+   |            arguments to this enum variant are incorrect
+   |
+   = note: expected struct `Rc<runtime::collections::Map>`
+              found struct `runtime::collections::Map`
+note: tuple variant defined here
+  --> src/interpreter.rs:25:5
+   |
+25 |     Map(Rc<Map>),
+   |     ^^^
+help: call `Into::into` on this expression to convert `runtime::collections::Map` into `Rc<runtime::collections::Map>`
+   |
+65 |         Ok(Value::Map(self.clone().into()))
+   |                                   +++++++
+
+error[E0308]: mismatched types
+   --> src/runtime/collections.rs:134:53
+    |
+134 |             callback(value, key.clone(), Value::Map(self.clone()))?;
+    |                                          ---------- ^^^^^^^^^^^^ expected `Rc<Map>`, found `Map`
+    |                                          |
+    |                                          arguments to this enum variant are incorrect
+    |
+    = note: expected struct `Rc<runtime::collections::Map>`
+               found struct `runtime::collections::Map`
+note: tuple variant defined here
+   --> src/interpreter.rs:25:5
+    |
+25  |     Map(Rc<Map>),
+    |     ^^^
+help: call `Into::into` on this expression to convert `runtime::collections::Map` into `Rc<runtime::collections::Map>`
+    |
+134 |             callback(value, key.clone(), Value::Map(self.clone().into()))?;
+    |                                                                 +++++++
+
+error[E0308]: mismatched types
+   --> src/runtime/collections.rs:255:23
+    |
+255 |         Ok(Value::Set(self.clone()))
+    |            ---------- ^^^^^^^^^^^^ expected `Rc<Set>`, found `Set`
+    |            |
+    |            arguments to this enum variant are incorrect
+    |
+    = note: expected struct `Rc<Set>`
+               found struct `Set`
+note: tuple variant defined here
+   --> src/interpreter.rs:26:5
+    |
+26  |     Set(Rc<Set>),
+    |     ^^^
+help: call `Into::into` on this expression to convert `Set` into `Rc<Set>`
+    |
+255 |         Ok(Value::Set(self.clone().into()))
+    |                                   +++++++
+
+error[E0308]: mismatched types
+   --> src/runtime/collections.rs:297:63
+    |
+297 |             callback(value.clone(), value.clone(), Value::Set(self.clone()))?;
+    |                                                    ---------- ^^^^^^^^^^^^ expected `Rc<Set>`, found `Set`
+    |                                                    |
+    |                                                    arguments to this enum variant are incorrect
+    |
+    = note: expected struct `Rc<Set>`
+               found struct `Set`
+note: tuple variant defined here
+   --> src/interpreter.rs:26:5
+    |
+26  |     Set(Rc<Set>),
+    |     ^^^
+help: call `Into::into` on this expression to convert `Set` into `Rc<Set>`
+    |
+297 |             callback(value.clone(), value.clone(), Value::Set(self.clone().into()))?;
+    |                                                                           +++++++
+
+error[E0308]: mismatched types
+   --> src/runtime/collections.rs:358:35
+    |
+358 |                 Ok(Value::WeakMap(self.clone()))
+    |                    -------------- ^^^^^^^^^^^^ expected `Rc<WeakMap>`, found `WeakMap`
+    |                    |
+    |                    arguments to this enum variant are incorrect
+    |
+    = note: expected struct `Rc<WeakMap>`
+               found struct `WeakMap`
+note: tuple variant defined here
+   --> src/interpreter.rs:27:5
+    |
+27  |     WeakMap(Rc<WeakMap>),
+    |     ^^^^^^^
+help: call `Into::into` on this expression to convert `WeakMap` into `Rc<WeakMap>`
+    |
+358 |                 Ok(Value::WeakMap(self.clone().into()))
+    |                                               +++++++
+
+error[E0308]: mismatched types
+   --> src/runtime/collections.rs:452:35
+    |
+452 |                 Ok(Value::WeakSet(self.clone()))
+    |                    -------------- ^^^^^^^^^^^^ expected `Rc<WeakSet>`, found `WeakSet`
+    |                    |
+    |                    arguments to this enum variant are incorrect
+    |
+    = note: expected struct `Rc<WeakSet>`
+               found struct `WeakSet`
+note: tuple variant defined here
+   --> src/interpreter.rs:28:5
+    |
+28  |     WeakSet(Rc<WeakSet>),
+    |     ^^^^^^^
+help: call `Into::into` on this expression to convert `WeakSet` into `Rc<WeakSet>`
+    |
+452 |                 Ok(Value::WeakSet(self.clone().into()))
+    |                                               +++++++
+
+error[E0277]: `Rc<Promise>` cannot be sent between threads safely
+   --> src/runtime/timers.rs:145:23
+    |
+145 |           thread::spawn(move || {
+    |  _________-------------_^
+    | |         |
+    | |         required by a bound introduced by this call
+146 | |             loop {
+147 | |                 // Sleep for a short time to avoid busy waiting
+148 | |                 thread::sleep(Duration::from_millis(10));
+...   |
+188 | |         });
+    | |_________^ `Rc<Promise>` cannot be sent between threads safely
+    |
+    = help: within `(std::string::String, interpreter::Value)`, the trait `Send` is not implemented for `Rc<Promise>`
+note: required because it appears within the type `interpreter::Value`
+   --> src/interpreter.rs:15:10
+    |
+15  | pub enum Value {
+    |          ^^^^^
+    = note: required because it appears within the type `(std::string::String, interpreter::Value)`
+    = note: required for `hashbrown::raw::RawTable<(std::string::String, interpreter::Value)>` to implement `Send`
+note: required because it appears within the type `hashbrown::map::HashMap<std::string::String, interpreter::Value, RandomState>`
+   --> /rust/deps/hashbrown-0.15.2/src/map.rs:185:12
+note: required because it appears within the type `HashMap<std::string::String, interpreter::Value>`
+   --> /home/ettinger/.rustup/toolchains/stable-x86_64-unknown-linux-gnu/lib/rustlib/src/rust/library/std/src/collections/hash/map.rs:230:12
+    |
+230 | pub struct HashMap<K, V, S = RandomState> {
+    |            ^^^^^^^
+note: required because it appears within the type `Environment`
+   --> src/interpreter.rs:243:12
+    |
+243 | pub struct Environment {
+    |            ^^^^^^^^^^^
+note: required because it's used within this closure
+   --> src/runtime/timers.rs:145:23
+    |
+145 |         thread::spawn(move || {
+    |                       ^^^^^^^
+note: required by a bound in `spawn`
+   --> /home/ettinger/.rustup/toolchains/stable-x86_64-unknown-linux-gnu/lib/rustlib/src/rust/library/std/src/thread/mod.rs:726:8
+    |
+723 | pub fn spawn<F, T>(f: F) -> JoinHandle<T>
+    |        ----- required by a bound in this function
+...
+726 |     F: Send + 'static,
+    |        ^^^^ required by this bound in `spawn`
+
+error[E0277]: `Rc<RefCell<Class>>` cannot be sent between threads safely
+   --> src/runtime/timers.rs:145:23
+    |
+145 |           thread::spawn(move || {
+    |  _________-------------_^
+    | |         |
+    | |         required by a bound introduced by this call
+146 | |             loop {
+147 | |                 // Sleep for a short time to avoid busy waiting
+148 | |                 thread::sleep(Duration::from_millis(10));
+...   |
+188 | |         });
+    | |_________^ `Rc<RefCell<Class>>` cannot be sent between threads safely
+    |
+    = help: within `(std::string::String, interpreter::Value)`, the trait `Send` is not implemented for `Rc<RefCell<Class>>`
+note: required because it appears within the type `interpreter::Value`
+   --> src/interpreter.rs:15:10
+    |
+15  | pub enum Value {
+    |          ^^^^^
+    = note: required because it appears within the type `(std::string::String, interpreter::Value)`
+    = note: required for `hashbrown::raw::RawTable<(std::string::String, interpreter::Value)>` to implement `Send`
+note: required because it appears within the type `hashbrown::map::HashMap<std::string::String, interpreter::Value, RandomState>`
+   --> /rust/deps/hashbrown-0.15.2/src/map.rs:185:12
+note: required because it appears within the type `HashMap<std::string::String, interpreter::Value>`
+   --> /home/ettinger/.rustup/toolchains/stable-x86_64-unknown-linux-gnu/lib/rustlib/src/rust/library/std/src/collections/hash/map.rs:230:12
+    |
+230 | pub struct HashMap<K, V, S = RandomState> {
+    |            ^^^^^^^
+note: required because it appears within the type `Environment`
+   --> src/interpreter.rs:243:12
+    |
+243 | pub struct Environment {
+    |            ^^^^^^^^^^^
+note: required because it's used within this closure
+   --> src/runtime/timers.rs:145:23
+    |
+145 |         thread::spawn(move || {
+    |                       ^^^^^^^
+note: required by a bound in `spawn`
+   --> /home/ettinger/.rustup/toolchains/stable-x86_64-unknown-linux-gnu/lib/rustlib/src/rust/library/std/src/thread/mod.rs:726:8
+    |
+723 | pub fn spawn<F, T>(f: F) -> JoinHandle<T>
+    |        ----- required by a bound in this function
+...
+726 |     F: Send + 'static,
+    |        ^^^^ required by this bound in `spawn`
+
+error[E0277]: `Rc<RefCell<ClassInstance>>` cannot be sent between threads safely
+   --> src/runtime/timers.rs:145:23
+    |
+145 |           thread::spawn(move || {
+    |  _________-------------_^
+    | |         |
+    | |         required by a bound introduced by this call
+146 | |             loop {
+147 | |                 // Sleep for a short time to avoid busy waiting
+148 | |                 thread::sleep(Duration::from_millis(10));
+...   |
+188 | |         });
+    | |_________^ `Rc<RefCell<ClassInstance>>` cannot be sent between threads safely
+    |
+    = help: within `(std::string::String, interpreter::Value)`, the trait `Send` is not implemented for `Rc<RefCell<ClassInstance>>`
+note: required because it appears within the type `interpreter::Value`
+   --> src/interpreter.rs:15:10
+    |
+15  | pub enum Value {
+    |          ^^^^^
+    = note: required because it appears within the type `(std::string::String, interpreter::Value)`
+    = note: required for `hashbrown::raw::RawTable<(std::string::String, interpreter::Value)>` to implement `Send`
+note: required because it appears within the type `hashbrown::map::HashMap<std::string::String, interpreter::Value, RandomState>`
+   --> /rust/deps/hashbrown-0.15.2/src/map.rs:185:12
+note: required because it appears within the type `HashMap<std::string::String, interpreter::Value>`
+   --> /home/ettinger/.rustup/toolchains/stable-x86_64-unknown-linux-gnu/lib/rustlib/src/rust/library/std/src/collections/hash/map.rs:230:12
+    |
+230 | pub struct HashMap<K, V, S = RandomState> {
+    |            ^^^^^^^
+note: required because it appears within the type `Environment`
+   --> src/interpreter.rs:243:12
+    |
+243 | pub struct Environment {
+    |            ^^^^^^^^^^^
+note: required because it's used within this closure
+   --> src/runtime/timers.rs:145:23
+    |
+145 |         thread::spawn(move || {
+    |                       ^^^^^^^
+note: required by a bound in `spawn`
+   --> /home/ettinger/.rustup/toolchains/stable-x86_64-unknown-linux-gnu/lib/rustlib/src/rust/library/std/src/thread/mod.rs:726:8
+    |
+723 | pub fn spawn<F, T>(f: F) -> JoinHandle<T>
+    |        ----- required by a bound in this function
+...
+726 |     F: Send + 'static,
+    |        ^^^^ required by this bound in `spawn`
+
+error[E0277]: `Rc<runtime::collections::Map>` cannot be sent between threads safely
+   --> src/runtime/timers.rs:145:23
+    |
+145 |           thread::spawn(move || {
+    |  _________-------------_^
+    | |         |
+    | |         required by a bound introduced by this call
+146 | |             loop {
+147 | |                 // Sleep for a short time to avoid busy waiting
+148 | |                 thread::sleep(Duration::from_millis(10));
+...   |
+188 | |         });
+    | |_________^ `Rc<runtime::collections::Map>` cannot be sent between threads safely
+    |
+    = help: within `(std::string::String, interpreter::Value)`, the trait `Send` is not implemented for `Rc<runtime::collections::Map>`
+note: required because it appears within the type `interpreter::Value`
+   --> src/interpreter.rs:15:10
+    |
+15  | pub enum Value {
+    |          ^^^^^
+    = note: required because it appears within the type `(std::string::String, interpreter::Value)`
+    = note: required for `hashbrown::raw::RawTable<(std::string::String, interpreter::Value)>` to implement `Send`
+note: required because it appears within the type `hashbrown::map::HashMap<std::string::String, interpreter::Value, RandomState>`
+   --> /rust/deps/hashbrown-0.15.2/src/map.rs:185:12
+note: required because it appears within the type `HashMap<std::string::String, interpreter::Value>`
+   --> /home/ettinger/.rustup/toolchains/stable-x86_64-unknown-linux-gnu/lib/rustlib/src/rust/library/std/src/collections/hash/map.rs:230:12
+    |
+230 | pub struct HashMap<K, V, S = RandomState> {
+    |            ^^^^^^^
+note: required because it appears within the type `Environment`
+   --> src/interpreter.rs:243:12
+    |
+243 | pub struct Environment {
+    |            ^^^^^^^^^^^
+note: required because it's used within this closure
+   --> src/runtime/timers.rs:145:23
+    |
+145 |         thread::spawn(move || {
+    |                       ^^^^^^^
+note: required by a bound in `spawn`
+   --> /home/ettinger/.rustup/toolchains/stable-x86_64-unknown-linux-gnu/lib/rustlib/src/rust/library/std/src/thread/mod.rs:726:8
+    |
+723 | pub fn spawn<F, T>(f: F) -> JoinHandle<T>
+    |        ----- required by a bound in this function
+...
+726 |     F: Send + 'static,
+    |        ^^^^ required by this bound in `spawn`
+
+error[E0277]: `Rc<Set>` cannot be sent between threads safely
+   --> src/runtime/timers.rs:145:23
+    |
+145 |           thread::spawn(move || {
+    |  _________-------------_^
+    | |         |
+    | |         required by a bound introduced by this call
+146 | |             loop {
+147 | |                 // Sleep for a short time to avoid busy waiting
+148 | |                 thread::sleep(Duration::from_millis(10));
+...   |
+188 | |         });
+    | |_________^ `Rc<Set>` cannot be sent between threads safely
+    |
+    = help: within `(std::string::String, interpreter::Value)`, the trait `Send` is not implemented for `Rc<Set>`
+note: required because it appears within the type `interpreter::Value`
+   --> src/interpreter.rs:15:10
+    |
+15  | pub enum Value {
+    |          ^^^^^
+    = note: required because it appears within the type `(std::string::String, interpreter::Value)`
+    = note: required for `hashbrown::raw::RawTable<(std::string::String, interpreter::Value)>` to implement `Send`
+note: required because it appears within the type `hashbrown::map::HashMap<std::string::String, interpreter::Value, RandomState>`
+   --> /rust/deps/hashbrown-0.15.2/src/map.rs:185:12
+note: required because it appears within the type `HashMap<std::string::String, interpreter::Value>`
+   --> /home/ettinger/.rustup/toolchains/stable-x86_64-unknown-linux-gnu/lib/rustlib/src/rust/library/std/src/collections/hash/map.rs:230:12
+    |
+230 | pub struct HashMap<K, V, S = RandomState> {
+    |            ^^^^^^^
+note: required because it appears within the type `Environment`
+   --> src/interpreter.rs:243:12
+    |
+243 | pub struct Environment {
+    |            ^^^^^^^^^^^
+note: required because it's used within this closure
+   --> src/runtime/timers.rs:145:23
+    |
+145 |         thread::spawn(move || {
+    |                       ^^^^^^^
+note: required by a bound in `spawn`
+   --> /home/ettinger/.rustup/toolchains/stable-x86_64-unknown-linux-gnu/lib/rustlib/src/rust/library/std/src/thread/mod.rs:726:8
+    |
+723 | pub fn spawn<F, T>(f: F) -> JoinHandle<T>
+    |        ----- required by a bound in this function
+...
+726 |     F: Send + 'static,
+    |        ^^^^ required by this bound in `spawn`
+
+error[E0277]: `Rc<WeakMap>` cannot be sent between threads safely
+   --> src/runtime/timers.rs:145:23
+    |
+145 |           thread::spawn(move || {
+    |  _________-------------_^
+    | |         |
+    | |         required by a bound introduced by this call
+146 | |             loop {
+147 | |                 // Sleep for a short time to avoid busy waiting
+148 | |                 thread::sleep(Duration::from_millis(10));
+...   |
+188 | |         });
+    | |_________^ `Rc<WeakMap>` cannot be sent between threads safely
+    |
+    = help: within `(std::string::String, interpreter::Value)`, the trait `Send` is not implemented for `Rc<WeakMap>`
+note: required because it appears within the type `interpreter::Value`
+   --> src/interpreter.rs:15:10
+    |
+15  | pub enum Value {
+    |          ^^^^^
+    = note: required because it appears within the type `(std::string::String, interpreter::Value)`
+    = note: required for `hashbrown::raw::RawTable<(std::string::String, interpreter::Value)>` to implement `Send`
+note: required because it appears within the type `hashbrown::map::HashMap<std::string::String, interpreter::Value, RandomState>`
+   --> /rust/deps/hashbrown-0.15.2/src/map.rs:185:12
+note: required because it appears within the type `HashMap<std::string::String, interpreter::Value>`
+   --> /home/ettinger/.rustup/toolchains/stable-x86_64-unknown-linux-gnu/lib/rustlib/src/rust/library/std/src/collections/hash/map.rs:230:12
+    |
+230 | pub struct HashMap<K, V, S = RandomState> {
+    |            ^^^^^^^
+note: required because it appears within the type `Environment`
+   --> src/interpreter.rs:243:12
+    |
+243 | pub struct Environment {
+    |            ^^^^^^^^^^^
+note: required because it's used within this closure
+   --> src/runtime/timers.rs:145:23
+    |
+145 |         thread::spawn(move || {
+    |                       ^^^^^^^
+note: required by a bound in `spawn`
+   --> /home/ettinger/.rustup/toolchains/stable-x86_64-unknown-linux-gnu/lib/rustlib/src/rust/library/std/src/thread/mod.rs:726:8
+    |
+723 | pub fn spawn<F, T>(f: F) -> JoinHandle<T>
+    |        ----- required by a bound in this function
+...
+726 |     F: Send + 'static,
+    |        ^^^^ required by this bound in `spawn`
+
+error[E0277]: `Rc<WeakSet>` cannot be sent between threads safely
+   --> src/runtime/timers.rs:145:23
+    |
+145 |           thread::spawn(move || {
+    |  _________-------------_^
+    | |         |
+    | |         required by a bound introduced by this call
+146 | |             loop {
+147 | |                 // Sleep for a short time to avoid busy waiting
+148 | |                 thread::sleep(Duration::from_millis(10));
+...   |
+188 | |         });
+    | |_________^ `Rc<WeakSet>` cannot be sent between threads safely
+    |
+    = help: within `(std::string::String, interpreter::Value)`, the trait `Send` is not implemented for `Rc<WeakSet>`
+note: required because it appears within the type `interpreter::Value`
+   --> src/interpreter.rs:15:10
+    |
+15  | pub enum Value {
+    |          ^^^^^
+    = note: required because it appears within the type `(std::string::String, interpreter::Value)`
+    = note: required for `hashbrown::raw::RawTable<(std::string::String, interpreter::Value)>` to implement `Send`
+note: required because it appears within the type `hashbrown::map::HashMap<std::string::String, interpreter::Value, RandomState>`
+   --> /rust/deps/hashbrown-0.15.2/src/map.rs:185:12
+note: required because it appears within the type `HashMap<std::string::String, interpreter::Value>`
+   --> /home/ettinger/.rustup/toolchains/stable-x86_64-unknown-linux-gnu/lib/rustlib/src/rust/library/std/src/collections/hash/map.rs:230:12
+    |
+230 | pub struct HashMap<K, V, S = RandomState> {
+    |            ^^^^^^^
+note: required because it appears within the type `Environment`
+   --> src/interpreter.rs:243:12
+    |
+243 | pub struct Environment {
+    |            ^^^^^^^^^^^
+note: required because it's used within this closure
+   --> src/runtime/timers.rs:145:23
+    |
+145 |         thread::spawn(move || {
+    |                       ^^^^^^^
+note: required by a bound in `spawn`
+   --> /home/ettinger/.rustup/toolchains/stable-x86_64-unknown-linux-gnu/lib/rustlib/src/rust/library/std/src/thread/mod.rs:726:8
+    |
+723 | pub fn spawn<F, T>(f: F) -> JoinHandle<T>
+    |        ----- required by a bound in this function
+...
+726 |     F: Send + 'static,
+    |        ^^^^ required by this bound in `spawn`
+
+error[E0277]: `dyn Fn(Value, &[Value], &Environment) -> Result<Value, String>` cannot be sent between threads safely
+   --> src/runtime/timers.rs:145:23
+    |
+145 |           thread::spawn(move || {
+    |  _________-------------_^
+    | |         |
+    | |         required by a bound introduced by this call
+146 | |             loop {
+147 | |                 // Sleep for a short time to avoid busy waiting
+148 | |                 thread::sleep(Duration::from_millis(10));
+...   |
+188 | |         });
+    | |_________^ `dyn Fn(Value, &[Value], &Environment) -> Result<Value, String>` cannot be sent between threads safely
+    |
+    = help: the trait `Send` is not implemented for `dyn Fn(Value, &[Value], &Environment) -> Result<Value, String>`
+    = note: required for `Unique<dyn Fn(Value, &[Value], &Environment) -> Result<Value, String>>` to implement `Send`
+note: required because it appears within the type `Box<dyn Fn(Value, &[Value], &Environment) -> Result<Value, String>>`
+   --> /home/ettinger/.rustup/toolchains/stable-x86_64-unknown-linux-gnu/lib/rustlib/src/rust/library/alloc/src/boxed.rs:231:12
+    |
+231 | pub struct Box<
+    |            ^^^
+note: required because it appears within the type `Option<Box<dyn Fn(Value, &[Value], &Environment) -> Result<..., ...>>>`
+   --> /home/ettinger/.rustup/toolchains/stable-x86_64-unknown-linux-gnu/lib/rustlib/src/rust/library/core/src/option.rs:572:10
+    |
+572 | pub enum Option<T> {
+    |          ^^^^^^
+note: required because it appears within the type `Function`
+   --> src/interpreter.rs:177:12
+    |
+177 | pub struct Function {
+    |            ^^^^^^^^
+note: required because it appears within the type `interpreter::Value`
+   --> src/interpreter.rs:15:10
+    |
+15  | pub enum Value {
+    |          ^^^^^
+    = note: required because it appears within the type `(std::string::String, interpreter::Value)`
+    = note: required for `hashbrown::raw::RawTable<(std::string::String, interpreter::Value)>` to implement `Send`
+note: required because it appears within the type `hashbrown::map::HashMap<std::string::String, interpreter::Value, RandomState>`
+   --> /rust/deps/hashbrown-0.15.2/src/map.rs:185:12
+note: required because it appears within the type `HashMap<std::string::String, interpreter::Value>`
+   --> /home/ettinger/.rustup/toolchains/stable-x86_64-unknown-linux-gnu/lib/rustlib/src/rust/library/std/src/collections/hash/map.rs:230:12
+    |
+230 | pub struct HashMap<K, V, S = RandomState> {
+    |            ^^^^^^^
+note: required because it appears within the type `Environment`
+   --> src/interpreter.rs:243:12
+    |
+243 | pub struct Environment {
+    |            ^^^^^^^^^^^
+note: required because it's used within this closure
+   --> src/runtime/timers.rs:145:23
+    |
+145 |         thread::spawn(move || {
+    |                       ^^^^^^^
+note: required by a bound in `spawn`
+   --> /home/ettinger/.rustup/toolchains/stable-x86_64-unknown-linux-gnu/lib/rustlib/src/rust/library/std/src/thread/mod.rs:726:8
+    |
+723 | pub fn spawn<F, T>(f: F) -> JoinHandle<T>
+    |        ----- required by a bound in this function
+...
+726 |     F: Send + 'static,
+    |        ^^^^ required by this bound in `spawn`
+    = note: the full name for the type has been written to '/home/ettinger/src/profullstack.com/smashlang/target/debug/deps/smashlang-30fbd968cae49935.long-type-2103112013669458562.txt'
+    = note: consider using `--verbose` to print the full type name to the console
+
+warning: variable does not need to be mutable
+   --> src/runtime/promise.rs:183:13
+    |
+183 |         let mut callbacks = self.on_fulfill.borrow_mut().drain(..).collect::<Vec<_>>();
+    |             ----^^^^^^^^^
+    |             |
+    |             help: remove this `mut`
+    |
+    = note: `#[warn(unused_mut)]` on by default
+
+error[E0382]: use of moved value: `this_promise`
+   --> src/runtime/promise.rs:146:29
+    |
+129 |                     let this_promise = self.clone();
+    |                         ------------ move occurs because `this_promise` has type `Promise`, which does not implement the `Copy` trait
+...
+134 |                             move |_this, args: &[Value], _env| {
+    |                             ---------------------------------- value moved into closure here
+135 |                                 if let Some(value) = args.first() {
+136 |                                     this_promise.resolve(value.clone());
+    |                                     ------------ variable moved due to use in closure
+...
+146 |                             move |_this, args: &[Value], _env| {
+    |                             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ value used here after move
+147 |                                 if let Some(reason) = args.first() {
+148 |                                     this_promise.reject(reason.clone());
+    |                                     ------------ use occurs due to use in closure
+
+warning: unused variable: `result_promise`
+   --> src/runtime/promise.rs:304:13
+    |
+304 |         let result_promise = Promise::new();
+    |             ^^^^^^^^^^^^^^ help: if this is intentional, prefix it with an underscore: `_result_promise`
+    |
+    = note: `#[warn(unused_variables)]` on by default
+
+Some errors have detailed explanations: E0277, E0308, E0382, E0599.
+For more information about an error, try `rustc --explain E0277`.
+warning: `smashlang` (lib) generated 5 warnings
+error: could not compile `smashlang` (lib) due to 24 previous errors; 5 warnings emitted

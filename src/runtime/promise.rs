@@ -331,6 +331,148 @@ impl Promise {
         self.then(on_fulfilled, on_rejected)
     }
 
+    /// Create a Promise that resolves when all the Promises in the iterable resolve
+    pub fn all(iterable: Value) -> Rc<Promise> {
+        let result_promise = Promise::new();
+        let promises = match iterable {
+            Value::Array(arr) => arr,
+            _ => {
+                result_promise.reject(Value::String("Promise.all requires an array".to_string()));
+                return result_promise;
+            },
+        };
+        if promises.is_empty() {
+            result_promise.resolve(Value::Array(vec![]));
+            return result_promise;
+        }
+        use std::rc::Rc;
+        use std::cell::RefCell;
+        let results = Rc::new(RefCell::new(vec![Value::Undefined; promises.len()]));
+        let remaining = Rc::new(RefCell::new(promises.len()));
+        for (i, promise) in promises.iter().enumerate() {
+            if let Value::Promise(p) = promise {
+                let result_promise_clone = result_promise.clone();
+                let results = results.clone();
+                let remaining = remaining.clone();
+                p.then(
+                    Function::new_native(
+                        None,
+                        vec!["value".to_string()],
+                        {
+                            let results = results.clone();
+                            let remaining = remaining.clone();
+                            let result_promise_clone = result_promise_clone.clone();
+                            move |_, args: &[Value], _| {
+                                if let Some(value) = args.first() {
+                                    results.borrow_mut()[i] = value.clone();
+                                    let mut rem = remaining.borrow_mut();
+                                    *rem -= 1;
+                                    if *rem == 0 {
+                                        result_promise_clone.resolve(Value::Array(results.borrow().clone()));
+                                    }
+                                }
+                                Ok(Value::Undefined)
+                            }
+                        },
+                    ),
+                    Function::new_native(
+                        None,
+                        vec!["reason".to_string()],
+                        {
+                            let result_promise_clone = result_promise_clone.clone();
+                            move |_, args: &[Value], _| {
+                                if let Some(reason) = args.first() {
+                                    result_promise_clone.reject(reason.clone());
+                                }
+                                Ok(Value::Undefined)
+                            }
+                        },
+                    ),
+                );
+            } else {
+                results.borrow_mut()[i] = promise.clone();
+                let mut rem = remaining.borrow_mut();
+                *rem -= 1;
+                if *rem == 0 {
+                    result_promise.resolve(Value::Array(results.borrow().clone()));
+                }
+            }
+        }
+        result_promise
+    }
+
+    /// Create a Promise that resolves or rejects as soon as one of the Promises in the iterable resolves or rejects
+    pub fn race(iterable: Value) -> Rc<Promise> {
+        let result_promise = Promise::new();
+        let promises = match iterable {
+            Value::Array(arr) => arr,
+            _ => {
+                result_promise.reject(Value::String("Promise.race requires an array".to_string()));
+                return result_promise;
+            },
+        };
+        if promises.is_empty() {
+            result_promise.resolve(Value::Undefined);
+            return result_promise;
+        }
+        let settled = Rc::new(RefCell::new(false));
+        for promise in promises.iter() {
+            if let Value::Promise(p) = promise {
+                let result_promise_clone = result_promise.clone();
+                let settled = settled.clone();
+                p.then(
+                    Function::new_native(
+                        None,
+                        vec!["value".to_string()],
+                        {
+                            let result_promise_clone = result_promise_clone.clone();
+                            let settled = settled.clone();
+                            move |_, args: &[Value], _| {
+                                let mut done = settled.borrow_mut();
+                                if !*done {
+                                    *done = true;
+                                    if let Some(value) = args.first() {
+                                        result_promise_clone.resolve(value.clone());
+                                    } else {
+                                        result_promise_clone.resolve(Value::Undefined);
+                                    }
+                                }
+                                Ok(Value::Undefined)
+                            }
+                        },
+                    ),
+                    Function::new_native(
+                        None,
+                        vec!["reason".to_string()],
+                        {
+                            let result_promise_clone = result_promise_clone.clone();
+                            let settled = settled.clone();
+                            move |_, args: &[Value], _| {
+                                let mut done = settled.borrow_mut();
+                                if !*done {
+                                    *done = true;
+                                    if let Some(reason) = args.first() {
+                                        result_promise_clone.reject(reason.clone());
+                                    } else {
+                                        result_promise_clone.reject(Value::Undefined);
+                                    }
+                                }
+                                Ok(Value::Undefined)
+                            }
+                        },
+                    ),
+                );
+            } else {
+                let mut done = settled.borrow_mut();
+                if !*done {
+                    *done = true;
+                    result_promise.resolve(promise.clone());
+                }
+            }
+        }
+        result_promise
+    }
+
     /// Create a Promise that resolves when all the Promises in the iterable settle
     pub fn all_settled(iterable: Value) -> Rc<Promise> {
         let result_promise = Promise::new();
