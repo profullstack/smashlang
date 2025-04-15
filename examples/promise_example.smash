@@ -1,0 +1,104 @@
+/**
+ * SmashLang Promise Example
+ * 
+ * This example demonstrates how to use Promises in SmashLang.
+ */
+
+// Basic Promise usage
+console.log("Creating a Promise...");
+const promise = new Promise((resolve, reject) => {
+  // Simulate an asynchronous operation
+  setTimeout(() => {
+    const success = true;
+    
+    if (success) {
+      resolve("Operation successful!");
+    } else {
+      reject("Operation failed!");
+    }
+  }, 1000);
+});
+
+// Using then/catch
+console.log("Attaching handlers...");
+promise
+  .then(result => {
+    console.log("Promise resolved with:", result);
+    return "Processed: " + result;
+  })
+  .then(processed => {
+    console.log("Chained then:", processed);
+  })
+  .catch(error => {
+    console.log("Promise rejected with:", error);
+  })
+  .finally(() => {
+    console.log("Promise settled (finally)");
+  });
+
+// Promise.resolve and Promise.reject
+const immediatelyResolved = Promise.resolve("Already resolved");
+immediatelyResolved.then(value => console.log("Immediate value:", value));
+
+const immediatelyRejected = Promise.reject("Already rejected");
+immediatelyRejected.catch(reason => console.log("Immediate error:", reason));
+
+// Promise.all
+const promises = [
+  Promise.resolve(1),
+  Promise.resolve(2),
+  Promise.resolve(3)
+];
+
+Promise.all(promises)
+  .then(values => {
+    console.log("All promises resolved:", values);
+  })
+  .catch(error => {
+    console.log("At least one promise rejected:", error);
+  });
+
+// Promise.race
+const fast = new Promise(resolve => setTimeout(() => resolve("fast"), 100));
+const slow = new Promise(resolve => setTimeout(() => resolve("slow"), 500));
+
+Promise.race([slow, fast])
+  .then(winner => {
+    console.log("Race winner:", winner);
+  });
+
+// Async/await
+async function fetchData() {
+  try {
+    // Simulate fetching data
+    const result = await new Promise(resolve => {
+      setTimeout(() => resolve({ data: "Some data" }), 300);
+    });
+    
+    console.log("Fetched:", result);
+    
+    // Process the data
+    const processed = await new Promise(resolve => {
+      setTimeout(() => resolve({ ...result, processed: true }), 200);
+    });
+    
+    console.log("Processed:", processed);
+    
+    return processed;
+  } catch (error) {
+    console.log("Error in fetchData:", error);
+    throw error;
+  }
+}
+
+// Call the async function
+console.log("Calling async function...");
+fetchData()
+  .then(result => {
+    console.log("Final result:", result);
+  })
+  .catch(error => {
+    console.log("Final error:", error);
+  });
+
+console.log("This will be logged before the promises resolve!");

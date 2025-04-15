@@ -19,10 +19,11 @@ pub mod lexer;
 pub mod parser;
 pub mod interpreter;
 pub mod compiler;
+pub mod runtime;
 
 /// Re-export main components for easier access
 pub use lexer::Lexer;
-pub use parser::{SmashLangParser as Parser, AstNode};
+pub use parser::{SmashParser as Parser, AstNode};
 pub use interpreter::{Interpreter, Value};
 pub use compiler::Compiler;
 

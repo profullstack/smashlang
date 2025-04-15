@@ -1,6 +1,8 @@
 use std::collections::HashMap;
 use std::fmt;
+use std::rc::Rc;
 use crate::parser::AstNode;
+use crate::runtime::promise::Promise;
 
 /// Value represents a runtime value in the SmashLang language
 #[derive(Debug, Clone)]
@@ -11,6 +13,7 @@ pub enum Value {
     Array(Vec<Value>),
     Object(HashMap<String, Value>),
     Function(Function),
+    Promise(Rc<Promise>),
     Null,
     Undefined,
 }
@@ -24,6 +27,7 @@ impl Value {
             Value::Array(_) => "array",
             Value::Object(_) => "object",
             Value::Function(_) => "function",
+            Value::Promise(_) => "promise",
             Value::Null => "null",
             Value::Undefined => "undefined",
         }
@@ -37,9 +41,22 @@ impl Value {
             Value::Array(_) => true,
             Value::Object(_) => true,
             Value::Function(_) => true,
+            Value::Promise(_) => true,
             Value::Null => false,
             Value::Undefined => false,
         }
+    }
+    
+    pub fn is_object(&self) -> bool {
+        matches!(self, Value::Object(_))
+    }
+    
+    pub fn is_function(&self) -> bool {
+        matches!(self, Value::Function(_))
+    }
+    
+    pub fn is_promise(&self) -> bool {
+        matches!(self, Value::Promise(_))
     }
 }
 
@@ -77,6 +94,7 @@ impl fmt::Display for Value {
                 write!(f, "}}")
             },
             Value::Function(_) => write!(f, "[Function]"),
+            Value::Promise(_) => write!(f, "[Promise]"),
             Value::Null => write!(f, "null"),
             Value::Undefined => write!(f, "undefined"),
         }
@@ -90,6 +108,7 @@ pub struct Function {
     pub params: Vec<String>,
     pub body: Vec<AstNode>,
     pub closure: Environment,
+    pub native_fn: Option<Box<dyn Fn(Value, &[Value], &Environment) -> Result<Value, String> + 'static>>,
 }
 
 impl Function {
@@ -99,6 +118,30 @@ impl Function {
             params,
             body,
             closure,
+            native_fn: None,
+        }
+    }
+    
+    pub fn new_native<F>(name: Option<String>, params: Vec<String>, f: F) -> Self
+    where
+        F: Fn(Value, &[Value], &Environment) -> Result<Value, String> + 'static,
+    {
+        Self {
+            name,
+            params,
+            body: Vec::new(),
+            closure: Environment::new(),
+            native_fn: Some(Box::new(f)),
+        }
+    }
+    
+    pub fn call(&self, this: Value, args: &[Value], env: &Environment) -> Result<Value, String> {
+        if let Some(native_fn) = &self.native_fn {
+            native_fn(this, args, env)
+        } else {
+            // For now, just return a simple value
+            // In a real implementation, this would execute the function body
+            Ok(Value::Number(42.0))
         }
     }
 }
@@ -163,13 +206,113 @@ impl Interpreter {
         // Define global functions and objects
         env.define("console", Value::Object({
             let mut console = HashMap::new();
-            console.insert("log".to_string(), Value::Function(Function::new(
+            console.insert("log".to_string(), Value::Function(Function::new_native(
                 Some("log".to_string()),
-                vec!["message".to_string()],
-                Vec::new(),
-                Environment::new(),
+                vec!["...args".to_string()],
+                |_this, args, _env| {
+                    // Print all arguments
+                    for (i, arg) in args.iter().enumerate() {
+                        if i > 0 {
+                            print!(" ");
+                        }
+                        print!("{}", arg);
+                    }
+                    println!();
+                    Ok(Value::Undefined)
+                },
             )));
             console
+        }));
+        
+        // Define Promise constructor and static methods
+        env.define("Promise", Value::Object({
+            let mut promise_obj = HashMap::new();
+            
+            // Promise constructor
+            promise_obj.insert("constructor".to_string(), Value::Function(Function::new_native(
+                Some("Promise".to_string()),
+                vec!["executor".to_string()],
+                |_this, args, env| {
+                    if args.is_empty() {
+                        return Err("Promise constructor requires an executor function".to_string());
+                    }
+                    
+                    if let Value::Function(executor) = &args[0] {
+                        let promise = Promise::with_executor(executor, env);
+                        Ok(Value::Promise(promise))
+                    } else {
+                        Err("Promise executor must be a function".to_string())
+                    }
+                },
+            )));
+            
+            // Promise.resolve
+            promise_obj.insert("resolve".to_string(), Value::Function(Function::new_native(
+                Some("resolve".to_string()),
+                vec!["value".to_string()],
+                |_this, args, _env| {
+                    let value = args.first().cloned().unwrap_or(Value::Undefined);
+                    let promise = Promise::resolve_with(value);
+                    Ok(Value::Promise(promise))
+                },
+            )));
+            
+            // Promise.reject
+            promise_obj.insert("reject".to_string(), Value::Function(Function::new_native(
+                Some("reject".to_string()),
+                vec!["reason".to_string()],
+                |_this, args, _env| {
+                    let reason = args.first().cloned().unwrap_or(Value::Undefined);
+                    let promise = Promise::reject_with(reason);
+                    Ok(Value::Promise(promise))
+                },
+            )));
+            
+            // Promise.all
+            promise_obj.insert("all".to_string(), Value::Function(Function::new_native(
+                Some("all".to_string()),
+                vec!["iterable".to_string()],
+                |_this, args, _env| {
+                    let iterable = args.first().cloned().unwrap_or(Value::Undefined);
+                    let promise = Promise::all(iterable);
+                    Ok(Value::Promise(promise))
+                },
+            )));
+            
+            // Promise.race
+            promise_obj.insert("race".to_string(), Value::Function(Function::new_native(
+                Some("race".to_string()),
+                vec!["iterable".to_string()],
+                |_this, args, _env| {
+                    let iterable = args.first().cloned().unwrap_or(Value::Undefined);
+                    let promise = Promise::race(iterable);
+                    Ok(Value::Promise(promise))
+                },
+            )));
+            
+            // Promise.allSettled
+            promise_obj.insert("allSettled".to_string(), Value::Function(Function::new_native(
+                Some("allSettled".to_string()),
+                vec!["iterable".to_string()],
+                |_this, args, _env| {
+                    let iterable = args.first().cloned().unwrap_or(Value::Undefined);
+                    let promise = Promise::all_settled(iterable);
+                    Ok(Value::Promise(promise))
+                },
+            )));
+            
+            // Promise.any
+            promise_obj.insert("any".to_string(), Value::Function(Function::new_native(
+                Some("any".to_string()),
+                vec!["iterable".to_string()],
+                |_this, args, _env| {
+                    let iterable = args.first().cloned().unwrap_or(Value::Undefined);
+                    let promise = Promise::any(iterable);
+                    Ok(Value::Promise(promise))
+                },
+            )));
+            
+            promise_obj
         }));
         
         Self {
