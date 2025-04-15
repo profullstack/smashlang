@@ -1,0 +1,344 @@
+/**
+ * SmashLang Runtime Features Example
+ * 
+ * This example demonstrates runtime features like timers, JSON methods,
+ * and browser-like APIs implemented in SmashLang.
+ */
+
+// ===== Timers =====
+console.log("\n===== Timers =====");
+
+// setTimeout - execute code after a delay
+console.log("Setting a timeout for 2 seconds...");
+setTimeout(() => {
+  console.log("Timeout executed after 2 seconds!");
+}, 2000);
+
+// setInterval - execute code repeatedly at intervals
+let counter = 0;
+const intervalId = setInterval(() => {
+  counter++;
+  console.log(`Interval executed ${counter} times`);
+  
+  // Stop after 5 executions
+  if (counter >= 5) {
+    console.log("Clearing interval");
+    clearInterval(intervalId);
+  }
+}, 1000);
+
+// clearTimeout - cancel a timeout
+const timeoutId = setTimeout(() => {
+  console.log("This timeout should never execute");
+}, 3000);
+
+console.log(`Timeout ID: ${timeoutId}`);
+clearTimeout(timeoutId);
+console.log("Timeout cleared");
+
+// Nested timeouts
+setTimeout(() => {
+  console.log("Outer timeout executed");
+  
+  setTimeout(() => {
+    console.log("Inner timeout executed");
+  }, 500);
+}, 1000);
+
+// ===== JSON Methods =====
+console.log("\n===== JSON Methods =====");
+
+// Create a complex object
+const person = {
+  name: "Alice",
+  age: 30,
+  isAdmin: false,
+  skills: ["JavaScript", "Rust", "Python"],
+  address: {
+    street: "123 Main St",
+    city: "Techville",
+    zip: "12345"
+  },
+  dateJoined: new Date(),
+  greet: function() {
+    return `Hello, my name is ${this.name}`;
+  }
+};
+
+// JSON.stringify - convert object to JSON string
+console.log("\nJSON.stringify examples:");
+
+// Basic usage
+const jsonString = JSON.stringify(person);
+console.log("Basic stringify:", jsonString);
+
+// With pretty printing (indentation)
+const prettyJson = JSON.stringify(person, null, 2);
+console.log("Pretty stringify:", prettyJson);
+
+// With replacer function
+const filteredJson = JSON.stringify(person, (key, value) => {
+  // Skip functions and hide age
+  if (typeof value === 'function') {
+    return undefined;
+  }
+  if (key === 'age') {
+    return '[REDACTED]';
+  }
+  return value;
+}, 2);
+
+console.log("Filtered stringify:", filteredJson);
+
+// With replacer array
+const selectedJson = JSON.stringify(person, ['name', 'skills', 'address'], 2);
+console.log("Selected stringify:", selectedJson);
+
+// JSON.parse - convert JSON string to object
+console.log("\nJSON.parse examples:");
+
+// Basic usage
+const parsedPerson = JSON.parse(jsonString);
+console.log("Parsed object:", parsedPerson);
+console.log("Name:", parsedPerson.name);
+console.log("First skill:", parsedPerson.skills[0]);
+console.log("City:", parsedPerson.address.city);
+
+// With reviver function
+const jsonWithDate = '{"name":"Bob","birthDate":"2000-01-15T00:00:00.000Z","active":true}';
+const parsedWithReviver = JSON.parse(jsonWithDate, (key, value) => {
+  // Convert date strings to Date objects
+  if (key === 'birthDate' && typeof value === 'string') {
+    return new Date(value);
+  }
+  return value;
+});
+
+console.log("Parsed with reviver:", parsedWithReviver);
+console.log("Birth date is Date object:", parsedWithReviver.birthDate instanceof Date);
+
+// ===== Browser APIs =====
+console.log("\n===== Browser APIs =====");
+
+// localStorage
+console.log("\nlocalStorage examples:");
+
+// Store data
+localStorage.setItem('username', 'alice_smith');
+localStorage.setItem('preferences', JSON.stringify({
+  theme: 'dark',
+  fontSize: 14,
+  notifications: true
+}));
+
+// Retrieve data
+const username = localStorage.getItem('username');
+console.log("Username:", username);
+
+const preferencesJson = localStorage.getItem('preferences');
+const preferences = JSON.parse(preferencesJson);
+console.log("Theme preference:", preferences.theme);
+
+// Check if item exists
+if (localStorage.getItem('auth_token')) {
+  console.log("Auth token exists");
+} else {
+  console.log("No auth token found");
+}
+
+// Get number of items
+console.log("Number of items in localStorage:", localStorage.length);
+
+// Get key by index
+const firstKey = localStorage.key(0);
+console.log("First key in localStorage:", firstKey);
+
+// Remove item
+localStorage.removeItem('username');
+console.log("After removing username:", localStorage.getItem('username'));
+
+// Clear all items
+localStorage.clear();
+console.log("Items after clear:", localStorage.length);
+
+// sessionStorage (works the same as localStorage)
+sessionStorage.setItem('session_id', 'abc123');
+console.log("Session ID:", sessionStorage.getItem('session_id'));
+
+// Location
+console.log("\nlocation examples:");
+
+// Get current URL
+console.log("Current URL:", location.href);
+console.log("Protocol:", location.protocol);
+console.log("Host:", location.host);
+console.log("Pathname:", location.pathname);
+console.log("Search:", location.search);
+console.log("Hash:", location.hash);
+
+// Change URL (in a real browser, this would navigate to a new page)
+// location.href = "https://example.com/path?query=value#section";
+
+// Navigator
+console.log("\nnavigator examples:");
+
+// Get browser information
+console.log("User Agent:", navigator.userAgent);
+console.log("Platform:", navigator.platform);
+console.log("Language:", navigator.language);
+console.log("Online:", navigator.onLine);
+
+// Document
+console.log("\ndocument examples:");
+
+// Get/set document title
+console.log("Document title:", document.title);
+document.title = "SmashLang Runtime Demo";
+console.log("Updated title:", document.title);
+
+// Cookies
+document.cookie = "user_id=12345; path=/";
+document.cookie = "session=active; path=/";
+console.log("Cookies:", document.cookie);
+
+// ===== Practical Examples =====
+console.log("\n===== Practical Examples =====");
+
+// Example 1: Debounce function using setTimeout
+function debounce(func, delay) {
+  let timeoutId;
+  
+  return function(...args) {
+    clearTimeout(timeoutId);
+    
+    timeoutId = setTimeout(() => {
+      func.apply(this, args);
+    }, delay);
+  };
+}
+
+// Usage of debounce
+const debouncedLog = debounce((message) => {
+  console.log(`Debounced: ${message}`);
+}, 500);
+
+console.log("Calling debounced function multiple times...");
+debouncedLog("Call 1");
+debouncedLog("Call 2");
+debouncedLog("Call 3");
+console.log("Only the last call should execute after 500ms");
+
+// Example 2: Simple cache using localStorage
+const cache = {
+  set: function(key, value, ttl = 3600000) { // Default TTL: 1 hour
+    const item = {
+      value: value,
+      expiry: Date.now() + ttl
+    };
+    localStorage.setItem(key, JSON.stringify(item));
+  },
+  
+  get: function(key) {
+    const itemStr = localStorage.getItem(key);
+    if (!itemStr) return null;
+    
+    const item = JSON.parse(itemStr);
+    if (Date.now() > item.expiry) {
+      localStorage.removeItem(key);
+      return null;
+    }
+    
+    return item.value;
+  },
+  
+  remove: function(key) {
+    localStorage.removeItem(key);
+  },
+  
+  clear: function() {
+    localStorage.clear();
+  }
+};
+
+// Usage of cache
+cache.set('user_data', { id: 1, name: 'Alice' }, 5000); // 5 seconds TTL
+console.log("Cached user data:", cache.get('user_data'));
+
+setTimeout(() => {
+  console.log("User data after 6 seconds:", cache.get('user_data')); // Should be null (expired)
+}, 6000);
+
+// Example 3: Simple pub/sub system using custom events
+const eventBus = {
+  events: {},
+  
+  subscribe: function(event, callback) {
+    if (!this.events[event]) {
+      this.events[event] = [];
+    }
+    this.events[event].push(callback);
+  },
+  
+  publish: function(event, data) {
+    if (!this.events[event]) return;
+    
+    this.events[event].forEach(callback => {
+      setTimeout(() => callback(data), 0);
+    });
+  },
+  
+  unsubscribe: function(event, callback) {
+    if (!this.events[event]) return;
+    
+    this.events[event] = this.events[event].filter(cb => cb !== callback);
+  }
+};
+
+// Usage of eventBus
+eventBus.subscribe('userLoggedIn', (user) => {
+  console.log(`User logged in: ${user.name}`);
+});
+
+eventBus.subscribe('userLoggedIn', (user) => {
+  console.log(`Sending welcome email to ${user.email}`);
+});
+
+setTimeout(() => {
+  eventBus.publish('userLoggedIn', { name: 'Bob', email: 'bob@example.com' });
+}, 1000);
+
+// Example 4: Polling with setInterval
+function pollResource(url, interval, callback) {
+  const poll = () => {
+    console.log(`Polling ${url}...`);
+    // In a real app, this would be a fetch call
+    const data = { status: 'success', timestamp: new Date().toISOString() };
+    callback(null, data);
+  };
+  
+  // Initial poll
+  poll();
+  
+  // Set up interval
+  const intervalId = setInterval(poll, interval);
+  
+  // Return function to stop polling
+  return function stopPolling() {
+    clearInterval(intervalId);
+    console.log("Polling stopped");
+  };
+}
+
+// Usage of polling
+const stopPolling = pollResource('/api/status', 2000, (error, data) => {
+  if (error) {
+    console.error("Polling error:", error);
+  } else {
+    console.log("Polling data:", data);
+  }
+});
+
+// Stop polling after 10 seconds
+setTimeout(stopPolling, 10000);
+
+console.log("\nRuntime features example complete!");

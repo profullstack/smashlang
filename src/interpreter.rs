@@ -6,6 +6,9 @@ use crate::parser::AstNode;
 use crate::runtime::promise::Promise;
 use crate::runtime::class::{Class, ClassInstance};
 use crate::runtime::collections::{Map, Set, WeakMap, WeakSet};
+use crate::runtime::timers::{TimerManager, create_set_timeout_function, create_set_interval_function, create_clear_timeout_function, create_clear_interval_function};
+use crate::runtime::json::create_json_object;
+use crate::runtime::browser::BrowserEnvironment;
 
 /// Value represents a runtime value in the SmashLang language
 #[derive(Debug, Clone)]
@@ -268,11 +271,19 @@ impl Environment {
 /// Interpreter for SmashLang
 pub struct Interpreter {
     environment: Environment,
+    timer_manager: TimerManager,
+    browser_environment: BrowserEnvironment,
 }
 
 impl Interpreter {
     pub fn new() -> Self {
         let mut env = Environment::new();
+        
+        // Create timer manager
+        let timer_manager = TimerManager::new(env.clone());
+        
+        // Create browser environment
+        let browser_environment = BrowserEnvironment::new();
         
         // Define global functions and objects
         env.define("console", Value::Object({
@@ -454,8 +465,30 @@ impl Interpreter {
             },
         )));
         
+        // Define timer functions
+        env.define("setTimeout", Value::Function(create_set_timeout_function(timer_manager.clone())));
+        env.define("setInterval", Value::Function(create_set_interval_function(timer_manager.clone())));
+        env.define("clearTimeout", Value::Function(create_clear_timeout_function(timer_manager.clone())));
+        env.define("clearInterval", Value::Function(create_clear_interval_function(timer_manager.clone())));
+        
+        // Define JSON object
+        env.define("JSON", create_json_object());
+        
+        // Define browser globals
+        let window = browser_environment.create_window();
+        env.define("window", window.clone());
+        
+        // Extract properties from window object to global scope
+        if let Value::Object(window_obj) = window {
+            for (key, value) in window_obj {
+                env.define(&key, value);
+            }
+        }
+        
         Self {
             environment: env,
+            timer_manager,
+            browser_environment,
         }
     }
     
