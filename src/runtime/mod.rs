@@ -8,3 +8,4 @@ pub mod collections;
 pub mod timers;
 pub mod json;
 pub mod browser;
+pub mod regex;
