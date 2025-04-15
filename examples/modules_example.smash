@@ -1,0 +1,188 @@
+/**
+ * SmashLang ES Modules Example
+ * 
+ * This example demonstrates how to use ES Modules in SmashLang.
+ */
+
+// File: math.smash
+// This would typically be in a separate file, but for demonstration purposes,
+// we're showing the content that would be in each file.
+
+/*
+// math.smash
+export const PI = 3.14159;
+export const E = 2.71828;
+
+export function square(x) {
+  return x * x;
+}
+
+export function cube(x) {
+  return x * x * x;
+}
+
+// Default export
+export default {
+  name: "math",
+  version: "1.0.0"
+};
+*/
+
+// File: utils.smash
+
+/*
+// utils.smash
+export function capitalize(str) {
+  return str.charAt(0).toUpperCase() + str.slice(1);
+}
+
+export function sum(...args) {
+  return args.reduce((total, num) => total + num, 0);
+}
+
+export function formatDate(date) {
+  return `${date.getFullYear()}-${date.getMonth() + 1}-${date.getDate()}`;
+}
+*/
+
+// File: logger.smash
+
+/*
+// logger.smash
+export class Logger {
+  constructor(prefix = "") {
+    this.prefix = prefix;
+  }
+  
+  log(message) {
+    console.log(`${this.prefix}[LOG]: ${message}`);
+  }
+  
+  error(message) {
+    console.log(`${this.prefix}[ERROR]: ${message}`);
+  }
+  
+  warn(message) {
+    console.log(`${this.prefix}[WARN]: ${message}`);
+  }
+}
+
+export default new Logger("[Default]");
+*/
+
+// File: main.smash (this file)
+// In a real application, you would import from actual files
+
+// Basic named imports
+import { PI, square } from './math.smash';
+console.log(`PI: ${PI}`);
+console.log(`Square of 4: ${square(4)}`);
+
+// Default import
+import math from './math.smash';
+console.log(`Math module: ${math.name} v${math.version}`);
+
+// Namespace import (import all exports)
+import * as utils from './utils.smash';
+console.log(`Capitalized: ${utils.capitalize("hello")}`);
+console.log(`Sum: ${utils.sum(1, 2, 3, 4, 5)}`);
+
+// Mixed imports (default and named)
+import logger, { Logger } from './logger.smash';
+logger.log("Using default logger");
+
+// Create a custom logger
+const customLogger = new Logger("[Custom]");
+customLogger.log("Using custom logger");
+customLogger.error("This is an error");
+
+// Re-exporting example
+// In a real application, this would be in a separate file
+
+/*
+// api.smash
+// Re-export specific items
+export { capitalize, formatDate } from './utils.smash';
+
+// Re-export with rename
+export { square as squareNumber } from './math.smash';
+
+// Re-export default as named export
+export { default as mathUtils } from './math.smash';
+
+// Re-export everything
+export * from './logger.smash';
+*/
+
+// Using re-exports
+import { capitalize, squareNumber, mathUtils } from './api.smash';
+console.log(`Using re-exported capitalize: ${capitalize("world")}`);
+console.log(`Using re-exported square (as squareNumber): ${squareNumber(5)}`);
+console.log(`Using re-exported math default: ${mathUtils.name}`);
+
+// Dynamic imports (loaded at runtime)
+async function loadModule() {
+  try {
+    // Dynamic import returns a Promise
+    const dynamicMath = await import('./math.smash');
+    console.log(`Dynamically imported PI: ${dynamicMath.PI}`);
+    console.log(`Dynamically calculated cube: ${dynamicMath.cube(3)}`);
+    
+    return dynamicMath;
+  } catch (error) {
+    console.error(`Failed to load module: ${error.message}`);
+    return null;
+  }
+}
+
+// Call the async function
+loadModule().then(module => {
+  if (module) {
+    console.log("Dynamic import successful");
+  }
+});
+
+// Module organization patterns
+
+/*
+// File structure example:
+//
+// src/
+// ├── index.smash         # Main entry point, exports public API
+// ├── math/
+// │   ├── index.smash     # Re-exports from the math directory
+// │   ├── basic.smash     # Basic math operations
+// │   ├── advanced.smash  # Advanced math operations
+// │   └── constants.smash # Mathematical constants
+// ├── utils/
+// │   ├── index.smash     # Re-exports from the utils directory
+// │   ├── string.smash    # String utilities
+// │   ├── array.smash     # Array utilities
+// │   └── object.smash    # Object utilities
+// └── logger/
+//     ├── index.smash     # Re-exports from the logger directory
+//     ├── console.smash   # Console logger implementation
+//     └── file.smash      # File logger implementation
+*/
+
+// Barrel pattern (index.smash in each directory re-exports)
+// This allows importing from the directory instead of specific files
+
+/*
+// math/index.smash
+export * from './basic.smash';
+export * from './advanced.smash';
+export * from './constants.smash';
+*/
+
+// Then you can import like this:
+import { add, subtract, multiply, divide } from './math';
+
+// Instead of:
+import { add, subtract } from './math/basic.smash';
+import { multiply, divide } from './math/advanced.smash';
+
+// This makes refactoring easier as you can move functions between files
+// without changing import statements in consuming code
+
+console.log("ES Modules example complete!");
