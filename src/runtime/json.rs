@@ -5,6 +5,7 @@ use serde_json::{self, json, Value as JsonValue};
 /// Convert a SmashLang Value to a serde_json Value
 pub fn value_to_json(value: &Value) -> Result<JsonValue, String> {
     match value {
+        Value::Identifier(_) => todo!("Identifier serialization not implemented"),
         Value::Null => Ok(JsonValue::Null),
         Value::Undefined => Ok(JsonValue::Null),
         Value::Boolean(b) => Ok(JsonValue::Bool(*b)),
@@ -154,6 +155,7 @@ pub fn create_json_parse_function() -> Function {
 /// Apply a reviver function to a parsed JSON value
 fn apply_reviver(value: Value, key: &str, reviver: Function, env: &Environment) -> Result<Value, String> {
     match value {
+        Value::Identifier(_) => todo!("Identifier serialization not implemented"),
         Value::Object(obj) => {
             let mut result = HashMap::new();
             
@@ -336,6 +338,7 @@ fn apply_replacer(
         },
         ReplacerType::Array(ref keys) => {
             match value {
+        Value::Identifier(_) => todo!("Identifier serialization not implemented"),
                 JsonValue::Object(obj) => {
                     let mut result = serde_json::Map::new();
                     

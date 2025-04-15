@@ -62,7 +62,7 @@ impl Map {
     pub fn set(&self, key: Value, value: Value) -> Result<Value, String> {
         let map_key = MapKey::from_value(key.clone())?;
         self.entries.borrow_mut().insert(map_key, value);
-        Ok(Value::Map(self.clone()))
+        Ok(Value::Map(Rc::new(self.clone())))
     }
     
     /// Get a value from the map
@@ -131,7 +131,7 @@ impl Map {
         F: Fn(Value, Value, Value) -> Result<(), String>,
     {
         for (key, value) in self.entries() {
-            callback(value, key.clone(), Value::Map(self.clone()))?;
+            callback(value, key.clone(), Value::Map(Rc::new(self.clone())))?;
         }
         Ok(())
     }
@@ -179,6 +179,7 @@ impl MapKey {
                 let ptr = &value as *const Value as usize;
                 Ok(MapKey::Object(ptr))
             },
+            Value::Identifier(_) => todo!("Identifier as Map key not implemented"),
             Value::Undefined => Err("Cannot use undefined as a Map key".to_string()),
         }
     }
@@ -252,7 +253,7 @@ impl Set {
     pub fn add(&self, value: Value) -> Result<Value, String> {
         let map_key = MapKey::from_value(value.clone())?;
         self.values.borrow_mut().insert(map_key);
-        Ok(Value::Set(self.clone()))
+        Ok(Value::Set(Rc::new(self.clone())))
     }
     
     /// Check if the set has a value
@@ -294,7 +295,7 @@ impl Set {
         F: Fn(Value, Value, Value) -> Result<(), String>,
     {
         for value in self.values() {
-            callback(value.clone(), value.clone(), Value::Set(self.clone()))?;
+            callback(value.clone(), value.clone(), Value::Set(Rc::new(self.clone())))?;
         }
         Ok(())
     }
@@ -355,7 +356,7 @@ impl WeakMap {
             Value::WeakMap(_) | Value::WeakSet(_) => {
                 let ptr = &key as *const Value as usize;
                 self.entries.borrow_mut().insert(ptr, value);
-                Ok(Value::WeakMap(self.clone()))
+                Ok(Value::WeakMap(Rc::new(self.clone())))
             },
             _ => Err("WeakMap keys must be objects".to_string()),
         }
@@ -449,7 +450,7 @@ impl WeakSet {
             Value::WeakMap(_) | Value::WeakSet(_) => {
                 let ptr = &value as *const Value as usize;
                 self.values.borrow_mut().insert(ptr);
-                Ok(Value::WeakSet(self.clone()))
+                Ok(Value::WeakSet(Rc::new(self.clone())))
             },
             _ => Err("WeakSet values must be objects".to_string()),
         }

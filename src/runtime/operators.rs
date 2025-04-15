@@ -318,7 +318,7 @@ pub fn spread_array(array: &Value) -> Result<Vec<Value>, String> {
                 // Object is iterable
                 let iterator = iter_fn.call(array.clone(), &[], &Environment::new())?;
                 
-                if let Value::Object(iter_obj) = iterator {
+                if let Value::Object(ref iter_obj) = iterator {
                     if let Some(Value::Function(next_fn)) = iter_obj.get("next") {
                         let mut result = Vec::new();
                         

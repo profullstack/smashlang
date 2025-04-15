@@ -126,31 +126,34 @@ impl Promise {
             match other_state {
                 PromiseState::Pending => {
                     // Set up callbacks to resolve/reject this Promise when the other Promise settles
-                    let this_promise = self.clone();
+                    let this_promise_fulfilled = self.clone();
+                    let on_fulfilled = move |_this, args: &[Value], _env| {
+                        if let Some(value) = args.first() {
+                            this_promise_fulfilled.resolve(value.clone());
+                        } else {
+                            this_promise_fulfilled.resolve(Value::Undefined);
+                        }
+                        Ok(Value::Undefined)
+                    };
+                    let this_promise_rejected = self.clone();
+                    let on_rejected = move |_this, args: &[Value], _env| {
+                        if let Some(reason) = args.first() {
+                            this_promise_rejected.reject(reason.clone());
+                        } else {
+                            this_promise_rejected.reject(Value::Undefined);
+                        }
+                        Ok(Value::Undefined)
+                    };
                     other_promise.then(
                         Function::new_native(
                             None,
                             vec!["value".to_string()],
-                            move |_this, args: &[Value], _env| {
-                                if let Some(value) = args.first() {
-                                    this_promise.resolve(value.clone());
-                                } else {
-                                    this_promise.resolve(Value::Undefined);
-                                }
-                                Ok(Value::Undefined)
-                            },
+                            on_fulfilled,
                         ),
                         Function::new_native(
                             None,
                             vec!["reason".to_string()],
-                            move |_this, args: &[Value], _env| {
-                                if let Some(reason) = args.first() {
-                                    this_promise.reject(reason.clone());
-                                } else {
-                                    this_promise.reject(Value::Undefined);
-                                }
-                                Ok(Value::Undefined)
-                            },
+                            on_rejected,
                         ),
                     );
                 },
@@ -642,7 +645,7 @@ impl Promise {
                     ),
                 );
             } else {
-                result_promise.resolve(promise);
+                result_promise.resolve(promise.clone());
                 break;
             }
         }

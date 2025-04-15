@@ -47,8 +47,9 @@ impl Value {
             Value::Set(_) => "set",
             Value::WeakMap(_) => "weakmap",
             Value::WeakSet(_) => "weakset",
-            Value::Null => "null",
+            Value::Null => "null", 
             Value::Undefined => "undefined",
+            Value::Identifier(_) => todo!("Identifier type_name not implemented"),
         }
     }
     
@@ -68,7 +69,8 @@ impl Value {
             Value::WeakMap(_) => true,
             Value::WeakSet(_) => true,
             Value::Null => false,
-            Value::Undefined => false,
+            Value::Undefined => "undefined",
+            Value::Identifier(_) => todo!("Identifier type_name not implemented"), false,
         }
     }
     
@@ -169,7 +171,8 @@ impl fmt::Display for Value {
             Value::WeakMap(_) => write!(f, "[WeakMap]"),
             Value::WeakSet(_) => write!(f, "[WeakSet]"),
             Value::Null => write!(f, "null"),
-            Value::Undefined => write!(f, "undefined"),
+            Value::Undefined => "undefined",
+            Value::Identifier(_) => todo!("Identifier type_name not implemented"), write!(f, "undefined"),
         }
     }
 }

@@ -7,7 +7,7 @@ use std::fmt;
 pub struct SmashParser;
 
 use pest::iterators::Pairs;
-use crate::parser::Rule;
+
 
 impl AstNode {
     /// TODO: Implement proper conversion from pest Pairs to AstNode
