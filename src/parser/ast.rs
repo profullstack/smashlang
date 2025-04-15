@@ -1,22 +1,6 @@
-use pest_derive::Parser;
 use std::collections::HashMap;
-use std::fmt;
 
-#[derive(Parser)]
-#[grammar = "grammar.pest"]
-pub struct SmashParser;
-
-use pest::iterators::Pairs;
-
-
-impl AstNode {
-    /// TODO: Implement proper conversion from pest Pairs to AstNode
-    pub fn from_pairs(_pairs: Pairs<'_, Rule>) -> Self {
-        // Placeholder: returns a dummy node
-        AstNode::Undefined
-    }
-}
-
+/// Abstract Syntax Tree node for SmashLang
 #[derive(Debug, Clone)]
 pub enum AstNode {
     // Literals
@@ -350,24 +334,6 @@ impl Parameter {
     }
 }
 
-use pest::iterators::Pair;
-
-
-impl AstNode {
-    pub fn from_pair(pair: Pair<Rule>) -> Option<Self> {
-        match pair.as_rule() {
-            Rule::program => {
-                let nodes = pair.into_inner()
-                    .filter_map(AstNode::from_pair)
-                    .collect();
-                Some(AstNode::Program(nodes))
-            }
-            // Add more rules here as needed for deeper parsing
-            _ => None,
-        }
-    }
-}
-
 #[derive(Debug, Clone)]
 pub enum ClassMember {
     Constructor {
@@ -401,5 +367,3 @@ pub struct ExportSpecifier {
     pub name: String,
     pub exported_name: Option<String>,
 }
-
-// Implementation of parser methods would go here...
