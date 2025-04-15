@@ -49,71 +49,47 @@ impl Promise {
         
         // Create resolve and reject functions
         let resolve_promise = promise.clone();
-        let resolve = {
-            let resolve_promise = resolve_promise.clone();
-            Function::new_native(
-                Some("resolve".to_string()),
-                vec!["value".to_string()],
-                move |_this, args: &[Value], _env| {
-                    if let Some(value) = args.first() {
-                        resolve_promise.resolve(value.clone());
-                    } else {
-                        resolve_promise.resolve(Value::Undefined);
-                    }
-                    Ok(Value::Undefined)
-                },
-            )
-        };
-        let reject_promise = promise.clone();
-        let reject = {
-            let reject_promise = reject_promise.clone();
-            Function::new_native(
-                Some("reject".to_string()),
-                vec!["reason".to_string()],
-                move |_this, args: &[Value], _env| {
-                    if let Some(reason) = args.first() {
-                        reject_promise.reject(reason.clone());
-                    } else {
-                        reject_promise.reject(Value::Undefined);
-                    }
-                    Ok(Value::Undefined)
-                },
-            )
-        };
-
-        
-        // Call the executor with resolve and reject
-        let _ = executor.call(
-            Value::Undefined,
-            &[Value::Function(resolve), Value::Function(reject)],
-            env,
+        let resolve = Function::new_native(
+            Some("resolve".to_string()),
+            vec!["value".to_string()],
+            move |_this, args, _env| {
+                if let Some(value) = args.first() {
+                    resolve_promise.resolve(value.clone());
+                } else {
+                    resolve_promise.resolve(Value::Undefined);
+                }
+                Ok(Value::Undefined)
+            },
         );
         
+        let reject_promise = promise.clone();
+        let reject = Function::new_native(
+            Some("reject".to_string()),
+            vec!["reason".to_string()],
+            move |_this, args, _env| {
+                if let Some(reason) = args.first() {
+                    reject_promise.reject(reason.clone());
+                } else {
+                    reject_promise.reject(Value::Undefined);
+                }
+                Ok(Value::Undefined)
+            },
+        );
+        
+        // Call the executor function
+        let _ = executor.call(Value::Undefined, &[Value::Function(resolve), Value::Function(reject)], env);
+        
         promise
     }
     
-    /// Create a Promise that is already fulfilled with a value
-    pub fn resolve_with(value: Value) -> Rc<Self> {
-        let promise = Self::new();
-        promise.resolve(value);
-        promise
-    }
-    
-    /// Create a Promise that is already rejected with a reason
-    pub fn reject_with(reason: Value) -> Rc<Self> {
-        let promise = Self::new();
-        promise.reject(reason);
-        promise
-    }
-    
-    /// Get the current state of the Promise
+    /// Get the current state of the promise
     pub fn state(&self) -> PromiseState {
         self.state.borrow().clone()
     }
     
-    /// Resolve the Promise with a value
+    /// Resolve the promise with a value
     pub fn resolve(&self, value: Value) {
-        // Only resolve if the Promise is still pending
+        // Only resolve if the promise is still pending
         if *self.state.borrow() != PromiseState::Pending {
             return;
         }
@@ -127,35 +103,37 @@ impl Promise {
                 PromiseState::Pending => {
                     // Set up callbacks to resolve/reject this Promise when the other Promise settles
                     let this_promise_fulfilled = self.clone();
-                    let on_fulfilled = move |_this, args: &[Value], _env| {
-                        if let Some(value) = args.first() {
-                            this_promise_fulfilled.resolve(value.clone());
-                        } else {
-                            this_promise_fulfilled.resolve(Value::Undefined);
-                        }
-                        Ok(Value::Undefined)
-                    };
                     let this_promise_rejected = self.clone();
-                    let on_rejected = move |_this, args: &[Value], _env| {
-                        if let Some(reason) = args.first() {
-                            this_promise_rejected.reject(reason.clone());
-                        } else {
-                            this_promise_rejected.reject(Value::Undefined);
-                        }
-                        Ok(Value::Undefined)
-                    };
-                    other_promise.then(
-                        Function::new_native(
-                            None,
-                            vec!["value".to_string()],
-                            on_fulfilled,
-                        ),
-                        Function::new_native(
-                            None,
-                            vec!["reason".to_string()],
-                            on_rejected,
-                        ),
+                    
+                    // Create a callback for when the other promise is fulfilled
+                    let on_fulfilled = Function::new_native(
+                        None,
+                        vec!["value".to_string()],
+                        move |_this, args, _env| {
+                            if let Some(value) = args.first() {
+                                this_promise_fulfilled.resolve(value.clone());
+                            } else {
+                                this_promise_fulfilled.resolve(Value::Undefined);
+                            }
+                            Ok(Value::Undefined)
+                        },
                     );
+                    
+                    // Create a callback for when the other promise is rejected
+                    let on_rejected = Function::new_native(
+                        None,
+                        vec!["reason".to_string()],
+                        move |_this, args, _env| {
+                            if let Some(reason) = args.first() {
+                                this_promise_rejected.reject(reason.clone());
+                            } else {
+                                this_promise_rejected.reject(Value::Undefined);
+                            }
+                            Ok(Value::Undefined)
+                        },
+                    );
+                    
+                    other_promise.then(on_fulfilled, on_rejected);
                 },
                 PromiseState::Fulfilled => {
                     // Resolve with the other Promise's value
@@ -182,28 +160,27 @@ impl Promise {
         *self.state.borrow_mut() = PromiseState::Fulfilled;
         *self.value.borrow_mut() = Some(value);
         
-        // Call all the on_fulfill callbacks
-        let mut callbacks = self.on_fulfill.borrow_mut().drain(..).collect::<Vec<_>>();
-        for (callback, result_promise) in callbacks {
-            let value = self.value.borrow().clone().unwrap_or(Value::Undefined);
-            
-            // Call the callback with the value
-            match callback.call(Value::Undefined, &[value], &Environment::new()) {
-                Ok(result) => {
-                    // Resolve the result Promise with the callback's result
-                    result_promise.resolve(result);
-                },
-                Err(error) => {
-                    // Reject the result Promise with the error
-                    result_promise.reject(Value::String(error));
-                },
+        // Call all the fulfill callbacks
+        let callbacks = self.on_fulfill.borrow_mut().drain(..).collect::<Vec<_>>();
+        for (callback, promise) in callbacks {
+            if let Some(value) = self.value.borrow().clone() {
+                let result = callback.call(Value::Undefined, &[value], &Environment::new());
+                
+                match result {
+                    Ok(result_value) => {
+                        promise.resolve(result_value);
+                    },
+                    Err(err) => {
+                        promise.reject(Value::String(err));
+                    },
+                }
             }
         }
     }
     
-    /// Reject the Promise with a reason
+    /// Reject the promise with a reason
     pub fn reject(&self, reason: Value) {
-        // Only reject if the Promise is still pending
+        // Only reject if the promise is still pending
         if *self.state.borrow() != PromiseState::Pending {
             return;
         }
@@ -212,85 +189,75 @@ impl Promise {
         *self.state.borrow_mut() = PromiseState::Rejected;
         *self.reason.borrow_mut() = Some(reason);
         
-        // Call all the on_reject callbacks
+        // Call all the reject callbacks
         let callbacks = self.on_reject.borrow_mut().drain(..).collect::<Vec<_>>();
-        for (callback, result_promise) in callbacks {
-            let reason = self.reason.borrow().clone().unwrap_or(Value::Undefined);
-            
-            // Call the callback with the reason
-            match callback.call(Value::Undefined, &[reason], &Environment::new()) {
-                Ok(result) => {
-                    // Resolve the result Promise with the callback's result
-                    result_promise.resolve(result);
-                },
-                Err(error) => {
-                    // Reject the result Promise with the error
-                    result_promise.reject(Value::String(error));
-                },
+        for (callback, promise) in callbacks {
+            if let Some(reason) = self.reason.borrow().clone() {
+                let result = callback.call(Value::Undefined, &[reason], &Environment::new());
+                
+                match result {
+                    Ok(result_value) => {
+                        promise.resolve(result_value);
+                    },
+                    Err(err) => {
+                        promise.reject(Value::String(err));
+                    },
+                }
             }
         }
     }
     
-    /// Add callbacks to be called when the Promise is settled
+    /// Add callbacks to be called when the promise is settled
     pub fn then(&self, on_fulfilled: Function, on_rejected: Function) -> Rc<Promise> {
-        let result_promise = Promise::new();
+        let promise = Promise::new();
         
         match *self.state.borrow() {
             PromiseState::Pending => {
-                // Add callbacks to be called when the Promise is settled
-                self.on_fulfill.borrow_mut().push_back((on_fulfilled, result_promise.clone()));
-                self.on_reject.borrow_mut().push_back((on_rejected, result_promise.clone()));
+                // Add callbacks to be called when the promise is settled
+                self.on_fulfill.borrow_mut().push_back((on_fulfilled, promise.clone()));
+                self.on_reject.borrow_mut().push_back((on_rejected, promise.clone()));
             },
             PromiseState::Fulfilled => {
-                // Call the on_fulfilled callback immediately
-                let value = self.value.borrow().clone().unwrap_or(Value::Undefined);
-                
-                // Schedule the callback to be called asynchronously
-                let _on_fulfilled_clone = on_fulfilled.clone();
-                let _result_promise_clone = result_promise.clone();
-                
-                // In a real implementation, this would be scheduled on the event loop
-                // For simplicity, we'll call it directly
-                match on_fulfilled.call(Value::Undefined, &[value], &Environment::new()) {
-                    Ok(result) => {
-                        result_promise.resolve(result);
-                    },
-                    Err(error) => {
-                        result_promise.reject(Value::String(error));
-                    },
+                // Call the fulfill callback immediately
+                if let Some(value) = self.value.borrow().clone() {
+                    let result = on_fulfilled.call(Value::Undefined, &[value], &Environment::new());
+                    
+                    match result {
+                        Ok(result_value) => {
+                            promise.resolve(result_value);
+                        },
+                        Err(err) => {
+                            promise.reject(Value::String(err));
+                        },
+                    }
                 }
             },
             PromiseState::Rejected => {
-                // Call the on_rejected callback immediately
-                let reason = self.reason.borrow().clone().unwrap_or(Value::Undefined);
-                
-                // Schedule the callback to be called asynchronously
-                let _on_rejected_clone = on_rejected.clone();
-                let _result_promise_clone = result_promise.clone();
-                
-                // In a real implementation, this would be scheduled on the event loop
-                // For simplicity, we'll call it directly
-                match on_rejected.call(Value::Undefined, &[reason], &Environment::new()) {
-                    Ok(result) => {
-                        result_promise.resolve(result);
-                    },
-                    Err(error) => {
-                        result_promise.reject(Value::String(error));
-                    },
+                // Call the reject callback immediately
+                if let Some(reason) = self.reason.borrow().clone() {
+                    let result = on_rejected.call(Value::Undefined, &[reason], &Environment::new());
+                    
+                    match result {
+                        Ok(result_value) => {
+                            promise.resolve(result_value);
+                        },
+                        Err(err) => {
+                            promise.reject(Value::String(err));
+                        },
+                    }
                 }
             },
         }
         
-        result_promise
+        promise
     }
     
-    /// Add a callback to be called when the Promise is rejected
+    /// Add a callback to be called when the promise is fulfilled
     pub fn catch(&self, on_rejected: Function) -> Rc<Promise> {
-        // Create a dummy on_fulfilled callback that just passes through the value
         let on_fulfilled = Function::new_native(
             None,
             vec!["value".to_string()],
-            |_, args: &[Value], _| {
+            |_this, args, _env| {
                 if let Some(value) = args.first() {
                     Ok(value.clone())
                 } else {
@@ -302,361 +269,424 @@ impl Promise {
         self.then(on_fulfilled, on_rejected)
     }
     
-    /// Add a callback to be called when the Promise is settled
+    /// Add a callback to be called when the promise is settled
     pub fn finally(&self, on_finally: Function) -> Rc<Promise> {
-        let result_promise = Promise::new();
+        let promise = Promise::new();
         
-        // Create on_fulfilled and on_rejected callbacks that call on_finally
+        // Create a callback for when the promise is fulfilled
         let on_finally_fulfilled = on_finally.clone();
         let on_fulfilled = Function::new_native(
             None,
             vec!["value".to_string()],
-            move |_, args: &[Value], env| {
+            move |_this, args, env| {
                 let value = args.first().cloned().unwrap_or(Value::Undefined);
-                match on_finally_fulfilled.call(Value::Undefined, &[], env) {
-                    Ok(_) => Ok(value),
-                    Err(error) => Err(error),
+                
+                // Call the finally callback
+                let result = on_finally_fulfilled.call(Value::Undefined, &[], env);
+                
+                match result {
+                    Ok(_) => {
+                        // Return the original value
+                        Ok(value)
+                    },
+                    Err(err) => {
+                        // Reject with the error
+                        Err(err)
+                    },
                 }
             },
         );
+        
+        // Create a callback for when the promise is rejected
         let on_finally_rejected = on_finally;
         let on_rejected = Function::new_native(
             None,
             vec!["reason".to_string()],
-            move |_, args: &[Value], env| {
+            move |_this, args, env| {
                 let reason = args.first().cloned().unwrap_or(Value::Undefined);
-                match on_finally_rejected.call(Value::Undefined, &[], env) {
-                    Ok(_) => Err(format!("{}", reason)),
-                    Err(error) => Err(error),
+                
+                // Call the finally callback
+                let result = on_finally_rejected.call(Value::Undefined, &[], env);
+                
+                match result {
+                    Ok(_) => {
+                        // Re-throw the original reason
+                        Err("Promise rejected".to_string())
+                    },
+                    Err(err) => {
+                        // Reject with the error
+                        Err(err)
+                    },
                 }
             },
         );
-        self.then(on_fulfilled, on_rejected)
-    }
-
-    /// Create a Promise that resolves when all the Promises in the iterable resolve
-    pub fn all(iterable: Value) -> Rc<Promise> {
-        let result_promise = Promise::new();
-        let promises = match iterable {
-            Value::Array(arr) => arr,
-            _ => {
-                result_promise.reject(Value::String("Promise.all requires an array".to_string()));
-                return result_promise;
-            },
-        };
-        if promises.is_empty() {
-            result_promise.resolve(Value::Array(vec![]));
-            return result_promise;
-        }
-        use std::rc::Rc;
-        use std::cell::RefCell;
-        let results = Rc::new(RefCell::new(vec![Value::Undefined; promises.len()]));
-        let remaining = Rc::new(RefCell::new(promises.len()));
-        for (i, promise) in promises.iter().enumerate() {
-            if let Value::Promise(p) = promise {
-                let result_promise_clone = result_promise.clone();
-                let results = results.clone();
-                let remaining = remaining.clone();
-                p.then(
-                    Function::new_native(
-                        None,
-                        vec!["value".to_string()],
-                        {
-                            let results = results.clone();
-                            let remaining = remaining.clone();
-                            let result_promise_clone = result_promise_clone.clone();
-                            move |_, args: &[Value], _| {
-                                if let Some(value) = args.first() {
-                                    results.borrow_mut()[i] = value.clone();
-                                    let mut rem = remaining.borrow_mut();
-                                    *rem -= 1;
-                                    if *rem == 0 {
-                                        result_promise_clone.resolve(Value::Array(results.borrow().clone()));
-                                    }
-                                }
-                                Ok(Value::Undefined)
-                            }
-                        },
-                    ),
-                    Function::new_native(
-                        None,
-                        vec!["reason".to_string()],
-                        {
-                            let result_promise_clone = result_promise_clone.clone();
-                            move |_, args: &[Value], _| {
-                                if let Some(reason) = args.first() {
-                                    result_promise_clone.reject(reason.clone());
-                                }
-                                Ok(Value::Undefined)
-                            }
-                        },
-                    ),
-                );
-            } else {
-                results.borrow_mut()[i] = promise.clone();
-                let mut rem = remaining.borrow_mut();
-                *rem -= 1;
-                if *rem == 0 {
-                    result_promise.resolve(Value::Array(results.borrow().clone()));
-                }
-            }
-        }
-        result_promise
-    }
-
-    /// Create a Promise that resolves or rejects as soon as one of the Promises in the iterable resolves or rejects
-    pub fn race(iterable: Value) -> Rc<Promise> {
-        let result_promise = Promise::new();
-        let promises = match iterable {
-            Value::Array(arr) => arr,
-            _ => {
-                result_promise.reject(Value::String("Promise.race requires an array".to_string()));
-                return result_promise;
-            },
-        };
-        if promises.is_empty() {
-            result_promise.resolve(Value::Undefined);
-            return result_promise;
-        }
-        let settled = Rc::new(RefCell::new(false));
-        for promise in promises.iter() {
-            if let Value::Promise(p) = promise {
-                let result_promise_clone = result_promise.clone();
-                let settled = settled.clone();
-                p.then(
-                    Function::new_native(
-                        None,
-                        vec!["value".to_string()],
-                        {
-                            let result_promise_clone = result_promise_clone.clone();
-                            let settled = settled.clone();
-                            move |_, args: &[Value], _| {
-                                let mut done = settled.borrow_mut();
-                                if !*done {
-                                    *done = true;
-                                    if let Some(value) = args.first() {
-                                        result_promise_clone.resolve(value.clone());
-                                    } else {
-                                        result_promise_clone.resolve(Value::Undefined);
-                                    }
-                                }
-                                Ok(Value::Undefined)
-                            }
-                        },
-                    ),
-                    Function::new_native(
-                        None,
-                        vec!["reason".to_string()],
-                        {
-                            let result_promise_clone = result_promise_clone.clone();
-                            let settled = settled.clone();
-                            move |_, args: &[Value], _| {
-                                let mut done = settled.borrow_mut();
-                                if !*done {
-                                    *done = true;
-                                    if let Some(reason) = args.first() {
-                                        result_promise_clone.reject(reason.clone());
-                                    } else {
-                                        result_promise_clone.reject(Value::Undefined);
-                                    }
-                                }
-                                Ok(Value::Undefined)
-                            }
-                        },
-                    ),
-                );
-            } else {
-                let mut done = settled.borrow_mut();
-                if !*done {
-                    *done = true;
-                    result_promise.resolve(promise.clone());
-                }
-            }
-        }
-        result_promise
-    }
-
-    /// Create a Promise that resolves when all the Promises in the iterable settle
-    pub fn all_settled(iterable: Value) -> Rc<Promise> {
-        let result_promise = Promise::new();
         
-        // Convert the iterable to an array
-        let promises = match iterable {
-            Value::Array(arr) => arr,
-            _ => {
-                // If the iterable is not an array, reject the Promise
-                result_promise.reject(Value::String("Promise.allSettled requires an array".to_string()));
-                return result_promise;
-            },
-        };
+        // Chain the callbacks
+        let result = self.then(on_fulfilled, on_rejected);
         
-        if promises.is_empty() {
-            // If the array is empty, resolve with an empty array
-            result_promise.resolve(Value::Array(vec![]));
-            return result_promise;
-        }
+        // Forward the result to the promise
+        promise.resolve(Value::Promise(result));
         
-        use std::rc::Rc;
-        use std::cell::RefCell;
-        let results = Rc::new(RefCell::new(vec![Value::Undefined; promises.len()]));
-        let remaining = Rc::new(RefCell::new(promises.len()));
-        
-        for (i, promise) in promises.iter().enumerate() {
-            if let Value::Promise(p) = promise {
-                let result_promise_clone = result_promise.clone();
-                let results = results.clone();
-                let remaining = remaining.clone();
-                p.then(
-                    Function::new_native(
-                        None,
-                        vec!["value".to_string()],
-                        {
-                            let results = results.clone();
-                            let remaining = remaining.clone();
-                            let result_promise_clone = result_promise_clone.clone();
-                            move |_, args: &[Value], _| {
-                                if let Some(value) = args.first() {
-                                    let mut result_obj = HashMap::new();
-                                    result_obj.insert("status".to_string(), Value::String("fulfilled".to_string()));
-                                    result_obj.insert("value".to_string(), value.clone());
-                                    results.borrow_mut()[i] = Value::Object(result_obj);
-                                    let mut rem = remaining.borrow_mut();
-                                    *rem -= 1;
-                                    if *rem == 0 {
-                                        result_promise_clone.resolve(Value::Array(results.borrow().clone()));
-                                    }
-                                }
-                                Ok(Value::Undefined)
-                            }
-                        },
-                    ),
-                    Function::new_native(
-                        None,
-                        vec!["reason".to_string()],
-                        {
-                            let results = results.clone();
-                            let remaining = remaining.clone();
-                            let result_promise_clone = result_promise_clone.clone();
-                            move |_, args: &[Value], _| {
-                                if let Some(reason) = args.first() {
-                                    let mut result_obj = HashMap::new();
-                                    result_obj.insert("status".to_string(), Value::String("rejected".to_string()));
-                                    result_obj.insert("reason".to_string(), reason.clone());
-                                    results.borrow_mut()[i] = Value::Object(result_obj);
-                                    let mut rem = remaining.borrow_mut();
-                                    *rem -= 1;
-                                    if *rem == 0 {
-                                        result_promise_clone.resolve(Value::Array(results.borrow().clone()));
-                                    }
-                                }
-                                Ok(Value::Undefined)
-                            }
-                        },
-                    ),
-                );
-            } else {
-                let mut result_obj = HashMap::new();
-                result_obj.insert("status".to_string(), Value::String("fulfilled".to_string()));
-                result_obj.insert("value".to_string(), promise.clone());
-                results.borrow_mut()[i] = Value::Object(result_obj);
-                let mut rem = remaining.borrow_mut();
-                *rem -= 1;
-                if *rem == 0 {
-                    result_promise.resolve(Value::Array(results.borrow().clone()));
-                }
-            }
-        }
-        
-        result_promise
+        promise
     }
     
-    /// Create a Promise that resolves when any of the Promises in the iterable resolves
-    pub fn any(iterable: Value) -> Rc<Promise> {
-        let result_promise = Promise::new();
+    /// Create a Promise that is resolved with a given value
+    pub fn resolve_with(value: Value) -> Rc<Self> {
+        let promise = Self::new();
+        promise.resolve(value);
+        promise
+    }
+    
+    /// Create a Promise that is rejected with a given reason
+    pub fn reject_with(reason: Value) -> Rc<Self> {
+        let promise = Self::new();
+        promise.reject(reason);
+        promise
+    }
+    
+    /// Create a Promise that resolves when all of the promises in the iterable argument have resolved
+    pub fn all(iterable: Value) -> Rc<Self> {
+        let promise = Self::new();
         
         // Convert the iterable to an array
-        let promises = match iterable {
-            Value::Array(arr) => arr,
-            _ => {
-                // If the iterable is not an array, reject the Promise
-                result_promise.reject(Value::String("Promise.any requires an array".to_string()));
-                return result_promise;
-            },
+        let values = match iterable {
+            Value::Array(values) => values,
+            _ => Vec::new(),
         };
         
-        if promises.is_empty() {
-            // If the array is empty, reject with AggregateError
-            let mut error = HashMap::new();
-            error.insert("name".to_string(), Value::String("AggregateError".to_string()));
-            error.insert("message".to_string(), Value::String("All promises were rejected".to_string()));
-            error.insert("errors".to_string(), Value::Array(vec![]));
-            
-            result_promise.reject(Value::Object(error));
-            return result_promise;
+        if values.is_empty() {
+            // Resolve with an empty array
+            promise.resolve(Value::Array(Vec::new()));
+            return promise;
         }
         
-        use std::rc::Rc;
-        use std::cell::RefCell;
-        let errors = Rc::new(RefCell::new(vec![Value::Undefined; promises.len()]));
-        let remaining = Rc::new(RefCell::new(promises.len()));
+        // Create a shared state for tracking the results
+        let results = Rc::new(RefCell::new(vec![Value::Undefined; values.len()]));
+        let count = Rc::new(RefCell::new(0));
         
-        for (i, promise) in promises.iter().enumerate() {
-            if let Value::Promise(p) = promise {
-                let result_promise_clone = result_promise.clone();
-                let errors = errors.clone();
-                let remaining = remaining.clone();
-                p.then(
-                    Function::new_native(
-                        None,
-                        vec!["value".to_string()],
-                        {
-                            let result_promise_clone = result_promise_clone.clone();
-                            move |_, args: &[Value], _| {
-                                if let Some(value) = args.first() {
-                                    result_promise_clone.resolve(value.clone());
-                                }
-                                Ok(Value::Undefined)
-                            }
-                        },
-                    ),
-                    Function::new_native(
-                        None,
-                        vec!["reason".to_string()],
-                        {
-                            let errors = errors.clone();
-                            let remaining = remaining.clone();
-                            let result_promise_clone = result_promise_clone.clone();
-                            move |_, args: &[Value], _| {
-                                if let Some(reason) = args.first() {
-                                    errors.borrow_mut()[i] = reason.clone();
-                                    let mut rem = remaining.borrow_mut();
-                                    *rem -= 1;
-                                    if *rem == 0 {
-                                        let mut error = HashMap::new();
-                                        error.insert("name".to_string(), Value::String("AggregateError".to_string()));
-                                        error.insert("message".to_string(), Value::String("All promises were rejected".to_string()));
-                                        error.insert("errors".to_string(), Value::Array(errors.borrow().clone()));
-                                        result_promise_clone.reject(Value::Object(error));
-                                    }
-                                }
-                                Ok(Value::Undefined)
-                            }
-                        },
-                    ),
+        // Process each value
+        for (i, value) in values.iter().enumerate() {
+            if let Value::Promise(p) = value {
+                // Create a callback for when the promise is fulfilled
+                let promise_clone = promise.clone();
+                let results_clone = results.clone();
+                let count_clone = count.clone();
+                let values_len = values.len();
+                
+                let on_fulfilled = Function::new_native(
+                    None,
+                    vec!["value".to_string()],
+                    move |_this, args, _env| {
+                        let value = args.first().cloned().unwrap_or(Value::Undefined);
+                        
+                        // Store the result
+                        results_clone.borrow_mut()[i] = value;
+                        
+                        // Increment the count
+                        let mut count = count_clone.borrow_mut();
+                        *count += 1;
+                        
+                        // If all promises have resolved, resolve the main promise
+                        if *count == values_len {
+                            let results = results_clone.borrow().clone();
+                            promise_clone.resolve(Value::Array(results));
+                        }
+                        
+                        Ok(Value::Undefined)
+                    },
                 );
+                
+                // Create a callback for when the promise is rejected
+                let promise_clone = promise.clone();
+                let on_rejected = Function::new_native(
+                    None,
+                    vec!["reason".to_string()],
+                    move |_this, args, _env| {
+                        let reason = args.first().cloned().unwrap_or(Value::Undefined);
+                        
+                        // Reject the main promise
+                        promise_clone.reject(reason);
+                        
+                        Ok(Value::Undefined)
+                    },
+                );
+                
+                // Add the callbacks to the promise
+                p.then(on_fulfilled, on_rejected);
             } else {
-                result_promise.resolve(promise.clone());
+                // Store the value
+                results.borrow_mut()[i] = value.clone();
+                
+                // Increment the count
+                let mut count_val = count.borrow_mut();
+                *count_val += 1;
+                
+                // If all values were not promises, resolve the main promise
+                if *count_val == values.len() {
+                    let results_val = results.borrow().clone();
+                    promise.resolve(Value::Array(results_val));
+                }
+            }
+        }
+        
+        promise
+    }
+    
+    /// Create a Promise that resolves or rejects when one of the promises in the iterable resolves or rejects
+    pub fn race(iterable: Value) -> Rc<Self> {
+        let promise = Self::new();
+        
+        // Convert the iterable to an array
+        let values = match iterable {
+            Value::Array(values) => values,
+            _ => Vec::new(),
+        };
+        
+        if values.is_empty() {
+            // Resolve with an empty array
+            promise.resolve(Value::Array(Vec::new()));
+            return promise;
+        }
+        
+        // Process each value
+        for value in values {
+            if let Value::Promise(p) = &value {
+                // Create a callback for when the promise is fulfilled
+                let promise_clone = promise.clone();
+                let on_fulfilled = Function::new_native(
+                    None,
+                    vec!["value".to_string()],
+                    move |_this, args, _env| {
+                        let value = args.first().cloned().unwrap_or(Value::Undefined);
+                        
+                        // Resolve the main promise
+                        promise_clone.resolve(value);
+                        
+                        Ok(Value::Undefined)
+                    },
+                );
+                
+                // Create a callback for when the promise is rejected
+                let promise_clone = promise.clone();
+                let on_rejected = Function::new_native(
+                    None,
+                    vec!["reason".to_string()],
+                    move |_this, args, _env| {
+                        let reason = args.first().cloned().unwrap_or(Value::Undefined);
+                        
+                        // Reject the main promise
+                        promise_clone.reject(reason);
+                        
+                        Ok(Value::Undefined)
+                    },
+                );
+                
+                // Add the callbacks to the promise
+                p.then(on_fulfilled, on_rejected);
+            } else {
+                // Resolve with the value
+                promise.resolve(value);
                 break;
             }
         }
         
-        result_promise
+        promise
     }
-}
-
-// Add Promise to the Value enum
-impl Value {
-    pub fn is_promise(&self) -> bool {
-        matches!(self, Value::Promise(_))
+    
+    /// Create a Promise that resolves when all of the promises in the iterable have settled
+    pub fn all_settled(iterable: Value) -> Rc<Self> {
+        let promise = Self::new();
+        
+        // Convert the iterable to an array
+        let values = match iterable {
+            Value::Array(values) => values,
+            _ => Vec::new(),
+        };
+        
+        if values.is_empty() {
+            // Resolve with an empty array
+            promise.resolve(Value::Array(Vec::new()));
+            return promise;
+        }
+        
+        // Create a shared state for tracking the results
+        let results = Rc::new(RefCell::new(vec![Value::Undefined; values.len()]));
+        let count = Rc::new(RefCell::new(0));
+        
+        // Process each value
+        for (i, value) in values.iter().enumerate() {
+            if let Value::Promise(p) = value {
+                // Create a callback for when the promise is fulfilled
+                let promise_clone = promise.clone();
+                let results_clone = results.clone();
+                let count_clone = count.clone();
+                let values_len = values.len();
+                
+                let on_fulfilled = Function::new_native(
+                    None,
+                    vec!["value".to_string()],
+                    move |_this, args, _env| {
+                        let value = args.first().cloned().unwrap_or(Value::Undefined);
+                        
+                        // Store the result
+                        let mut result = HashMap::new();
+                        result.insert("status".to_string(), Value::String("fulfilled".to_string()));
+                        result.insert("value".to_string(), value);
+                        results_clone.borrow_mut()[i] = Value::Object(result);
+                        
+                        // Increment the count
+                        let mut count = count_clone.borrow_mut();
+                        *count += 1;
+                        
+                        // If all promises have settled, resolve the main promise
+                        if *count == values_len {
+                            let results = results_clone.borrow().clone();
+                            promise_clone.resolve(Value::Array(results));
+                        }
+                        
+                        Ok(Value::Undefined)
+                    },
+                );
+                
+                // Create a callback for when the promise is rejected
+                let promise_clone = promise.clone();
+                let results_clone = results.clone();
+                let count_clone = count.clone();
+                let values_len = values.len();
+                
+                let on_rejected = Function::new_native(
+                    None,
+                    vec!["reason".to_string()],
+                    move |_this, args, _env| {
+                        let reason = args.first().cloned().unwrap_or(Value::Undefined);
+                        
+                        // Store the result
+                        let mut result = HashMap::new();
+                        result.insert("status".to_string(), Value::String("rejected".to_string()));
+                        result.insert("reason".to_string(), reason);
+                        results_clone.borrow_mut()[i] = Value::Object(result);
+                        
+                        // Increment the count
+                        let mut count = count_clone.borrow_mut();
+                        *count += 1;
+                        
+                        // If all promises have settled, resolve the main promise
+                        if *count == values_len {
+                            let results = results_clone.borrow().clone();
+                            promise_clone.resolve(Value::Array(results));
+                        }
+                        
+                        Ok(Value::Undefined)
+                    },
+                );
+                
+                // Add the callbacks to the promise
+                p.then(on_fulfilled, on_rejected);
+            } else {
+                // Store the value
+                let mut result = HashMap::new();
+                result.insert("status".to_string(), Value::String("fulfilled".to_string()));
+                result.insert("value".to_string(), value.clone());
+                results.borrow_mut()[i] = Value::Object(result);
+                
+                // Increment the count
+                let mut count_val = count.borrow_mut();
+                *count_val += 1;
+                
+                // If all values were not promises, resolve the main promise
+                if *count_val == values.len() {
+                    let results_val = results.borrow().clone();
+                    promise.resolve(Value::Array(results_val));
+                }
+            }
+        }
+        
+        promise
+    }
+    
+    /// Create a Promise that resolves when any of the promises in the iterable resolves
+    pub fn any(iterable: Value) -> Rc<Self> {
+        let promise = Self::new();
+        
+        // Convert the iterable to an array
+        let values = match iterable {
+            Value::Array(values) => values,
+            _ => Vec::new(),
+        };
+        
+        if values.is_empty() {
+            // Reject with an AggregateError
+            let mut error = HashMap::new();
+            error.insert("name".to_string(), Value::String("AggregateError".to_string()));
+            error.insert("message".to_string(), Value::String("All promises were rejected".to_string()));
+            error.insert("errors".to_string(), Value::Array(Vec::new()));
+            promise.reject(Value::Object(error));
+            return promise;
+        }
+        
+        // Create a shared state for tracking the errors
+        let errors = Rc::new(RefCell::new(vec![Value::Undefined; values.len()]));
+        let count = Rc::new(RefCell::new(0));
+        
+        // Process each value
+        for (i, value) in values.iter().enumerate() {
+            if let Value::Promise(p) = value {
+                // Create a callback for when the promise is fulfilled
+                let promise_clone = promise.clone();
+                let on_fulfilled = Function::new_native(
+                    None,
+                    vec!["value".to_string()],
+                    move |_this, args, _env| {
+                        let value = args.first().cloned().unwrap_or(Value::Undefined);
+                        
+                        // Resolve the main promise
+                        promise_clone.resolve(value);
+                        
+                        Ok(Value::Undefined)
+                    },
+                );
+                
+                // Create a callback for when the promise is rejected
+                let promise_clone = promise.clone();
+                let errors_clone = errors.clone();
+                let count_clone = count.clone();
+                let values_len = values.len();
+                
+                let on_rejected = Function::new_native(
+                    None,
+                    vec!["reason".to_string()],
+                    move |_this, args, _env| {
+                        let reason = args.first().cloned().unwrap_or(Value::Undefined);
+                        
+                        // Store the error
+                        errors_clone.borrow_mut()[i] = reason;
+                        
+                        // Increment the count
+                        let mut count = count_clone.borrow_mut();
+                        *count += 1;
+                        
+                        // If all promises have rejected, reject the main promise
+                        if *count == values_len {
+                            let mut error = HashMap::new();
+                            error.insert("name".to_string(), Value::String("AggregateError".to_string()));
+                            error.insert("message".to_string(), Value::String("All promises were rejected".to_string()));
+                            error.insert("errors".to_string(), Value::Array(errors_clone.borrow().clone()));
+                            promise_clone.reject(Value::Object(error));
+                        }
+                        
+                        Ok(Value::Undefined)
+                    },
+                );
+                
+                // Add the callbacks to the promise
+                p.then(on_fulfilled, on_rejected);
+            } else {
+                // Resolve with the value
+                promise.resolve(value.clone());
+                break;
+            }
+        }
+        
+        promise
     }
 }

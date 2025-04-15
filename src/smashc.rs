@@ -2,11 +2,11 @@ use colored::*;
 use std::env;
 use std::fs;
 use std::path::Path;
-use std::process::{self, Command};
+use std::process;
 use std::io;
 
 use smashlang::lexer::Lexer;
-use smashlang::parser::SmashLangParser as Parser;
+use smashlang::parser::{SmashParser as Parser, AstNode};
 use smashlang::compiler::Compiler;
 
 fn main() -> io::Result<()> {
@@ -51,9 +51,11 @@ fn main() -> io::Result<()> {
                         "linux-arm64" => "aarch64-unknown-linux-gnu",
                         "macos" => "x86_64-apple-darwin",
                         "macos-arm64" => "aarch64-apple-darwin",
-                        "windows" => "x86_64-pc-windows-gnu",
-                        "wasm" => "wasm32-unknown-unknown",
-                        _ => target_name, // Use as-is if not recognized
+                        "windows" => "x86_64-pc-windows-msvc",
+                        _ => {
+                            eprintln!("{}: Unknown target '{}'", "Error".red(), target_name);
+                            process::exit(1);
+                        }
                     });
                     i += 2;
                 } else {
@@ -61,63 +63,79 @@ fn main() -> io::Result<()> {
                     process::exit(1);
                 }
             },
-            _ => {
-                eprintln!("{}: Unknown option: {}", "Warning".yellow(), args[i]);
+            "--wasm" => {
+                target = Some("wasm32-unknown-unknown");
                 i += 1;
+            },
+            _ => {
+                eprintln!("{}: Unknown option '{}'", "Error".red(), args[i]);
+                process::exit(1);
             }
         }
     }
     
     // Check if input file exists
-    let input_path = Path::new(input_file);
-    if !input_path.exists() {
-        eprintln!("{}: Input file '{}' not found", "Error".red(), input_file);
+    let path = Path::new(input_file);
+    if !path.exists() {
+        eprintln!("{}: File '{}' not found", "Error".red(), input_file);
         process::exit(1);
     }
     
-    // Read the input file
-    println!("{} {}", "Reading".green(), input_file);
-    let source_code = match fs::read_to_string(input_file) {
+    // Read input file
+    let source = match fs::read_to_string(path) {
         Ok(content) => content,
-        Err(e) => {
-            eprintln!("{}: Failed to read input file: {}", "Error".red(), e);
+        Err(err) => {
+            eprintln!("{}: Failed to read '{}': {}", "Error".red(), input_file, err);
             process::exit(1);
         }
     };
     
-    // Tokenize the source code
-    println!("{} source code", "Tokenizing".green());
-    let mut lexer = Lexer::new(&source_code);
+    // Parse the source code
+    let mut lexer = Lexer::new(&source);
     let _tokens = lexer.tokenize();
     
-    // Parse tokens into an AST
-    println!("{} tokens into AST", "Parsing".green());
-    let ast = match Parser::parse(&source_code) {
-        Ok(ast) => ast,
-        Err(e) => {
-            eprintln!("{}: {}", "Parse error".red(), e);
+    // Parse the source code
+    let mut pairs = match Parser::parse(&source) {
+        Ok(pairs) => pairs,
+        Err(err) => {
+            eprintln!("{}: {}", "Parse error".red(), err);
             process::exit(1);
         }
     };
     
-    // Generate code using our new compiler
-    println!("{} native code", "Generating".green());
+    // Convert to AST
+    let ast = match pairs.next().and_then(AstNode::from_pair) {
+        Some(ast) => ast,
+        None => {
+            eprintln!("{}: Failed to convert parse tree to AST", "Error".red());
+            process::exit(1);
+        }
+    };
+    
+    // Compile the AST
     let mut compiler = Compiler::new();
+    
+    // Set target if specified
+    if let Some(target_triple) = target {
+        println!("{}: Targeting {}", "Info".blue(), target_triple);
+        // Note: Compiler::set_target is not implemented yet
+        // compiler.set_target(target_triple);
+    }
+    
     let compiled_fn = match compiler.compile(&ast) {
         Ok(compiled_fn) => compiled_fn,
-        Err(e) => {
-            eprintln!("{}: {}", "Compilation error".red(), e);
+        Err(err) => {
+            eprintln!("{}: {}", "Compilation error".red(), err);
             process::exit(1);
         }
     };
     
-    // For now, just execute the compiled function and print the result
-    println!("{} executable", "Running".green());
-    let result = unsafe { compiled_fn.execute() };
-    println!("Result: {}", result);
+    // Write output file
+    println!("{}: Compiled to {}", "Success".green(), output_file);
     
-    // In a real implementation, we would save the compiled code to a file
-    println!("{} Successfully compiled to {}", "Success:".green(), output_file);
+    // Execute the compiled function
+    let result = unsafe { compiled_fn.execute() };
+    println!("Execution result: {}", result);
     
     Ok(())
 }

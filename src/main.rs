@@ -12,7 +12,8 @@ mod interpreter;
 mod compiler;
 
 use lexer::Lexer;
-use parser::SmashLangParser as Parser;
+use parser::SmashParser as Parser;
+use parser::AstNode;
 use interpreter::Interpreter;
 use compiler::Compiler;
 
@@ -84,7 +85,7 @@ fn start_repl() {
     println!("Type .help for commands, .exit to quit");
     
     let mut rl = DefaultEditor::new().unwrap();
-    let interpreter = Interpreter::new();
+    let _interpreter = Interpreter::new();
     
     loop {
         let readline = rl.readline(">> ");
@@ -185,10 +186,20 @@ fn compile_file(file_path: &str) {
     let mut lexer = Lexer::new(&source);
     let _tokens = lexer.tokenize();
     
-    let ast = match Parser::parse(&source) {
-        Ok(ast) => ast,
+    // Parse the source code
+    let mut pairs = match Parser::parse(&source) {
+        Ok(pairs) => pairs,
         Err(err) => {
             eprintln!("Parse error: {}", err);
+            process::exit(1);
+        }
+    };
+    
+    // Convert to AST
+    let ast = match pairs.next().and_then(AstNode::from_pair) {
+        Some(ast) => ast,
+        None => {
+            eprintln!("Failed to convert parse tree to AST");
             process::exit(1);
         }
     };
@@ -219,10 +230,19 @@ fn execute_code(source: &str) -> Result<interpreter::Value, String> {
     let mut lexer = Lexer::new(source);
     let _tokens = lexer.tokenize();
     
-    let ast = match Parser::parse(source) {
-        Ok(ast) => ast,
+    // Parse the source code
+    let mut pairs = match Parser::parse(source) {
+        Ok(pairs) => pairs,
         Err(err) => {
             return Err(format!("Parse error: {}", err));
+        }
+    };
+    
+    // Convert to AST
+    let ast = match pairs.next().and_then(AstNode::from_pair) {
+        Some(ast) => ast,
+        None => {
+            return Err("Failed to convert parse tree to AST".to_string());
         }
     };
     

@@ -81,8 +81,12 @@ impl TimerManager {
             environment,
         };
         
-        // Start the timer thread
-        manager.start_timer_thread();
+        // Start a thread to check for ready timers
+        let timers_clone = manager.timers.clone();
+        let env_clone = manager.environment.clone();
+        
+        // We'll use a simple polling approach instead of a separate thread
+        // This avoids the need to send Values between threads
         
         manager
     }
@@ -126,66 +130,52 @@ impl TimerManager {
     }
     
     /// Clear a timeout or interval
-    pub fn clear_timer(&self, id: usize) -> bool {
+    pub fn clear_timer(&self, id: usize) {
         let mut timers = self.timers.lock().unwrap();
-        
         if let Some(timer) = timers.get_mut(&id) {
             timer.cancelled = true;
-            true
-        } else {
-            false
         }
     }
     
-    /// Start the timer thread
-    fn start_timer_thread(&self) {
-        let timers = self.timers.clone();
-        let environment = self.environment.clone();
+    /// Process ready timers
+    pub fn process_timers(&self) {
+        let now = Instant::now();
+        let mut ready_timers = Vec::new();
         
-        thread::spawn(move || {
-            loop {
-                // Sleep for a short time to avoid busy waiting
-                thread::sleep(Duration::from_millis(10));
-                
-                let now = Instant::now();
-                let mut ready_timers = Vec::new();
-                
-                // Find ready timers
-                {
-                    let mut timers_lock = timers.lock().unwrap();
-                    let mut to_remove = Vec::new();
+        // Find ready timers
+        {
+            let mut timers = self.timers.lock().unwrap();
+            let mut to_remove = Vec::new();
+            
+            for (id, timer) in timers.iter_mut() {
+                if timer.is_ready(now) {
+                    // Clone the timer for execution
+                    let callback = timer.callback.clone();
+                    let args = timer.args.clone();
                     
-                    for (id, timer) in timers_lock.iter_mut() {
-                        if timer.is_ready(now) {
-                            // Clone the timer for execution
-                            let callback = timer.callback.clone();
-                            let args = timer.args.clone();
-                            
-                            // Add to ready timers
-                            ready_timers.push((callback, args));
-                            
-                            // Update or remove the timer
-                            if timer.is_interval {
-                                timer.update_next_execution();
-                            } else {
-                                to_remove.push(*id);
-                            }
-                        }
-                    }
+                    // Add to ready timers
+                    ready_timers.push((callback, args));
                     
-                    // Remove completed timeouts
-                    for id in to_remove {
-                        timers_lock.remove(&id);
+                    // Update or remove the timer
+                    if timer.is_interval {
+                        timer.update_next_execution();
+                    } else {
+                        to_remove.push(*id);
                     }
-                }
-                
-                // Execute ready timers
-                for (callback, args) in ready_timers {
-                    // Execute the callback
-                    let _ = callback.call(Value::Undefined, &args, &environment);
                 }
             }
-        });
+            
+            // Remove completed timeouts
+            for id in to_remove {
+                timers.remove(&id);
+            }
+        }
+        
+        // Execute ready timers
+        for (callback, args) in ready_timers {
+            // Execute the callback
+            let _ = callback.call(Value::Undefined, &args, &self.environment);
+        }
     }
 }
 
@@ -196,21 +186,17 @@ pub fn create_set_timeout_function(timer_manager: TimerManager) -> Function {
         vec!["callback".to_string(), "delay".to_string(), "...args".to_string()],
         move |_this, args, _env| {
             if args.is_empty() {
-                return Err("setTimeout requires at least one argument".to_string());
+                return Err("setTimeout requires at least 1 argument".to_string());
             }
             
             let callback = match &args[0] {
-                Value::Function(func) => func.clone(),
-                _ => return Err("setTimeout callback must be a function".to_string()),
+                Value::Function(f) => f.clone(),
+                _ => return Err("setTimeout requires a function as first argument".to_string()),
             };
             
-            let delay = if args.len() > 1 {
-                match &args[1] {
-                    Value::Number(n) => *n as u64,
-                    _ => 0,
-                }
-            } else {
-                0
+            let delay = match args.get(1) {
+                Some(Value::Number(n)) => *n as u64,
+                _ => 0,
             };
             
             let callback_args = if args.len() > 2 {
@@ -232,21 +218,17 @@ pub fn create_set_interval_function(timer_manager: TimerManager) -> Function {
         vec!["callback".to_string(), "delay".to_string(), "...args".to_string()],
         move |_this, args, _env| {
             if args.is_empty() {
-                return Err("setInterval requires at least one argument".to_string());
+                return Err("setInterval requires at least 1 argument".to_string());
             }
             
             let callback = match &args[0] {
-                Value::Function(func) => func.clone(),
-                _ => return Err("setInterval callback must be a function".to_string()),
+                Value::Function(f) => f.clone(),
+                _ => return Err("setInterval requires a function as first argument".to_string()),
             };
             
-            let delay = if args.len() > 1 {
-                match &args[1] {
-                    Value::Number(n) => *n as u64,
-                    _ => 0,
-                }
-            } else {
-                0
+            let delay = match args.get(1) {
+                Some(Value::Number(n)) => *n as u64,
+                _ => 0,
             };
             
             let callback_args = if args.len() > 2 {
@@ -267,17 +249,10 @@ pub fn create_clear_timeout_function(timer_manager: TimerManager) -> Function {
         Some("clearTimeout".to_string()),
         vec!["id".to_string()],
         move |_this, args, _env| {
-            if args.is_empty() {
-                return Ok(Value::Undefined);
+            if let Some(Value::Number(id)) = args.first() {
+                timer_manager.clear_timer(*id as usize);
             }
-            
-            let id = match &args[0] {
-                Value::Number(n) => *n as usize,
-                _ => return Ok(Value::Undefined),
-            };
-            
-            let result = timer_manager.clear_timer(id);
-            Ok(Value::Boolean(result))
+            Ok(Value::Undefined)
         },
     )
 }
@@ -288,17 +263,10 @@ pub fn create_clear_interval_function(timer_manager: TimerManager) -> Function {
         Some("clearInterval".to_string()),
         vec!["id".to_string()],
         move |_this, args, _env| {
-            if args.is_empty() {
-                return Ok(Value::Undefined);
+            if let Some(Value::Number(id)) = args.first() {
+                timer_manager.clear_timer(*id as usize);
             }
-            
-            let id = match &args[0] {
-                Value::Number(n) => *n as usize,
-                _ => return Ok(Value::Undefined),
-            };
-            
-            let result = timer_manager.clear_timer(id);
-            Ok(Value::Boolean(result))
+            Ok(Value::Undefined)
         },
     )
 }
