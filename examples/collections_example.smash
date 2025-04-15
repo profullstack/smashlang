@@ -1,0 +1,325 @@
+/**
+ * SmashLang Collections Example
+ * 
+ * This example demonstrates how to use Map, Set, WeakMap, and WeakSet collections in SmashLang.
+ */
+
+// ===== Map =====
+console.log("\n===== Map =====");
+
+// Creating a Map
+const userMap = new Map();
+
+// Adding key-value pairs
+userMap.set('john', { name: 'John Doe', age: 30 });
+userMap.set('jane', { name: 'Jane Smith', age: 25 });
+userMap.set('bob', { name: 'Bob Johnson', age: 35 });
+
+console.log("Map size:", userMap.size);
+
+// Getting values
+const john = userMap.get('john');
+console.log("John's data:", john);
+
+// Checking if a key exists
+console.log("Has 'jane'?", userMap.has('jane'));
+console.log("Has 'alice'?", userMap.has('alice'));
+
+// Using objects as keys
+const obj1 = { id: 1 };
+const obj2 = { id: 2 };
+
+const objectMap = new Map();
+objectMap.set(obj1, 'Object 1 data');
+objectMap.set(obj2, 'Object 2 data');
+
+console.log("Object 1 data:", objectMap.get(obj1));
+
+// Note: A different object with the same properties is a different key
+const obj1Copy = { id: 1 };
+console.log("Has obj1Copy?", objectMap.has(obj1Copy)); // false
+console.log("obj1Copy data:", objectMap.get(obj1Copy)); // undefined
+
+// Deleting entries
+userMap.delete('bob');
+console.log("After delete, size:", userMap.size);
+console.log("Has 'bob'?", userMap.has('bob'));
+
+// Iterating over a Map
+console.log("\nIterating over userMap:");
+
+// Using forEach
+userMap.forEach((value, key) => {
+  console.log(`${key}: ${value.name}, ${value.age} years old`);
+});
+
+// Using entries()
+console.log("\nEntries:");
+for (const [key, value] of userMap.entries()) {
+  console.log(`${key}: ${value.name}, ${value.age} years old`);
+}
+
+// Using keys()
+console.log("\nKeys:");
+for (const key of userMap.keys()) {
+  console.log(key);
+}
+
+// Using values()
+console.log("\nValues:");
+for (const value of userMap.values()) {
+  console.log(`${value.name}, ${value.age} years old`);
+}
+
+// Creating a Map from an iterable
+const initialData = [
+  ['apple', 'red'],
+  ['banana', 'yellow'],
+  ['grape', 'purple']
+];
+
+const fruitColors = new Map(initialData);
+console.log("\nFruit colors map size:", fruitColors.size);
+console.log("Banana color:", fruitColors.get('banana'));
+
+// Converting Map to Array
+const fruitEntries = Array.from(fruitColors.entries());
+console.log("\nFruit entries array:", fruitEntries);
+
+// Clearing a Map
+fruitColors.clear();
+console.log("After clear, size:", fruitColors.size);
+
+// ===== Set =====
+console.log("\n===== Set =====");
+
+// Creating a Set
+const uniqueNumbers = new Set();
+
+// Adding values
+uniqueNumbers.add(1);
+uniqueNumbers.add(2);
+uniqueNumbers.add(3);
+uniqueNumbers.add(2); // Duplicate, will be ignored
+
+console.log("Set size:", uniqueNumbers.size);
+
+// Checking if a value exists
+console.log("Has 2?", uniqueNumbers.has(2));
+console.log("Has 4?", uniqueNumbers.has(4));
+
+// Using objects in Sets
+const userSet = new Set();
+
+const user1 = { name: 'John', id: 1 };
+const user2 = { name: 'Jane', id: 2 };
+
+userSet.add(user1);
+userSet.add(user2);
+userSet.add(user1); // Duplicate reference, will be ignored
+
+console.log("User set size:", userSet.size);
+
+// Note: A different object with the same properties is a different value
+const user1Copy = { name: 'John', id: 1 };
+userSet.add(user1Copy);
+console.log("After adding copy, size:", userSet.size); // 3, not 2
+
+// Deleting values
+uniqueNumbers.delete(2);
+console.log("After delete, size:", uniqueNumbers.size);
+console.log("Has 2?", uniqueNumbers.has(2));
+
+// Iterating over a Set
+console.log("\nIterating over uniqueNumbers:");
+
+// Using forEach
+uniqueNumbers.forEach(value => {
+  console.log(value);
+});
+
+// Using values()
+console.log("\nValues:");
+for (const value of uniqueNumbers.values()) {
+  console.log(value);
+}
+
+// Using entries() (key and value are the same in a Set)
+console.log("\nEntries:");
+for (const [key, value] of uniqueNumbers.entries()) {
+  console.log(`${key} => ${value}`);
+}
+
+// Creating a Set from an iterable
+const initialFruits = ['apple', 'banana', 'apple', 'orange', 'banana'];
+const uniqueFruits = new Set(initialFruits);
+
+console.log("\nUnique fruits set size:", uniqueFruits.size);
+console.log("Unique fruits:", Array.from(uniqueFruits));
+
+// Creating a Set from a string
+const uniqueChars = new Set('hello');
+console.log("\nUnique characters in 'hello':", Array.from(uniqueChars));
+
+// Clearing a Set
+uniqueNumbers.clear();
+console.log("After clear, size:", uniqueNumbers.size);
+
+// ===== WeakMap =====
+console.log("\n===== WeakMap =====");
+
+// Creating a WeakMap
+const weakMap = new WeakMap();
+
+// WeakMap keys must be objects
+let keyObj1 = { id: 1 };
+let keyObj2 = { id: 2 };
+
+// Setting values
+weakMap.set(keyObj1, 'Data for object 1');
+weakMap.set(keyObj2, 'Data for object 2');
+
+// Getting values
+console.log("keyObj1 data:", weakMap.get(keyObj1));
+console.log("Has keyObj1?", weakMap.has(keyObj1));
+
+// Deleting entries
+weakMap.delete(keyObj1);
+console.log("After delete, has keyObj1?", weakMap.has(keyObj1));
+
+// WeakMap doesn't prevent garbage collection
+// This is just a demonstration - in a real scenario, the object would be garbage collected
+keyObj2 = null;
+// Now the entry in the WeakMap with keyObj2 can be garbage collected
+
+// WeakMap doesn't have size property or iteration methods
+// console.log(weakMap.size); // undefined
+// weakMap.forEach(...); // Error
+
+// ===== WeakSet =====
+console.log("\n===== WeakSet =====");
+
+// Creating a WeakSet
+const weakSet = new WeakSet();
+
+// WeakSet values must be objects
+let valueObj1 = { id: 1 };
+let valueObj2 = { id: 2 };
+
+// Adding values
+weakSet.add(valueObj1);
+weakSet.add(valueObj2);
+
+// Checking if values exist
+console.log("Has valueObj1?", weakSet.has(valueObj1));
+console.log("Has valueObj2?", weakSet.has(valueObj2));
+
+// Deleting values
+weakSet.delete(valueObj1);
+console.log("After delete, has valueObj1?", weakSet.has(valueObj1));
+
+// WeakSet doesn't prevent garbage collection
+// This is just a demonstration - in a real scenario, the object would be garbage collected
+valueObj2 = null;
+// Now the entry in the WeakSet with valueObj2 can be garbage collected
+
+// WeakSet doesn't have size property or iteration methods
+// console.log(weakSet.size); // undefined
+// weakSet.forEach(...); // Error
+
+// ===== Practical Examples =====
+console.log("\n===== Practical Examples =====");
+
+// Example 1: Using Map for caching
+function getUser(id) {
+  // In a real app, this would be a database or API call
+  return { id, name: `User ${id}`, lastAccess: new Date() };
+}
+
+const userCache = new Map();
+
+function getCachedUser(id) {
+  if (userCache.has(id)) {
+    console.log(`Cache hit for user ${id}`);
+    return userCache.get(id);
+  }
+  
+  console.log(`Cache miss for user ${id}, fetching...`);
+  const user = getUser(id);
+  userCache.set(id, user);
+  return user;
+}
+
+getCachedUser(42); // Cache miss
+getCachedUser(7);  // Cache miss
+getCachedUser(42); // Cache hit
+
+// Example 2: Using Set for unique values
+function uniqueWords(text) {
+  const words = text.toLowerCase().split(/\W+/).filter(word => word.length > 0);
+  return new Set(words);
+}
+
+const text = "To be or not to be, that is the question.";
+const words = uniqueWords(text);
+console.log("Unique words:", Array.from(words));
+console.log("Word count:", words.size);
+
+// Example 3: Using WeakMap for private data
+const privateData = new WeakMap();
+
+class Person {
+  constructor(name, age) {
+    this.name = name;
+    privateData.set(this, { age });
+  }
+  
+  getName() {
+    return this.name;
+  }
+  
+  getAge() {
+    return privateData.get(this).age;
+  }
+  
+  setAge(age) {
+    privateData.get(this).age = age;
+  }
+}
+
+const person = new Person("Alice", 30);
+console.log(`${person.getName()} is ${person.getAge()} years old`);
+person.setAge(31);
+console.log(`After birthday: ${person.getAge()} years old`);
+
+// Example 4: Using Set for removing duplicates from an array
+function removeDuplicates(array) {
+  return Array.from(new Set(array));
+}
+
+const numbersWithDuplicates = [1, 2, 2, 3, 4, 4, 5, 5, 5];
+const uniqueNumbersArray = removeDuplicates(numbersWithDuplicates);
+console.log("Original array:", numbersWithDuplicates);
+console.log("Without duplicates:", uniqueNumbersArray);
+
+// Example 5: Using Map for counting occurrences
+function countOccurrences(array) {
+  const counts = new Map();
+  
+  for (const item of array) {
+    const count = counts.get(item) || 0;
+    counts.set(item, count + 1);
+  }
+  
+  return counts;
+}
+
+const fruits = ['apple', 'banana', 'apple', 'orange', 'banana', 'apple'];
+const fruitCounts = countOccurrences(fruits);
+
+console.log("Fruit counts:");
+fruitCounts.forEach((count, fruit) => {
+  console.log(`${fruit}: ${count}`);
+});
+
+console.log("\nCollections example complete!");
