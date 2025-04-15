@@ -3,3 +3,4 @@
 pub mod promise;
 pub mod class;
 pub mod module;
+pub mod operators;

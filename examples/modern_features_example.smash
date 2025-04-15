@@ -1,0 +1,293 @@
+/**
+ * SmashLang Modern JavaScript Features Example
+ * 
+ * This example demonstrates modern JavaScript features implemented in SmashLang.
+ */
+
+// ===== Optional Chaining (?) =====
+console.log("\n===== Optional Chaining =====");
+
+const user = {
+  name: "John",
+  address: {
+    city: "New York",
+    zip: "10001"
+  },
+  contacts: {
+    email: "john@example.com",
+    phone: null
+  },
+  getFullName() {
+    return `${this.name} Doe`;
+  }
+};
+
+// Without optional chaining (traditional approach)
+function getZipCodeTraditional(user) {
+  if (user && user.address && user.address.zip) {
+    return user.address.zip;
+  }
+  return "Unknown";
+}
+
+// With optional chaining
+function getZipCodeModern(user) {
+  return user?.address?.zip ?? "Unknown";
+}
+
+console.log("Traditional approach:", getZipCodeTraditional(user));
+console.log("Modern approach:", getZipCodeModern(user));
+
+// Optional chaining with method calls
+console.log("Full name:", user?.getFullName?.());
+
+// Optional chaining with non-existent properties
+console.log("Country:", user?.address?.country ?? "Unknown");
+
+// Optional chaining with null values
+console.log("Phone:", user?.contacts?.phone ?? "No phone");
+
+// Optional chaining with computed properties
+const key = "city";
+console.log("Dynamic property:", user?.address?.[key]);
+
+// Optional chaining with array elements
+const users = [
+  { name: "Alice" },
+  { name: "Bob" }
+];
+console.log("First user:", users?.[0]?.name);
+console.log("Third user:", users?.[2]?.name ?? "Not found");
+
+// ===== Nullish Coalescing (??) =====
+console.log("\n===== Nullish Coalescing =====");
+
+// Nullish coalescing vs logical OR
+const settings = {
+  theme: "dark",
+  fontSize: 0,
+  showNotifications: false,
+  timeout: null
+};
+
+// Logical OR (||) treats 0 and false as falsy values
+console.log("Font size (||):", settings.fontSize || 16);
+console.log("Show notifications (||):", settings.showNotifications || true);
+
+// Nullish coalescing (??) only treats null and undefined as falsy
+console.log("Font size (??):", settings.fontSize ?? 16);
+console.log("Show notifications (??):", settings.showNotifications ?? true);
+console.log("Timeout (??):", settings.timeout ?? 1000);
+console.log("Missing property (??):", settings.missing ?? "default");
+
+// Chaining nullish coalescing
+const value = null;
+const fallback1 = undefined;
+const fallback2 = 0;
+const fallback3 = "default";
+
+console.log("Chained fallbacks:", value ?? fallback1 ?? fallback2 ?? fallback3);
+
+// ===== Logical Assignment Operators =====
+console.log("\n===== Logical Assignment Operators =====");
+
+// Nullish assignment (??=)
+let config = {
+  theme: "light"
+};
+
+// Only assigns if the property is null or undefined
+config.theme ??= "dark";
+config.fontSize ??= 16;
+config.timeout ??= 1000;
+
+console.log("Config after ??=:", config);
+
+// Logical AND assignment (&&=)
+let userProfile = {
+  name: "Jane",
+  verified: true,
+  active: false
+};
+
+// Only assigns if the left side is truthy
+userProfile.name &&= "Jane Doe";
+userProfile.verified &&= false;
+userProfile.active &&= true;
+
+console.log("User profile after &&=:", userProfile);
+
+// Logical OR assignment (||=)
+let options = {
+  debug: false,
+  cache: 0,
+  retry: null
+};
+
+// Only assigns if the left side is falsy
+options.debug ||= true;
+options.cache ||= 60;
+options.retry ||= 3;
+options.timeout ||= 5000;
+
+console.log("Options after ||=:", options);
+
+// ===== Destructuring Assignment =====
+console.log("\n===== Destructuring Assignment =====");
+
+// Array destructuring
+const colors = ["red", "green", "blue", "yellow", "purple"];
+
+// Basic array destructuring
+const [primary, secondary, tertiary] = colors;
+console.log("First three colors:", primary, secondary, tertiary);
+
+// Skip elements
+const [first, , third] = colors;
+console.log("First and third:", first, third);
+
+// Rest pattern
+const [head, ...tail] = colors;
+console.log("Head:", head);
+console.log("Tail:", tail);
+
+// Default values
+const [a, b, c = "default"] = ["one", "two"];
+console.log("With default:", a, b, c);
+
+// Swapping variables
+let x = 1;
+let y = 2;
+[x, y] = [y, x];
+console.log("After swap:", x, y);
+
+// Object destructuring
+const product = {
+  id: 1,
+  name: "Laptop",
+  price: 999.99,
+  specs: {
+    cpu: "Intel i7",
+    ram: "16GB",
+    storage: "512GB SSD"
+  },
+  inStock: true,
+  tags: ["electronics", "computers"]
+};
+
+// Basic object destructuring
+const { id, name, price } = product;
+console.log("Product details:", id, name, price);
+
+// Renaming variables
+const { name: productName, price: productPrice } = product;
+console.log("Renamed:", productName, productPrice);
+
+// Default values
+const { discount = 0, inStock } = product;
+console.log("With default:", discount, inStock);
+
+// Nested destructuring
+const { specs: { cpu, ram } } = product;
+console.log("Specs:", cpu, ram);
+
+// Rest pattern in objects
+const { id: productId, ...productDetails } = product;
+console.log("Product ID:", productId);
+console.log("Other details:", productDetails);
+
+// Combining with iteration
+const items = [
+  { id: 1, name: "Phone", price: 699 },
+  { id: 2, name: "Tablet", price: 499 },
+  { id: 3, name: "Laptop", price: 999 }
+];
+
+for (const { id, name, price } of items) {
+  console.log(`Item ${id}: ${name} - $${price}`);
+}
+
+// ===== Spread Operator =====
+console.log("\n===== Spread Operator =====");
+
+// Array spread
+const numbers1 = [1, 2, 3];
+const numbers2 = [4, 5, 6];
+
+// Combine arrays
+const allNumbers = [...numbers1, ...numbers2];
+console.log("Combined arrays:", allNumbers);
+
+// Insert elements
+const insertedNumbers = [0, ...numbers1, 4];
+console.log("With inserted elements:", insertedNumbers);
+
+// Copy array
+const numbersCopy = [...numbers1];
+numbersCopy.push(4);
+console.log("Original:", numbers1);
+console.log("Copy after modification:", numbersCopy);
+
+// Spread string into characters
+const chars = [..."Hello"];
+console.log("String spread:", chars);
+
+// Object spread
+const defaults = {
+  theme: "light",
+  fontSize: 16,
+  showSidebar: true
+};
+
+const userSettings = {
+  theme: "dark",
+  showNotifications: true
+};
+
+// Combine objects (later properties override earlier ones)
+const mergedSettings = { ...defaults, ...userSettings };
+console.log("Merged settings:", mergedSettings);
+
+// Add new properties
+const enhancedSettings = { ...userSettings, fontSize: 20, fontFamily: "Arial" };
+console.log("Enhanced settings:", enhancedSettings);
+
+// Copy object
+const settingsCopy = { ...userSettings };
+settingsCopy.theme = "blue";
+console.log("Original:", userSettings);
+console.log("Copy after modification:", settingsCopy);
+
+// Function arguments
+function sum(...numbers) {
+  return numbers.reduce((total, n) => total + n, 0);
+}
+
+console.log("Sum:", sum(1, 2, 3, 4, 5));
+console.log("Sum with spread:", sum(...numbers1, ...numbers2));
+
+// ===== Combining Features =====
+console.log("\n===== Combining Features =====");
+
+function processUser(user) {
+  // Combine optional chaining, nullish coalescing, and destructuring
+  const { name, address } = user ?? {};
+  const city = address?.city ?? "Unknown";
+  const zip = address?.zip ?? "Unknown";
+  
+  // Use spread to create a new object
+  return {
+    ...user,
+    formattedAddress: `${city}, ${zip}`,
+    lastAccessed: new Date().toISOString()
+  };
+}
+
+const processedUser = processUser(user);
+console.log("Processed user:", processedUser);
+
+// Null case
+const processedNull = processUser(null);
+console.log("Processed null:", processedNull);
+
+console.log("\nModern JavaScript features example complete!");
