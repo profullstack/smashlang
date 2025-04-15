@@ -314,7 +314,7 @@ pub fn spread_array(array: &Value) -> Result<Vec<Value>, String> {
             Ok(chars)
         },
         Value::Object(obj) => {
-            if let Some(Value::Function(iter_fn)) = obj.get(Symbol::iterator.as_str()) {
+            if let Some(Value::Function(iter_fn)) = obj.get(Symbol::Iterator.as_str()) {
                 // Object is iterable
                 let iterator = iter_fn.call(array.clone(), &[], &Environment::new())?;
                 

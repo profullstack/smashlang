@@ -64,7 +64,7 @@ impl Module {
     
     /// Parse the module source code
     pub fn parse(&mut self) -> Result<(), String> {
-        match SmashParser::parse(&self.source) {
+        match <SmashParser as pest::Parser<crate::parser::Rule>>::parse(crate::parser::Rule::program, &self.source) {
             Ok(ast) => {
                 self.ast = Some(ast);
                 Ok(())
