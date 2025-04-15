@@ -131,6 +131,12 @@ This document outlines the features, components, and architectural improvements 
 - [ ] Add support for generators and iterators
 - [ ] Implement proper closures with lexical scoping
 - [ ] Add support for decorators/annotations
+- [ ] Implement optional static typing system
+  - [ ] Add type annotations syntax for variables, functions, and classes
+  - [ ] Create type checker module
+  - [ ] Implement type inference
+  - [ ] Support interfaces and type definitions
+  - [ ] Add runtime type checking option
 - [ ] Add comprehensive tests for all language features
 
 ### Standard Library
