@@ -335,7 +335,7 @@ impl WeakMap {
                     }
                 }
             },
-            Value::WeakMap(other_map) => {
+            Value::WeakMap(_other_map) => {
                 // Cannot iterate over WeakMap entries
                 return Err("Cannot create WeakMap from another WeakMap".to_string());
             },
@@ -429,7 +429,7 @@ impl WeakSet {
                     weak_set.add(item.clone())?;
                 }
             },
-            Value::WeakSet(other_set) => {
+            Value::WeakSet(_other_set) => {
                 // Cannot iterate over WeakSet values
                 return Err("Cannot create WeakSet from another WeakSet".to_string());
             },

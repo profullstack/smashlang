@@ -115,7 +115,7 @@ pub fn nullish_coalescing(left: &Value, right: &Value) -> Value {
 }
 
 /// Implements the logical AND operator (&&)
-pub fn logical_and(left: &Value, right: &Value, env: &Environment) -> Value {
+pub fn logical_and(left: &Value, right: &Value, _env: &Environment) -> Value {
     if !left.is_truthy() {
         left.clone()
     } else {
@@ -124,7 +124,7 @@ pub fn logical_and(left: &Value, right: &Value, env: &Environment) -> Value {
 }
 
 /// Implements the logical OR operator (||)
-pub fn logical_or(left: &Value, right: &Value, env: &Environment) -> Value {
+pub fn logical_or(left: &Value, right: &Value, _env: &Environment) -> Value {
     if left.is_truthy() {
         left.clone()
     } else {

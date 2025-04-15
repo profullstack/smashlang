@@ -23,7 +23,8 @@ pub mod runtime;
 
 /// Re-export main components for easier access
 pub use lexer::Lexer;
-pub use parser::{SmashParser as Parser, AstNode};
+pub use parser::{SmashParser, AstNode};
+use pest::Parser as PestParser;
 pub use interpreter::{Interpreter, Value};
 pub use compiler::Compiler;
 
@@ -44,14 +45,20 @@ pub fn execute(source: &str) -> Result<Value, String> {
     // Parse the source code
     let mut lexer = Lexer::new(source);
     let _tokens = lexer.tokenize();
-    
-    let ast = match Parser::parse(source) {
-        Ok(ast) => ast,
+
+    let mut pairs = match <SmashParser as PestParser<parser::Rule>>::parse(parser::Rule::program, source) {
+        Ok(pairs) => pairs,
         Err(err) => {
             return Err(format!("Parse error: {}", err));
         }
     };
-    
+    let ast = match pairs.next().and_then(AstNode::from_pair) {
+        Some(ast) => ast,
+        None => {
+            return Err("Failed to convert parse tree to AST".to_string());
+        }
+    };
+
     // Interpret the AST
     let interpreter = Interpreter::new();
     match interpreter.evaluate(&ast) {
@@ -75,14 +82,20 @@ pub fn compile(source: &str) -> Result<compiler::CompiledFunction, String> {
     // Parse the source code
     let mut lexer = Lexer::new(source);
     let _tokens = lexer.tokenize();
-    
-    let ast = match Parser::parse(source) {
-        Ok(ast) => ast,
+
+    let mut pairs = match <SmashParser as PestParser<parser::Rule>>::parse(parser::Rule::program, source) {
+        Ok(pairs) => pairs,
         Err(err) => {
             return Err(format!("Parse error: {}", err));
         }
     };
-    
+    let ast = match pairs.next().and_then(AstNode::from_pair) {
+        Some(ast) => ast,
+        None => {
+            return Err("Failed to convert parse tree to AST".to_string());
+        }
+    };
+
     // Compile the AST
     let mut compiler = Compiler::new();
     compiler.compile(&ast)

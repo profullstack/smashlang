@@ -272,8 +272,9 @@ impl ClassInstance {
 
 /// Create a class constructor function
 pub fn create_class_constructor(class: Rc<RefCell<Class>>) -> Function {
+    let class_name = class.borrow().name.clone();
     Function::new_native(
-        Some(class.borrow().name.clone()),
+        Some(class_name),
         vec!["...args".to_string()],
         move |_this, args, env| {
             // Create a new instance of the class

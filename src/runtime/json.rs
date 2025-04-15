@@ -241,7 +241,7 @@ pub fn create_json_stringify_function() -> Function {
                         for item in arr {
                             if let Value::String(s) = item {
                                 keys.push(s.clone());
-                            } else if let Value::Number(n) => {
+                            } else if let Value::Number(n) = value {
                                 if n.fract() == 0.0 {
                                     keys.push(n.to_string());
                                 }
@@ -306,6 +306,7 @@ pub fn create_json_stringify_function() -> Function {
 }
 
 /// Replacer type for JSON.stringify
+#[derive(Clone)]
 enum ReplacerType {
     Function(Function),
     Array(Vec<String>),
@@ -333,7 +334,7 @@ fn apply_replacer(
             // Convert result back to JSON value
             value_to_json(&result)
         },
-        ReplacerType::Array(keys) => {
+        ReplacerType::Array(ref keys) => {
             match value {
                 JsonValue::Object(obj) => {
                     let mut result = serde_json::Map::new();

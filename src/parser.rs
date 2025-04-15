@@ -339,6 +339,24 @@ impl Parameter {
     }
 }
 
+use pest::iterators::Pair;
+
+
+impl AstNode {
+    pub fn from_pair(pair: Pair<Rule>) -> Option<Self> {
+        match pair.as_rule() {
+            Rule::program => {
+                let nodes = pair.into_inner()
+                    .filter_map(AstNode::from_pair)
+                    .collect();
+                Some(AstNode::Program(nodes))
+            }
+            // Add more rules here as needed for deeper parsing
+            _ => None,
+        }
+    }
+}
+
 #[derive(Debug, Clone)]
 pub enum ClassMember {
     Constructor {

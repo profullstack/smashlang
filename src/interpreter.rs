@@ -79,9 +79,7 @@ impl Value {
         matches!(self, Value::Function(_))
     }
     
-    pub fn is_promise(&self) -> bool {
-        matches!(self, Value::Promise(_))
-    }
+
     
     pub fn is_class(&self) -> bool {
         matches!(self, Value::Class(_))
@@ -176,13 +174,33 @@ impl fmt::Display for Value {
 }
 
 /// Function represents a callable function in the SmashLang language
-#[derive(Debug, Clone)]
 pub struct Function {
     pub name: Option<String>,
     pub params: Vec<String>,
     pub body: Vec<AstNode>,
     pub closure: Environment,
     pub native_fn: Option<Box<dyn Fn(Value, &[Value], &Environment) -> Result<Value, String> + 'static>>,
+}
+
+impl std::fmt::Debug for Function {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("Function")
+            .field("name", &self.name)
+            .field("params", &self.params)
+            .finish()
+    }
+}
+
+impl Clone for Function {
+    fn clone(&self) -> Self {
+        Function {
+            name: self.name.clone(),
+            params: self.params.clone(),
+            body: self.body.clone(),
+            closure: self.closure.clone(),
+            native_fn: None // Cannot clone closures
+        }
+    }
 }
 
 impl Function {
