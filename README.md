@@ -28,6 +28,14 @@ SmashLang is a JavaScript-inspired programming language implemented in Rust that
 - **Error Handling**: Try/catch/finally mechanism
 - **Modern Language Features**: Destructuring, pattern matching, async/await, and more
 
+### Platforms
+[![Android](https://img.shields.io/badge/Android-3DDC84?logo=android&logoColor=fff&style=for-the-badge)](https://github.com/profullstack/smashlang/blob/master/docs/platforms/android.md)
+[![iOS](https://img.shields.io/badge/iOS-000000?logo=apple&logoColor=fff&style=for-the-badge)](https://github.com/profullstack/smashlang/blob/master/docs/platforms/ios.md)
+[![Windows](https://img.shields.io/badge/Windows-0078D6?logo=windows&logoColor=fff&style=for-the-badge)](https://github.com/profullstack/smashlang/blob/master/docs/platforms/windows.md)
+[![macOS](https://img.shields.io/badge/macOS-000000?logo=macos&logoColor=fff&style=for-the-badge)](https://github.com/profullstack/smashlang/blob/master/docs/platforms/macos.md)
+[![Linux](https://img.shields.io/badge/Linux-FCC624?logo=linux&logoColor=000&style=for-the-badge)](https://github.com/profullstack/smashlang/blob/master/docs/platforms/linux.md)
+[![Web](https://img.shields.io/badge/Web-4285F4?logo=googlechrome&logoColor=fff&style=for-the-badge)](https://github.com/profullstack/smashlang/blob/master/docs/wasm_support.md)
+
 ## 🧰 Implementation
 
 SmashLang is built using modern Rust crates:

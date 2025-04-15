@@ -1,8 +1,10 @@
 use std::collections::HashMap;
 use std::fmt;
 use std::rc::Rc;
+use std::cell::RefCell;
 use crate::parser::AstNode;
 use crate::runtime::promise::Promise;
+use crate::runtime::class::{Class, ClassInstance};
 
 /// Value represents a runtime value in the SmashLang language
 #[derive(Debug, Clone)]
@@ -14,6 +16,8 @@ pub enum Value {
     Object(HashMap<String, Value>),
     Function(Function),
     Promise(Rc<Promise>),
+    Class(Rc<RefCell<Class>>),
+    ClassInstance(Rc<RefCell<ClassInstance>>),
     Null,
     Undefined,
 }
@@ -28,6 +32,8 @@ impl Value {
             Value::Object(_) => "object",
             Value::Function(_) => "function",
             Value::Promise(_) => "promise",
+            Value::Class(_) => "class",
+            Value::ClassInstance(_) => "object",
             Value::Null => "null",
             Value::Undefined => "undefined",
         }
@@ -42,13 +48,15 @@ impl Value {
             Value::Object(_) => true,
             Value::Function(_) => true,
             Value::Promise(_) => true,
+            Value::Class(_) => true,
+            Value::ClassInstance(_) => true,
             Value::Null => false,
             Value::Undefined => false,
         }
     }
     
     pub fn is_object(&self) -> bool {
-        matches!(self, Value::Object(_))
+        matches!(self, Value::Object(_) | Value::ClassInstance(_))
     }
     
     pub fn is_function(&self) -> bool {
@@ -57,6 +65,14 @@ impl Value {
     
     pub fn is_promise(&self) -> bool {
         matches!(self, Value::Promise(_))
+    }
+    
+    pub fn is_class(&self) -> bool {
+        matches!(self, Value::Class(_))
+    }
+    
+    pub fn is_class_instance(&self) -> bool {
+        matches!(self, Value::ClassInstance(_))
     }
 }
 
@@ -95,6 +111,8 @@ impl fmt::Display for Value {
             },
             Value::Function(_) => write!(f, "[Function]"),
             Value::Promise(_) => write!(f, "[Promise]"),
+            Value::Class(class) => write!(f, "[Class: {}]", class.borrow().name),
+            Value::ClassInstance(instance) => write!(f, "[{} instance]", instance.borrow().class.name),
             Value::Null => write!(f, "null"),
             Value::Undefined => write!(f, "undefined"),
         }

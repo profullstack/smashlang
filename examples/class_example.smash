@@ -1,0 +1,207 @@
+/**
+ * SmashLang Class Example
+ * 
+ * This example demonstrates how to use Classes in SmashLang.
+ */
+
+// Basic class definition
+class Person {
+  // Class properties with default values
+  name = "Unknown";
+  age = 0;
+  
+  // Constructor method
+  constructor(name, age) {
+    this.name = name;
+    this.age = age;
+    console.log(`Created person: ${name}, ${age} years old`);
+  }
+  
+  // Instance methods
+  greet() {
+    console.log(`Hello, my name is ${this.name} and I am ${this.age} years old.`);
+  }
+  
+  birthday() {
+    this.age++;
+    console.log(`${this.name} is now ${this.age} years old.`);
+  }
+  
+  // Method with parameters
+  introduce(otherPerson) {
+    console.log(`Hi ${otherPerson.name}, I'm ${this.name}!`);
+  }
+}
+
+// Creating instances
+const john = new Person("John", 30);
+const jane = new Person("Jane", 25);
+
+// Calling methods
+john.greet();
+jane.greet();
+
+// Accessing properties
+console.log(`${john.name} is ${john.age} years old.`);
+
+// Modifying properties
+john.name = "Johnny";
+console.log(`Name changed to ${john.name}`);
+
+// Calling methods with parameters
+john.introduce(jane);
+
+// Calling methods that modify state
+john.birthday();
+john.greet();
+
+// Inheritance
+class Employee extends Person {
+  // Additional properties
+  title = "";
+  salary = 0;
+  
+  // Constructor with super call
+  constructor(name, age, title, salary) {
+    // Call parent constructor
+    super(name, age);
+    
+    // Initialize additional properties
+    this.title = title;
+    this.salary = salary;
+    
+    console.log(`Created employee: ${name}, ${title}`);
+  }
+  
+  // Override parent method
+  greet() {
+    console.log(`Hello, I'm ${this.name}, a ${this.title}.`);
+  }
+  
+  // Additional methods
+  work() {
+    console.log(`${this.name} is working as a ${this.title}.`);
+  }
+  
+  // Method that calls parent method
+  introduce(otherPerson) {
+    super.introduce(otherPerson);
+    console.log(`I work as a ${this.title}.`);
+  }
+}
+
+// Creating an instance of the child class
+const alice = new Employee("Alice", 35, "Software Engineer", 100000);
+
+// Calling methods
+alice.greet();  // Uses overridden method
+alice.work();   // Uses new method
+alice.birthday(); // Uses inherited method
+
+// Polymorphism
+const people = [john, jane, alice];
+console.log("\nIntroducing everyone:");
+for (const person of people) {
+  person.greet();
+}
+
+// Static members
+class MathUtils {
+  // Static properties
+  static PI = 3.14159;
+  static E = 2.71828;
+  
+  // Static methods
+  static square(x) {
+    return x * x;
+  }
+  
+  static cube(x) {
+    return x * x * x;
+  }
+  
+  static circleArea(radius) {
+    return MathUtils.PI * MathUtils.square(radius);
+  }
+}
+
+// Using static members
+console.log(`\nMath constants: PI = ${MathUtils.PI}, E = ${MathUtils.E}`);
+console.log(`Square of 5: ${MathUtils.square(5)}`);
+console.log(`Cube of 3: ${MathUtils.cube(3)}`);
+console.log(`Area of circle with radius 2: ${MathUtils.circleArea(2)}`);
+
+// Private fields and methods
+class Counter {
+  // Private field
+  #count = 0;
+  
+  // Private method
+  #increment() {
+    this.#count++;
+    console.log(`Private increment: ${this.#count}`);
+  }
+  
+  // Public methods that use private members
+  increment() {
+    this.#increment();
+  }
+  
+  getCount() {
+    return this.#count;
+  }
+}
+
+// Using a class with private members
+console.log("\nTesting private members:");
+const counter = new Counter();
+counter.increment();
+counter.increment();
+console.log(`Count: ${counter.getCount()}`);
+
+// This would cause an error:
+// console.log(counter.#count);
+// counter.#increment();
+
+// Class with getter and setter
+class Temperature {
+  #celsius = 0;
+  
+  constructor(celsius) {
+    this.#celsius = celsius;
+  }
+  
+  // Getter
+  get celsius() {
+    return this.#celsius;
+  }
+  
+  // Setter
+  set celsius(value) {
+    if (value < -273.15) {
+      throw new Error("Temperature below absolute zero is not possible");
+    }
+    this.#celsius = value;
+  }
+  
+  // Computed getter
+  get fahrenheit() {
+    return this.#celsius * 9/5 + 32;
+  }
+  
+  // Computed setter
+  set fahrenheit(value) {
+    this.#celsius = (value - 32) * 5/9;
+  }
+}
+
+// Using getters and setters
+console.log("\nTesting getters and setters:");
+const temp = new Temperature(25);
+console.log(`${temp.celsius}°C = ${temp.fahrenheit}°F`);
+
+temp.celsius = 30;
+console.log(`${temp.celsius}°C = ${temp.fahrenheit}°F`);
+
+temp.fahrenheit = 68;
+console.log(`${temp.celsius}°C = ${temp.fahrenheit}°F`);
