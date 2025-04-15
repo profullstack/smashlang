@@ -28,6 +28,7 @@ pub enum Value {
     WeakSet(Rc<WeakSet>),
     Null,
     Undefined,
+    Identifier(String),
 }
 
 impl Value {

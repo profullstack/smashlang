@@ -6,6 +6,17 @@ use std::fmt;
 #[grammar = "grammar.pest"]
 pub struct SmashParser;
 
+use pest::iterators::Pairs;
+use crate::parser::Rule;
+
+impl AstNode {
+    /// TODO: Implement proper conversion from pest Pairs to AstNode
+    pub fn from_pairs(_pairs: Pairs<'_, Rule>) -> Self {
+        // Placeholder: returns a dummy node
+        AstNode::Undefined
+    }
+}
+
 #[derive(Debug, Clone)]
 pub enum AstNode {
     // Literals

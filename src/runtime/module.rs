@@ -65,8 +65,10 @@ impl Module {
     /// Parse the module source code
     pub fn parse(&mut self) -> Result<(), String> {
         match <SmashParser as pest::Parser<crate::parser::Rule>>::parse(crate::parser::Rule::program, &self.source) {
-            Ok(ast) => {
-                self.ast = Some(ast);
+            Ok(pairs) => {
+                // TODO: Properly convert Pairs<'_, Rule> to AstNode
+                // This is a placeholder; implement actual conversion logic as needed
+                self.ast = Some(AstNode::from_pairs(pairs));
                 Ok(())
             },
             Err(err) => {
