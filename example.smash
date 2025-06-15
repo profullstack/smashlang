@@ -1,8 +1,5 @@
 let x = [1, 2, 3];
 const y = [true, false, false, true];
-let user = {
-    name: "chovy",
-    age: 33,
 };
 
 print("age:", user.age);
